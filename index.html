@@ -34,12 +34,14 @@
     background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dark) 100%);
     color:#fff;
     padding:22px 20px 18px;
+    text-align:center;
   }
   header.topbar h1{
     margin:0;
     font-size:22px;
     display:flex;
     align-items:center;
+    justify-content:center;
     gap:8px;
   }
   header.topbar p{
@@ -50,6 +52,7 @@
   .meta-row{
     display:flex;
     flex-wrap:wrap;
+    justify-content:center;
     gap:10px;
     align-items:center;
     margin-top:14px;
@@ -100,6 +103,7 @@
     grid-template-columns:1fr;
     gap:16px;
   }
+  .grid.stats{margin-top:28px;}
   @media(min-width:760px){
     .grid{grid-template-columns:repeat(2,1fr);}
     .grid.stats{grid-template-columns:repeat(2,1fr);}
@@ -147,17 +151,38 @@
     display:flex;
     flex-direction:column;
     justify-content:center;
-    min-height:150px;
+    min-height:auto;
+    padding:16px 18px 14px;
+    border-top-width:3px;
+  }
+  .stat-card .kpi-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:var(--text-dark);
   }
   .stat-card .big{
-    font-size:32px;
+    font-size:28px;
     font-weight:800;
     margin:6px 0 2px;
   }
-  .stat-card .small{
-    font-size:14px;
-    font-weight:600;
+  .stat-card .sub-text{
+    font-size:11px;
     color:var(--text-muted);
+    margin-bottom:12px;
+  }
+  .stat-card .progress-track{
+    height:4px;
+    border-radius:3px;
+    background:#eef1f6;
+    overflow:hidden;
+  }
+  .stat-card .progress-fill{
+    height:100%;
+    border-radius:3px;
+    width:100%;
+    transition:background-color .3s;
   }
   .stat-card .label{
     font-size:12px;
@@ -197,8 +222,23 @@
 <body>
 
 <header class="topbar">
-  <h1>⛽ GLP Dashboard</h1>
-  <p>Abastecimiento · Indicadores internos y externos</p>
+  <h1>
+    <svg width="34" height="30" viewBox="0 0 100 46" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+      <g fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="2.5">
+        <circle cx="18" cy="20" r="13"/>
+        <line x1="12" y1="31" x2="8" y2="40" stroke-width="1.6"/>
+        <line x1="24" y1="31" x2="28" y2="40" stroke-width="1.6"/>
+        <circle cx="50" cy="15" r="15.5"/>
+        <line x1="42" y1="28" x2="37" y2="40" stroke-width="1.6"/>
+        <line x1="58" y1="28" x2="63" y2="40" stroke-width="1.6"/>
+        <circle cx="82" cy="20" r="13"/>
+        <line x1="76" y1="31" x2="72" y2="40" stroke-width="1.6"/>
+        <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.6"/>
+      </g>
+    </svg>
+    Indicadores Abastecimiento
+  </h1>
+  <p>Indicadores internos y externos</p>
   <div class="meta-row" id="metaRow">
     <span class="pill" id="dataStatus">Cargando datos…</span>
   </div>
@@ -218,7 +258,7 @@
       <div class="card" style="border-top-color:var(--blue-light); grid-column: 1 / -1;">
         <div class="card-head">
           <div>
-            <h3>Proyección Stock vs FC/POA</h3>
+            <h3>Proyección Stock vs Forecast / POA</h3>
             <div class="sub">Evolución diaria · Inventario, despacho planeado y POA</div>
           </div>
         </div>
@@ -234,13 +274,14 @@
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartPrima"></canvas></div>
+        <div class="legend-note">*PPI sin RAD</div>
       </div>
 
       <div class="card" style="border-top-color:var(--purple);">
         <div class="card-head">
           <div>
             <h3>Mix de abastecimiento semanal</h3>
-            <div class="sub">Volumen por destino y fuente (TM)</div>
+            <div class="sub">Volumen por destino y fuente (%)</div>
           </div>
           <select id="mixWeekSelect"></select>
         </div>
@@ -250,14 +291,16 @@
 
     <div class="grid stats">
       <div class="card stat-card" id="cardMargenMes" style="border-top-color:var(--green);">
-        <div class="label">MARGEN DEL MES PROYECTADO <span id="margenMesLabel"></span></div>
+        <div class="kpi-label">MARGEN DEL MES PROYECTADO <span id="margenMesLabel"></span></div>
         <div class="big" id="margenMesMM">—</div>
-        <div class="small" id="margenMesUSDTM">—</div>
+        <div class="sub-text" id="margenMesUSDTM">—</div>
+        <div class="progress-track"><div class="progress-fill" id="margenMesBar"></div></div>
       </div>
       <div class="card stat-card" id="cardMargenYTD" style="border-top-color:var(--green);">
-        <div class="label">MARGEN ACUMULADO YTD</div>
+        <div class="kpi-label">MARGEN ACUMULADO YTD</div>
         <div class="big" id="margenYTDMM">—</div>
-        <div class="small" id="margenYTDUSDTM">—</div>
+        <div class="sub-text" id="margenYTDUSDTM">—</div>
+        <div class="progress-track"><div class="progress-fill" id="margenYTDBar"></div></div>
       </div>
     </div>
 
@@ -297,7 +340,6 @@
   </div>
 </main>
 
-<footer>Dashboard GLP · Datos cargados localmente desde Excel semanal · No se envía información a ningún servidor</footer>
 
 <script>
 const COLORS = {
@@ -357,7 +399,7 @@ async function loadAllFromSupabase(){
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
     DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc)}));
 
-    document.getElementById('dataStatus').textContent = '✅ Datos en vivo desde Supabase · ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dataStatus').textContent = '✅ Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('dashboardContent').classList.remove('hidden');
     renderAll();
@@ -406,9 +448,17 @@ function fmtPeriodo(v){
   return s;
 }
 
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 function fmtMes(v){
-  if(v instanceof Date) return v.toLocaleDateString('es-PE',{month:'short',year:'numeric'});
-  return String(v);
+  if(v instanceof Date) return MESES[v.getMonth()] + ' ' + String(v.getFullYear()).slice(2);
+  const s = String(v);
+  const m = s.match(/^(\d{4})-(\d{2})/);
+  if(m){
+    const monthIdx = parseInt(m[2],10) - 1;
+    if(MESES[monthIdx]) return MESES[monthIdx] + ' ' + m[1].slice(2);
+  }
+  return s;
 }
 
 function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
@@ -442,9 +492,9 @@ function renderStock(){
     data:{
       labels: d.map(r=>fmtPeriodo(r.fecha)),
       datasets:[
-        {label:'Inventario Inicial', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:'rgba(30,79,143,0.12)', fill:true, tension:.3, pointRadius:2},
-        {label:'Desp. Planeado', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:'transparent', borderDash:[4,3], tension:.3, pointRadius:0},
-        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:'transparent', borderDash:[2,2], tension:.3, pointRadius:0},
+        {label:'Inventario Inicial', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:2},
+        {label:'Desp. Planeado', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:0},
+        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:0},
       ]
     },
     options: baseLineOpts()
@@ -466,10 +516,9 @@ function renderPrima(){
     type:'bar',
     data:{labels, datasets:[{label:'Prima (USD/TM)', data:values, backgroundColor:colors, borderRadius:6}]},
     options:{
-      indexAxis:'y',
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} USD/TM`}}},
-      scales:{x:{grid:{color:'#eef1f6'}}, y:{grid:{display:false}}}
+      scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
     }
   });
 }
@@ -479,19 +528,22 @@ function renderMargen(){
   if(!d.length) return;
   const last = d[d.length-1];
   document.getElementById('margenMesLabel').textContent = '· ' + fmtMes(last.mes);
-  setStat('margenMesMM','margenMesUSDTM','cardMargenMes', last.mesMM, last.mesUSDTM);
-  setStat('margenYTDMM','margenYTDUSDTM','cardMargenYTD', last.ytdMM, last.ytdUSDTM);
+  setStat('margenMesMM','margenMesUSDTM','cardMargenMes','margenMesBar', last.mesMM, last.mesUSDTM);
+  setStat('margenYTDMM','margenYTDUSDTM','cardMargenYTD','margenYTDBar', last.ytdMM, last.ytdUSDTM);
 }
 
-function setStat(idMM, idUSDTM, cardId, mm, usdtm){
+function setStat(idMM, idUSDTM, cardId, barId, mm, usdtm){
   const elMM = document.getElementById(idMM);
   const elUSDTM = document.getElementById(idUSDTM);
   const card = document.getElementById(cardId);
+  const bar = document.getElementById(barId);
   const ok = mm !== null && mm >= 0;
+  const statusColor = mm===null ? COLORS.blueLight : (ok ? COLORS.green : COLORS.red);
   elMM.textContent = (mm===null?'—': (mm>=0?'+':'') + fmt1(mm) + ' MM USD');
-  elMM.style.color = mm===null ? '#1b2733' : (ok ? COLORS.green : COLORS.red);
+  elMM.style.color = mm===null ? '#1b2733' : statusColor;
   elUSDTM.textContent = usdtm===null ? '' : fmt1(usdtm) + ' USD/TM';
-  card.style.borderTopColor = mm===null ? COLORS.blueLight : (ok ? COLORS.green : COLORS.red);
+  card.style.borderTopColor = statusColor;
+  bar.style.backgroundColor = statusColor;
 }
 
 function renderMix(){
@@ -512,11 +564,17 @@ function drawMix(week){
   const destinos = [...new Set(rows.map(r=>r.destino))];
   const fuentes = [...new Set(rows.map(r=>r.fuente))];
   const palette = [COLORS.blue, COLORS.orange, COLORS.teal, COLORS.purple, COLORS.green, COLORS.red, COLORS.gray];
+  const totals = {};
+  destinos.forEach(dest=>{
+    totals[dest] = rows.filter(r=>r.destino===dest).reduce((s,r)=>s+(r.volumen||0),0);
+  });
   const datasets = fuentes.map((f,i)=>({
     label:f,
     data: destinos.map(dest=>{
       const row = rows.find(r=>r.destino===dest && r.fuente===f);
-      return row ? row.volumen : 0;
+      const vol = row ? row.volumen : 0;
+      const total = totals[dest];
+      return total ? (vol/total*100) : 0;
     }),
     backgroundColor: palette[i % palette.length],
     borderRadius:4
@@ -527,8 +585,14 @@ function drawMix(week){
     data:{labels:destinos, datasets},
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom', labels:{boxWidth:10, padding:10}}},
-      scales:{x:{stacked:true, grid:{display:false}}, y:{stacked:true, grid:{color:'#eef1f6'}, title:{display:true,text:'TM'}}}
+      plugins:{
+        legend:{position:'bottom', labels:{boxWidth:10, padding:10}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}}
+      },
+      scales:{
+        x:{stacked:true, grid:{display:false}},
+        y:{stacked:true, grid:{color:'#eef1f6'}, title:{display:true,text:'%'}, max:100}
+      }
     }
   });
 }
@@ -574,7 +638,7 @@ function renderVariacion(){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'Variación MB', data:d.map(r=>r.mb), borderColor:COLORS.blueLight, backgroundColor:'rgba(74,127,201,0.1)', fill:true, tension:.3, pointRadius:2},
+        {label:'Variación MB', data:d.map(r=>r.mb), borderColor:COLORS.blueLight, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:2},
         {label:'Variación PlusPetrol', data:d.map(r=>r.ppc), borderColor:COLORS.orange, backgroundColor:'transparent', tension:.3, pointRadius:2},
       ]
     },
