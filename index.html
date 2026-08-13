@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GLP Dashboard · Abastecimiento</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
@@ -236,7 +237,7 @@
         <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.6"/>
       </g>
     </svg>
-    Indicadores Abastecimiento
+    Abastecimiento | Resumen semanal
   </h1>
   <p>Indicadores internos y externos</p>
   <div class="meta-row" id="metaRow">
@@ -351,6 +352,11 @@ const COLORS = {
 Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
 Chart.defaults.font.size = 11;
 Chart.defaults.color = '#64748b';
+
+if(typeof ChartDataLabels !== 'undefined'){
+  Chart.register(ChartDataLabels);
+  Chart.defaults.plugins.datalabels.display = false;
+}
 
 let charts = {};
 let DATA = {};
@@ -517,7 +523,17 @@ function renderPrima(){
     data:{labels, datasets:[{label:'Prima (USD/TM)', data:values, backgroundColor:colors, borderRadius:6}]},
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} USD/TM`}}},
+      layout:{padding:{top:22}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.raw} USD/TM`}},
+        datalabels:{
+          display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
+          anchor:'end', align:'top',
+          color:'#1b2733', font:{weight:'700', size:11},
+          formatter:v=>fmt1(v)
+        }
+      },
       scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
     }
   });
@@ -587,7 +603,12 @@ function drawMix(week){
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{position:'bottom', labels:{boxWidth:10, padding:10}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}}
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}},
+        datalabels:{
+          display:c=>c.dataset.data[c.dataIndex] >= 6,
+          color:'#fff', font:{weight:'700', size:10},
+          formatter:v=>v.toFixed(0) + '%'
+        }
       },
       scales:{
         x:{stacked:true, grid:{display:false}},
