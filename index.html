@@ -36,6 +36,7 @@
     color:#fff;
     padding:22px 20px 18px;
     text-align:center;
+    position:relative;
   }
   header.topbar h1{
     margin:0;
@@ -51,19 +52,21 @@
     color:#cfe0f5;
   }
   .meta-row{
+    position:absolute;
+    top:12px;
+    right:14px;
     display:flex;
     flex-wrap:wrap;
-    justify-content:center;
+    justify-content:flex-end;
     gap:10px;
     align-items:center;
-    margin-top:14px;
   }
   .pill{
     background:rgba(255,255,255,0.15);
     border:1px solid rgba(255,255,255,0.3);
     border-radius:20px;
-    padding:6px 14px;
-    font-size:12px;
+    padding:3px 9px;
+    font-size:10px;
     color:#fff;
   }
   .btn{
@@ -312,7 +315,6 @@
     </svg>
     Abastecimiento | Resumen semanal
   </h1>
-  <p>Indicadores internos y externos</p>
   <div class="meta-row" id="metaRow">
     <span class="pill" id="dataStatus">Cargando datos…</span>
   </div>
@@ -456,7 +458,6 @@
             <div class="sub">Variación por período USD/TM</div>
           </div>
         </div>
-        <div class="chips" id="variacionChips"></div>
         <div class="chart-wrap"><canvas id="chartVariacion"></canvas></div>
       </div>
     </div>
@@ -846,7 +847,7 @@ function drawMix(week){
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
-        legend:{position:'bottom', labels:{boxWidth:10, padding:10}},
+        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
         tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}},
         datalabels:{
           display:c=>c.dataset.data[c.dataIndex] >= 6,
@@ -957,13 +958,6 @@ function pearson(xs, ys){
 
 function renderVariacion(){
   const d = DATA.variacion;
-  const wrap = document.getElementById('variacionChips');
-  const sdMB = stddev(d.map(r=>r.mb));
-  const sdPPC = stddev(d.map(r=>r.ppc));
-  wrap.innerHTML = `
-    <div class="chip">Desv. estándar MB <b>${sdMB===null?'—':fmt1(sdMB)+' USD/TM'}</b></div>
-    <div class="chip">Desv. estándar PlusPetrol CFR Callao <b>${sdPPC===null?'—':fmt1(sdPPC)+' USD/TM'}</b></div>
-  `;
   destroyChart('chartVariacion');
   const ctx = document.getElementById('chartVariacion');
   charts.chartVariacion = new Chart(ctx, {
@@ -978,7 +972,7 @@ function renderVariacion(){
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
-        legend:{position:'bottom', labels:{boxWidth:10,padding:10}},
+        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
         datalabels:{
           display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
           anchor:c=>c.dataset.data[c.dataIndex]>=0 ? 'end' : 'start',
@@ -996,7 +990,7 @@ function baseLineOpts(yTitle){
   return {
     responsive:true, maintainAspectRatio:false,
     interaction:{mode:'index', intersect:false},
-    plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:10}}},
+    plugins:{legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}}},
     scales:{
       x:{grid:{display:false}},
       y:{grid:{color:'#eef1f6'}, title: yTitle?{display:true,text:yTitle}:{display:false}}
