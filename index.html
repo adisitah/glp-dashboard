@@ -247,14 +247,12 @@
   }
   .alert-badge.ok .dot{background:var(--green);}
   .corr-badge{
-    background:#f5f8fd;
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:6px 12px;
+    padding:0;
     font-size:11.5px;
     line-height:1.5;
     color:var(--text-dark);
     white-space:nowrap;
+    text-align:right;
   }
   .corr-badge .corr-title{
     font-weight:700;
@@ -495,7 +493,7 @@ const COLORS = {
   green:'#1f9254', red:'#c0392b', gray:'#94a3b8'
 };
 
-Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
+Chart.defaults.font.family = "'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
 Chart.defaults.font.size = 11;
 Chart.defaults.color = '#64748b';
 
@@ -547,7 +545,7 @@ async function loadAllFromSupabase(){
     DATA.prima = prima.data.map(r=>({mes:r.mes, solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas)}));
     DATA.margen = margen.data.map(r=>({mes:r.mes, mesMM:num(r.mes_mm), mesUSDTM:num(r.mes_usdtm), ytdMM:num(r.ytd_mm), ytdUSDTM:num(r.ytd_usdtm)}));
     DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
-    DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb)}));
+    DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb), fca:num(r.FCA ?? r.fca)}));
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
     DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc)}));
 
@@ -681,8 +679,8 @@ function renderDetalle(){
   );
 
   const ppiCfrTable = buildTable(
-    ['Periodo','PPI (USD/TM)','CFR (USD/TM)','MB'],
-    DATA.ppiCfr.map(r=>[fmtPeriodo(r.periodo), fmt1(r.ppi), fmt1(r.cfr), fmt1(r.mb)])
+    ['Periodo','PPI (USD/TM)','CFR (USD/TM)','MB','FCA'],
+    DATA.ppiCfr.map(r=>[fmtPeriodo(r.periodo), fmt1(r.ppi), fmt1(r.cfr), fmt1(r.mb), fmt1(r.fca)])
   );
 
   const esperaTable = buildTable(
@@ -883,6 +881,7 @@ function renderPPICFR(){
   const mbValues = d.map(r=>r.mb);
   const ppiValues = d.map(r=>r.ppi);
   const cfrValues = d.map(r=>r.cfr);
+  const fcaValues = d.map(r=>r.fca);
 
   const wrap = document.getElementById('ppiCfrChips');
   const rMbPpi = pearson(mbValues, ppiValues);
@@ -908,6 +907,7 @@ function renderPPICFR(){
         {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:COLORS.blue, tension:.3, pointRadius:2, fill:false},
         {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:COLORS.teal, tension:.3, pointRadius:2, fill:false},
         {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:COLORS.purple, tension:.3, pointRadius:2, fill:false},
+        {label:'FCA', data:fcaValues, borderColor:COLORS.orange, backgroundColor:COLORS.orange, tension:.3, pointRadius:2, fill:false},
       ]
     },
     options:{
