@@ -218,6 +218,54 @@
   }
   .hidden{display:none !important;}
   .legend-note{font-size:11px;color:#94a3b8;margin-top:6px;}
+  .tabbar{
+    display:flex;
+    gap:4px;
+    border-bottom:1px solid var(--border);
+    margin:8px 0 24px;
+  }
+  .tab-btn{
+    background:none;
+    border:none;
+    padding:10px 18px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--text-muted);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    margin-bottom:-1px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .tab-btn:hover{color:var(--blue-mid);}
+  .tab-btn.active{color:var(--blue-dark); border-bottom-color:var(--blue);}
+  .data-table-wrap{
+    overflow:auto;
+    max-height:340px;
+    border:1px solid var(--border);
+    border-radius:10px;
+  }
+  table.data-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.data-table th{
+    position:sticky; top:0;
+    background:#f5f8fd;
+    text-align:left;
+    padding:8px 10px;
+    font-weight:700;
+    color:var(--blue-dark);
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  table.data-table td{
+    padding:7px 10px;
+    border-bottom:1px solid #f1f4f8;
+    color:var(--text-dark);
+    white-space:nowrap;
+  }
+  table.data-table tbody tr:nth-child(even){background:#fafbfd;}
+  table.data-table tbody tr:hover{background:#eef4fc;}
+  .data-card{margin-bottom:16px;}
 </style>
 </head>
 <body>
@@ -254,12 +302,34 @@
 
   <div id="dashboardContent" class="hidden">
 
+    <div class="tabbar">
+      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">📊 Resumen</button>
+      <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">📋 Detalle de datos</button>
+    </div>
+
+    <div id="viewResumen">
+
     <div class="section-title">📦 Datos internos</div>
     <div class="grid wide">
       <div class="card" style="border-top-color:var(--blue-light); grid-column: 1 / -1;">
         <div class="card-head">
           <div>
-            <h3>Proyección Stock vs Forecast / POA</h3>
+            <h3 style="display:flex;align-items:center;gap:6px;">
+              <svg width="24" height="21" viewBox="0 0 100 46" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                <g fill="rgba(30,79,143,0.12)" stroke="var(--blue)" stroke-width="3">
+                  <circle cx="18" cy="20" r="13"/>
+                  <line x1="12" y1="31" x2="8" y2="40" stroke-width="1.8"/>
+                  <line x1="24" y1="31" x2="28" y2="40" stroke-width="1.8"/>
+                  <circle cx="50" cy="15" r="15.5"/>
+                  <line x1="42" y1="28" x2="37" y2="40" stroke-width="1.8"/>
+                  <line x1="58" y1="28" x2="63" y2="40" stroke-width="1.8"/>
+                  <circle cx="82" cy="20" r="13"/>
+                  <line x1="76" y1="31" x2="72" y2="40" stroke-width="1.8"/>
+                  <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.8"/>
+                </g>
+              </svg>
+              Proyección Stock vs Forecast / POA
+            </h3>
             <div class="sub">Evolución diaria · Inventario, despacho planeado y POA</div>
           </div>
         </div>
@@ -270,18 +340,40 @@
       <div class="card" style="border-top-color:var(--orange);">
         <div class="card-head">
           <div>
-            <h3>Prima ponderada vs competencia</h3>
+            <h3 style="display:flex;align-items:center;gap:6px;">
+              <svg width="26" height="19" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                <g fill="rgba(224,134,46,0.12)" stroke="var(--orange)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+                  <path d="M8,42 L92,42 L80,60 L20,60 Z"/>
+                  <rect x="55" y="18" width="24" height="24" rx="2"/>
+                  <line x1="67" y1="18" x2="67" y2="6"/>
+                </g>
+                <path d="M4,66 Q17,58 30,66 T56,66 T82,66 T96,66" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              Prima ponderada vs competencia
+            </h3>
             <div class="sub" id="primaSub">Solgas vs PPI y competencia</div>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartPrima"></canvas></div>
-        <div class="legend-note">*PPI sin RAD ni MB</div>
+        <div class="legend-note">*PPI sin RAD, MB</div>
       </div>
 
       <div class="card" style="border-top-color:var(--purple);">
         <div class="card-head">
           <div>
-            <h3>Mix de abastecimiento semanal</h3>
+            <h3 style="display:flex;align-items:center;gap:6px;">
+              <svg width="30" height="18" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                <g fill="rgba(142,111,206,0.12)" stroke="var(--purple)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+                  <rect x="26" y="14" width="70" height="26" rx="13"/>
+                  <path d="M96,20 h14 l6,10 v10 h-20 z"/>
+                </g>
+                <line x1="26" y1="27" x2="96" y2="27" stroke="var(--purple)" stroke-width="2" opacity="0.5"/>
+                <circle cx="42" cy="46" r="7" fill="white" stroke="var(--purple)" stroke-width="4"/>
+                <circle cx="74" cy="46" r="7" fill="white" stroke="var(--purple)" stroke-width="4"/>
+                <circle cx="104" cy="46" r="7" fill="white" stroke="var(--purple)" stroke-width="4"/>
+              </svg>
+              Mix de abastecimiento semanal
+            </h3>
             <div class="sub">Volumen por destino y fuente (%)</div>
           </div>
           <select id="mixWeekSelect"></select>
@@ -320,7 +412,13 @@
       <div class="card" style="border-top-color:var(--orange);">
         <div class="card-head">
           <div>
-            <h3>Tiempo de espera PlusPetrol</h3>
+            <h3 style="display:flex;align-items:center;gap:6px;">
+              <svg width="20" height="20" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                <circle cx="30" cy="30" r="24" fill="rgba(224,134,46,0.12)" stroke="var(--orange)" stroke-width="4"/>
+                <path d="M30,14 V30 L41,38" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Tiempo de espera PlusPetrol
+            </h3>
             <div class="sub">Horas promedio por semana</div>
           </div>
         </div>
@@ -331,11 +429,18 @@
         <div class="card-head">
           <div>
             <h3>Variación de precio: PlusPetrol vs MB</h3>
-            <div class="sub">Variación por período</div>
+            <div class="sub">Variación por período USD/TM</div>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartVariacion"></canvas></div>
       </div>
+    </div>
+
+    </div>
+
+    <div id="viewDetalle" class="hidden">
+      <div class="section-title">📋 Detalle de datos</div>
+      <div id="detalleTables"></div>
     </div>
 
   </div>
@@ -477,6 +582,78 @@ function renderAll(){
   renderPPICFR();
   renderEspera();
   renderVariacion();
+  renderDetalle();
+}
+
+function switchTab(tab){
+  const isResumen = tab === 'resumen';
+  document.getElementById('viewResumen').classList.toggle('hidden', !isResumen);
+  document.getElementById('viewDetalle').classList.toggle('hidden', isResumen);
+  document.getElementById('tabBtnResumen').classList.toggle('active', isResumen);
+  document.getElementById('tabBtnDetalle').classList.toggle('active', !isResumen);
+}
+
+function buildTable(headers, rows){
+  const thead = '<thead><tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
+  const tbody = '<tbody>' + rows.map(r=>'<tr>' + r.map(c=>`<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody>';
+  return `<div class="data-table-wrap"><table class="data-table">${thead}${tbody}</table></div>`;
+}
+
+function dataCard(title, borderColor, tableHtml){
+  return `
+    <div class="card data-card" style="border-top-color:${borderColor};">
+      <h3 style="margin-bottom:12px;">${title}</h3>
+      ${tableHtml}
+    </div>`;
+}
+
+function renderDetalle(){
+  const el = document.getElementById('detalleTables');
+  if(!el) return;
+
+  const stockTable = buildTable(
+    ['Fecha','Inventario (kTM)','Desp. Planeado (kTM)','POA (kTM)'],
+    DATA.stock.map(r=>[fmtPeriodo(r.fecha), fmt1(r.inventario), fmt1(r.despPlaneado), fmt1(r.poa)])
+  );
+
+  const primaTable = buildTable(
+    ['Mes','Solgas','PPI','PlusPetrol','Primax','Zeta Gas'],
+    DATA.prima.map(r=>[fmtMes(r.mes), fmt1(r.solgas), fmt1(r.ppi), fmt1(r.plusPetrol), fmt1(r.primax), fmt1(r.zetaGas)])
+  );
+
+  const margenTable = buildTable(
+    ['Mes','Margen Mes (MM USD)','Margen Mes (USD/TM)','Margen YTD (MM USD)','Margen YTD (USD/TM)'],
+    DATA.margen.map(r=>[fmtMes(r.mes), fmt1(r.mesMM), fmt1(r.mesUSDTM), fmt1(r.ytdMM), fmt1(r.ytdUSDTM)])
+  );
+
+  const mixTable = buildTable(
+    ['Semana','Destino','Fuente','Volumen (TM)'],
+    DATA.mix.map(r=>[fmtPeriodo(r.semana), r.destino, r.fuente, fmt1(r.volumen)])
+  );
+
+  const ppiCfrTable = buildTable(
+    ['Periodo','PPI (USD/TM)','CFR (USD/TM)'],
+    DATA.ppiCfr.map(r=>[fmtPeriodo(r.periodo), fmt1(r.ppi), fmt1(r.cfr)])
+  );
+
+  const esperaTable = buildTable(
+    ['Semana','Horas'],
+    DATA.espera.map(r=>[fmtPeriodo(r.semana), fmt1(r.horas)])
+  );
+
+  const variacionTable = buildTable(
+    ['Periodo','Variación MB (USD/TM)','Variación PlusPetrol CFR Callao (USD/TM)'],
+    DATA.variacion.map(r=>[fmtPeriodo(r.periodo), fmt1(r.mb), fmt1(r.ppc)])
+  );
+
+  el.innerHTML =
+    dataCard('Proyección Stock vs Forecast / POA', COLORS.blue, stockTable) +
+    dataCard('Prima ponderada vs competencia', COLORS.orange, primaTable) +
+    dataCard('Margen mensual', COLORS.green, margenTable) +
+    dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
+    dataCard('PPI vs CFR', COLORS.teal, ppiCfrTable) +
+    dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
+    dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable);
 }
 
 function renderStock(){
@@ -486,9 +663,9 @@ function renderStock(){
   if(d.length){
     const last = d[d.length-1];
     wrap.innerHTML = `
-      <div class="chip">Inventario actual <b>${fmt1(last.inventario)} TM</b></div>
-      <div class="chip">Desp. planeado <b>${fmt1(last.despPlaneado)} TM</b></div>
-      <div class="chip">POA <b>${fmt1(last.poa)} TM</b></div>
+      <div class="chip">Inventario actual <b>${fmt1(last.inventario)} kTM</b></div>
+      <div class="chip">Desp. planeado <b>${fmt1(last.despPlaneado)} kTM</b></div>
+      <div class="chip">POA <b>${fmt1(last.poa)} kTM</b></div>
     `;
   }
   destroyChart('chartStock');
@@ -503,7 +680,7 @@ function renderStock(){
         {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:0},
       ]
     },
-    options: baseLineOpts()
+    options: baseLineOpts('kTM')
   });
 }
 
@@ -514,9 +691,9 @@ function renderPrima(){
   if(!d.length){ sub.textContent = 'Sin datos'; return; }
   const last = d[d.length-1];
   sub.textContent = 'Mes: ' + fmtMes(last.mes);
-  const labels = ['Solgas','PPI','PlusPetrol','Primax','Zeta Gas'];
-  const values = [last.solgas,last.ppi,last.plusPetrol,last.primax,last.zetaGas];
-  const colors = [COLORS.blue, COLORS.gray, COLORS.orange, COLORS.teal, COLORS.purple];
+  const labels = ['Solgas','PlusPetrol','Primax','Zeta Gas','PPI'];
+  const values = [last.solgas,last.plusPetrol,last.primax,last.zetaGas,last.ppi];
+  const colors = [COLORS.blue, COLORS.orange, COLORS.teal, COLORS.purple, COLORS.gray];
   const ctx = document.getElementById('chartPrima');
   charts.chartPrima = new Chart(ctx, {
     type:'bar',
@@ -631,7 +808,23 @@ function renderPPICFR(){
         {label:'CFR', data:d.map(r=>r.cfr), borderColor:COLORS.teal, backgroundColor:'transparent', tension:.3, pointRadius:2},
       ]
     },
-    options: baseLineOpts('USD/TM')
+    options:{
+      ...baseLineOpts('USD/TM'),
+      layout:{padding:{top:20}},
+      plugins:{
+        ...baseLineOpts().plugins,
+        datalabels:{
+          display:c=>{
+            const v=c.dataset.data[c.dataIndex];
+            return v!=null && !isNaN(v) && c.dataIndex===c.dataset.data.length-1;
+          },
+          align:'top', anchor:'end',
+          color:c=>c.dataset.borderColor,
+          font:{weight:'700', size:11},
+          formatter:v=>fmt1(v)
+        }
+      }
+    }
   });
 }
 
@@ -655,15 +848,28 @@ function renderVariacion(){
   destroyChart('chartVariacion');
   const ctx = document.getElementById('chartVariacion');
   charts.chartVariacion = new Chart(ctx, {
-    type:'line',
+    type:'bar',
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'Variación MB', data:d.map(r=>r.mb), borderColor:COLORS.blueLight, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:2},
-        {label:'Variación PlusPetrol', data:d.map(r=>r.ppc), borderColor:COLORS.orange, backgroundColor:'transparent', tension:.3, pointRadius:2},
+        {label:'Variación MB', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:4},
+        {label:'Variación PlusPetrol CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:4},
       ]
     },
-    options: baseLineOpts()
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'bottom', labels:{boxWidth:10,padding:10}},
+        datalabels:{
+          display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
+          anchor:c=>c.dataset.data[c.dataIndex]>=0 ? 'end' : 'start',
+          align:c=>c.dataset.data[c.dataIndex]>=0 ? 'top' : 'bottom',
+          color:'#1b2733', font:{weight:'700', size:10},
+          formatter:v=>fmt1(v)
+        }
+      },
+      scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
+    }
   });
 }
 
