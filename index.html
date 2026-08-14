@@ -107,7 +107,7 @@
     grid-template-columns:1fr;
     gap:16px;
   }
-  .grid.stats{margin-top:28px;}
+  .grid.stats{margin-top:28px; margin-bottom:28px;}
   @media(min-width:760px){
     .grid{grid-template-columns:repeat(2,1fr);}
     .grid.stats{grid-template-columns:repeat(2,1fr);}
@@ -377,7 +377,7 @@
       <div class="card" style="border-top-color:var(--teal); grid-column: 1 / -1;">
         <div class="card-head">
           <div>
-            <h3>PPI vs CFR vs MB</h3>
+            <h3>PPI - CFR - FCA - MB</h3>
             <div class="sub">USD/TM</div>
           </div>
         </div>
@@ -431,6 +431,22 @@
         </div>
         <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
       </div>
+
+      <div class="card" style="border-top-color:var(--orange);">
+        <div class="card-head">
+          <div>
+            <h3 style="display:flex;align-items:center;gap:6px;">
+              <svg width="20" height="20" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+                <circle cx="30" cy="30" r="24" fill="rgba(224,134,46,0.12)" stroke="var(--orange)" stroke-width="4"/>
+                <path d="M30,14 V30 L41,38" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Tiempo de espera PlusPetrol
+            </h3>
+            <div class="sub">Horas promedio por semana</div>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartEspera"></canvas></div>
+      </div>
     </div>
 
     <div class="grid stats">
@@ -449,21 +465,6 @@
     </div>
 
     <div class="grid">
-        <div class="card-head">
-          <div>
-            <h3 style="display:flex;align-items:center;gap:6px;">
-              <svg width="20" height="20" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-                <circle cx="30" cy="30" r="24" fill="rgba(224,134,46,0.12)" stroke="var(--orange)" stroke-width="4"/>
-                <path d="M30,14 V30 L41,38" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Tiempo de espera PlusPetrol
-            </h3>
-            <div class="sub">Horas promedio por semana</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartEspera"></canvas></div>
-      </div>
-
       <div class="card" style="border-top-color:var(--blue-light); grid-column: 1 / -1;">
         <div class="card-head">
           <div>
@@ -598,8 +599,9 @@ function fmtPeriodo(v){
     return 'Sem ' + v;
   }
   const s = String(v);
-  if(/^\d{4}-\d{2}-\d{2}/.test(s)){
-    const d = new Date(s);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m){
+    const d = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
     if(!isNaN(d)) return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'});
   }
   if(/^\d{4}-W?\d{1,2}$/i.test(s)) return 'Sem ' + s.split(/-W?/i)[1];
@@ -698,7 +700,7 @@ function renderDetalle(){
     dataCard('Prima ponderada vs competencia', COLORS.orange, primaTable) +
     dataCard('Margen mensual', COLORS.green, margenTable) +
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
-    dataCard('PPI vs CFR vs MB', COLORS.teal, ppiCfrTable) +
+    dataCard('PPI - CFR - FCA - MB', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
     dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable);
 }
