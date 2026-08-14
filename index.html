@@ -218,6 +218,30 @@
   }
   .hidden{display:none !important;}
   .legend-note{font-size:11px;color:#94a3b8;margin-top:6px;}
+  .alert-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:rgba(192,57,43,0.1);
+    border:1px solid rgba(192,57,43,0.35);
+    color:var(--red);
+    border-radius:20px;
+    padding:5px 11px;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .alert-badge .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--red);
+    flex-shrink:0;
+  }
+  .alert-badge.ok{
+    background:rgba(31,146,84,0.1);
+    border-color:rgba(31,146,84,0.35);
+    color:var(--green);
+  }
+  .alert-badge.ok .dot{background:var(--green);}
   .tabbar{
     display:flex;
     gap:4px;
@@ -328,12 +352,11 @@
                   <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.8"/>
                 </g>
               </svg>
-              Proyección Stock vs Forecast / POA
+              TERMINAL | Proyección de inventarios + 30 d
             </h3>
-            <div class="sub">Evolución diaria · Inventario, despacho planeado y POA</div>
           </div>
+          <div id="stockAlertBadge"></div>
         </div>
-        <div class="chips" id="stockChips"></div>
         <div class="chart-wrap"><canvas id="chartStock"></canvas></div>
       </div>
 
@@ -650,7 +673,7 @@ function renderDetalle(){
   );
 
   el.innerHTML =
-    dataCard('Proyección Stock vs Forecast / POA', COLORS.blue, stockTable) +
+    dataCard('TERMINAL | Proyección de inventarios + 30 d', COLORS.blue, stockTable) +
     dataCard('Prima ponderada vs competencia', COLORS.orange, primaTable) +
     dataCard('Margen mensual', COLORS.green, margenTable) +
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
@@ -661,16 +684,13 @@ function renderDetalle(){
 
 function renderStock(){
   const d = DATA.stock;
-  const wrap = document.getElementById('stockChips');
-  wrap.innerHTML = '';
-  if(d.length){
-    const last = d[d.length-1];
-    wrap.innerHTML = `
-      <div class="chip">Inventario actual <b>${fmt1(last.inventario)} kTM</b></div>
-      <div class="chip">Desp. planeado <b>${fmt1(last.despPlaneado)} kTM</b></div>
-      <div class="chip">POA <b>${fmt1(last.poa)} kTM</b></div>
-    `;
-  }
+
+  const badge = document.getElementById('stockAlertBadge');
+  const alertCount = d.filter(r=>r.inventario!=null && r.despPlaneado!=null && r.inventario < r.despPlaneado).length;
+  badge.innerHTML = alertCount > 0
+    ? `<div class="alert-badge"><span class="dot"></span>${alertCount} alerta${alertCount===1?'':'s'}</div>`
+    : `<div class="alert-badge ok"><span class="dot"></span>Sin alertas</div>`;
+
   destroyChart('chartStock');
   const ctx = document.getElementById('chartStock');
   charts.chartStock = new Chart(ctx, {
@@ -678,12 +698,25 @@ function renderStock(){
     data:{
       labels: d.map(r=>fmtPeriodo(r.fecha)),
       datasets:[
-        {label:'Inventario Inicial', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:2},
-        {label:'Desp. Planeado', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:0},
-        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:'transparent', fill:false, tension:.3, pointRadius:0},
+        {label:'Inventario Inicial', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:COLORS.blue, fill:false, tension:.3, pointRadius:2},
+        {label:'Desp. Planeado', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:COLORS.orange, fill:false, tension:.3, pointRadius:0},
+        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:COLORS.green, fill:false, tension:.3, pointRadius:0},
       ]
     },
-    options: baseLineOpts('kTM')
+    options: {
+      ...baseLineOpts('kTM'),
+      layout:{padding:{top:22}},
+      plugins:{
+        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:8, padding:10}},
+        datalabels:{
+          display:c=>c.dataIndex===0,
+          align:'top', anchor:'end',
+          color:c=>c.dataset.borderColor,
+          font:{weight:'700', size:11},
+          formatter:v=>(v==null||isNaN(v))?'':Math.round(v)
+        }
+      }
+    }
   });
 }
 
