@@ -246,6 +246,22 @@
     color:var(--green);
   }
   .alert-badge.ok .dot{background:var(--green);}
+  .corr-badge{
+    background:#f5f8fd;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:6px 12px;
+    font-size:11.5px;
+    line-height:1.5;
+    color:var(--text-dark);
+    white-space:nowrap;
+  }
+  .corr-badge .corr-title{
+    font-weight:700;
+    color:var(--blue-dark);
+    display:block;
+    margin-bottom:1px;
+  }
   .tabbar{
     display:flex;
     gap:4px;
@@ -367,8 +383,8 @@
             <h3>PPI vs CFR vs MB</h3>
             <div class="sub">USD/TM</div>
           </div>
+          <div id="ppiCfrChips"></div>
         </div>
-        <div class="chips" id="ppiCfrChips"></div>
         <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
         <div class="legend-note">*PPI sin RAD</div>
       </div>
@@ -874,9 +890,12 @@ function renderPPICFR(){
   const rPpiCfr = pearson(ppiValues, cfrValues);
   const fmtR = v => v===null ? '—' : v.toFixed(2);
   wrap.innerHTML = `
-    <div class="chip">Correlación MB–PPI <b>${fmtR(rMbPpi)}</b></div>
-    <div class="chip">Correlación MB–CFR <b>${fmtR(rMbCfr)}</b></div>
-    <div class="chip">Correlación PPI–CFR <b>${fmtR(rPpiCfr)}</b></div>
+    <div class="corr-badge">
+      <span class="corr-title">Correlación</span>
+      PPI-MB: ${fmtR(rMbPpi)}<br>
+      CFR-MB: ${fmtR(rMbCfr)}<br>
+      PPI-CFR: ${fmtR(rPpiCfr)}
+    </div>
   `;
 
   destroyChart('chartPPICFR');
@@ -886,9 +905,9 @@ function renderPPICFR(){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:'transparent', tension:.3, pointRadius:2},
-        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:'transparent', tension:.3, pointRadius:2},
-        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:'transparent', tension:.3, pointRadius:2},
+        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:COLORS.blue, tension:.3, pointRadius:2, fill:false},
+        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:COLORS.teal, tension:.3, pointRadius:2, fill:false},
+        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:COLORS.purple, tension:.3, pointRadius:2, fill:false},
       ]
     },
     options:{
