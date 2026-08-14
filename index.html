@@ -361,6 +361,18 @@
         <div class="chart-wrap"><canvas id="chartStock"></canvas></div>
       </div>
 
+      <div class="card" style="border-top-color:var(--teal); grid-column: 1 / -1;">
+        <div class="card-head">
+          <div>
+            <h3>PPI vs CFR vs MB</h3>
+            <div class="sub">USD/TM</div>
+          </div>
+        </div>
+        <div class="chips" id="ppiCfrChips"></div>
+        <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
+        <div class="legend-note">*PPI sin RAD</div>
+      </div>
+
       <div class="card" style="border-top-color:var(--orange);">
         <div class="card-head">
           <div>
@@ -423,19 +435,6 @@
     </div>
 
     <div class="grid">
-      <div class="card" style="border-top-color:var(--teal); grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3>PPI vs CFR vs MB</h3>
-            <div class="sub">USD/TM</div>
-          </div>
-        </div>
-        <div class="chips" id="ppiCfrChips"></div>
-        <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
-        <div class="legend-note">*PPI sin RAD</div>
-      </div>
-
-      <div class="card" style="border-top-color:var(--orange);">
         <div class="card-head">
           <div>
             <h3 style="display:flex;align-items:center;gap:6px;">
@@ -532,7 +531,7 @@ async function loadAllFromSupabase(){
     DATA.prima = prima.data.map(r=>({mes:r.mes, solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas)}));
     DATA.margen = margen.data.map(r=>({mes:r.mes, mesMM:num(r.mes_mm), mesUSDTM:num(r.mes_usdtm), ytdMM:num(r.ytd_mm), ytdUSDTM:num(r.ytd_usdtm)}));
     DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
-    DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr)}));
+    DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb)}));
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
     DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc)}));
 
@@ -666,8 +665,8 @@ function renderDetalle(){
   );
 
   const ppiCfrTable = buildTable(
-    ['Periodo','PPI (USD/TM)','CFR (USD/TM)'],
-    DATA.ppiCfr.map(r=>[fmtPeriodo(r.periodo), fmt1(r.ppi), fmt1(r.cfr)])
+    ['Periodo','PPI (USD/TM)','CFR (USD/TM)','MB'],
+    DATA.ppiCfr.map(r=>[fmtPeriodo(r.periodo), fmt1(r.ppi), fmt1(r.cfr), fmt1(r.mb)])
   );
 
   const esperaTable = buildTable(
@@ -865,8 +864,7 @@ function drawMix(week){
 
 function renderPPICFR(){
   const d = DATA.ppiCfr;
-  const mbMap = new Map((DATA.variacion||[]).map(r=>[String(r.periodo), r.mb]));
-  const mbValues = d.map(r=> mbMap.has(String(r.periodo)) ? mbMap.get(String(r.periodo)) : null);
+  const mbValues = d.map(r=>r.mb);
   const ppiValues = d.map(r=>r.ppi);
   const cfrValues = d.map(r=>r.cfr);
 
@@ -888,9 +886,9 @@ function renderPPICFR(){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:'transparent', tension:.3, pointRadius:2, yAxisID:'y'},
-        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:'transparent', tension:.3, pointRadius:2, yAxisID:'y'},
-        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:'transparent', tension:.3, pointRadius:2, yAxisID:'y1'},
+        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:'transparent', tension:.3, pointRadius:2},
+        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:'transparent', tension:.3, pointRadius:2},
+        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:'transparent', tension:.3, pointRadius:2},
       ]
     },
     options:{
@@ -911,8 +909,7 @@ function renderPPICFR(){
       },
       scales:{
         x:{grid:{display:false}},
-        y:{grid:{color:'#eef1f6'}, position:'left', title:{display:true,text:'USD/TM'}, ticks:{precision:0}},
-        y1:{grid:{display:false}, position:'right', title:{display:true,text:'MB'}}
+        y:{grid:{color:'#eef1f6'}, title:{display:true,text:'USD/TM'}, ticks:{precision:0}}
       }
     }
   });
