@@ -303,7 +303,7 @@
   <div id="dashboardContent" class="hidden">
 
     <div class="tabbar">
-      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">📊 Resumen</button>
+      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">📊 Dashboard</button>
       <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">📋 Detalle de datos</button>
     </div>
 
@@ -353,6 +353,7 @@
             </h3>
             <div class="sub" id="primaSub">Solgas vs PPI y competencia</div>
           </div>
+          <select id="primaMonthSelect"></select>
         </div>
         <div class="chart-wrap"><canvas id="chartPrima"></canvas></div>
         <div class="legend-note">*PPI sin RAD, MB</div>
@@ -407,6 +408,7 @@
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
+        <div class="legend-note">*PPI sin RAD</div>
       </div>
 
       <div class="card" style="border-top-color:var(--orange);">
@@ -432,6 +434,7 @@
             <div class="sub">Variación por período USD/TM</div>
           </div>
         </div>
+        <div class="chips" id="variacionChips"></div>
         <div class="chart-wrap"><canvas id="chartVariacion"></canvas></div>
       </div>
     </div>
@@ -687,13 +690,25 @@ function renderStock(){
 function renderPrima(){
   const d = DATA.prima;
   const sub = document.getElementById('primaSub');
+  const select = document.getElementById('primaMonthSelect');
   destroyChart('chartPrima');
-  if(!d.length){ sub.textContent = 'Sin datos'; return; }
-  const last = d[d.length-1];
-  sub.textContent = 'Mes: ' + fmtMes(last.mes);
+  if(!d.length){ sub.textContent = 'Sin datos'; select.innerHTML=''; return; }
+  const months = [...new Set(d.map(r=>r.mes))];
+  select.innerHTML = months.map(m=>`<option value="${m}">${fmtMes(m)}</option>`).join('');
+  select.value = months[months.length-1];
+  select.onchange = ()=>drawPrima(select.value);
+  drawPrima(select.value);
+}
+
+function drawPrima(month){
+  const d = DATA.prima;
+  const sub = document.getElementById('primaSub');
+  destroyChart('chartPrima');
+  const row = d.find(r=>String(r.mes)===String(month)) || d[d.length-1];
+  sub.textContent = 'Mes: ' + fmtMes(row.mes);
   const labels = ['Solgas','PlusPetrol','Primax','Zeta Gas','PPI'];
-  const values = [last.solgas,last.plusPetrol,last.primax,last.zetaGas,last.ppi];
-  const colors = [COLORS.blue, COLORS.orange, COLORS.teal, COLORS.purple, COLORS.gray];
+  const values = [row.solgas,row.plusPetrol,row.primax,row.zetaGas,row.ppi];
+  const colors = [COLORS.blue, COLORS.teal, COLORS.orange, COLORS.green, COLORS.gray];
   const ctx = document.getElementById('chartPrima');
   charts.chartPrima = new Chart(ctx, {
     type:'bar',
@@ -703,12 +718,12 @@ function renderPrima(){
       layout:{padding:{top:22}},
       plugins:{
         legend:{display:false},
-        tooltip:{callbacks:{label:c=>` ${c.raw} USD/TM`}},
+        tooltip:{callbacks:{label:c=>` ${Math.round(c.raw)} USD/TM`}},
         datalabels:{
           display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
           anchor:'end', align:'top',
           color:'#1b2733', font:{weight:'700', size:11},
-          formatter:v=>fmt1(v)
+          formatter:v=>Math.round(v)
         }
       },
       scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
@@ -751,10 +766,18 @@ function renderMix(){
   drawMix(select.value);
 }
 
+const DESTINO_ORDEN = ['Piura','Trujillo','Chiclayo','Huancayo','Arequipa','Cusco','Pucallpa','Huaraz','Ayacucho','Juanjui'];
+
 function drawMix(week){
   destroyChart('chartMix');
   const rows = DATA.mix.filter(r=>String(r.semana)===String(week));
-  const destinos = [...new Set(rows.map(r=>r.destino))];
+  const destinos = [...new Set(rows.map(r=>r.destino))].sort((a,b)=>{
+    const ia = DESTINO_ORDEN.indexOf(a), ib = DESTINO_ORDEN.indexOf(b);
+    if(ia===-1 && ib===-1) return a.localeCompare(b);
+    if(ia===-1) return 1;
+    if(ib===-1) return -1;
+    return ia - ib;
+  });
   const fuentes = [...new Set(rows.map(r=>r.fuente))];
   const palette = [COLORS.blue, COLORS.orange, COLORS.teal, COLORS.purple, COLORS.green, COLORS.red, COLORS.gray];
   const totals = {};
@@ -821,8 +844,12 @@ function renderPPICFR(){
           align:'top', anchor:'end',
           color:c=>c.dataset.borderColor,
           font:{weight:'700', size:11},
-          formatter:v=>fmt1(v)
+          formatter:v=>Math.round(v)
         }
+      },
+      scales:{
+        ...baseLineOpts().scales,
+        y:{...baseLineOpts('USD/TM').scales.y, ticks:{precision:0}}
       }
     }
   });
@@ -843,8 +870,23 @@ function renderEspera(){
   });
 }
 
+function stddev(arr){
+  const valid = arr.filter(v=>v!=null && !isNaN(v));
+  if(valid.length < 2) return null;
+  const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
+  const variance = valid.reduce((a,b)=>a+Math.pow(b-mean,2),0) / (valid.length-1);
+  return Math.sqrt(variance);
+}
+
 function renderVariacion(){
   const d = DATA.variacion;
+  const wrap = document.getElementById('variacionChips');
+  const sdMB = stddev(d.map(r=>r.mb));
+  const sdPPC = stddev(d.map(r=>r.ppc));
+  wrap.innerHTML = `
+    <div class="chip">Desv. estándar MB <b>${sdMB===null?'—':fmt1(sdMB)+' USD/TM'}</b></div>
+    <div class="chip">Desv. estándar PlusPetrol CFR Callao <b>${sdPPC===null?'—':fmt1(sdPPC)+' USD/TM'}</b></div>
+  `;
   destroyChart('chartVariacion');
   const ctx = document.getElementById('chartVariacion');
   charts.chartVariacion = new Chart(ctx, {
