@@ -421,13 +421,14 @@
     </div>
 
     <div class="grid">
-      <div class="card" style="border-top-color:var(--teal);">
+      <div class="card" style="border-top-color:var(--teal); grid-column: 1 / -1;">
         <div class="card-head">
           <div>
-            <h3>PPI vs CFR</h3>
+            <h3>PPI vs CFR vs MB</h3>
             <div class="sub">USD/TM</div>
           </div>
         </div>
+        <div class="chips" id="ppiCfrChips"></div>
         <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
         <div class="legend-note">*PPI sin RAD</div>
       </div>
@@ -683,7 +684,7 @@ function renderDetalle(){
     dataCard('Prima ponderada vs competencia', COLORS.orange, primaTable) +
     dataCard('Margen mensual', COLORS.green, margenTable) +
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
-    dataCard('PPI vs CFR', COLORS.teal, ppiCfrTable) +
+    dataCard('PPI vs CFR vs MB', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
     dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable);
 }
@@ -721,6 +722,10 @@ function renderStock(){
           font:{weight:'700', size:11},
           formatter:v=>(v==null||isNaN(v))?'':Math.round(v)
         }
+      },
+      scales:{
+        ...baseLineOpts('kTM').scales,
+        x:{...baseLineOpts('kTM').scales.x, ticks:{font:{size:9.5}}}
       }
     }
   });
@@ -859,6 +864,22 @@ function drawMix(week){
 
 function renderPPICFR(){
   const d = DATA.ppiCfr;
+  const mbMap = new Map((DATA.variacion||[]).map(r=>[String(r.periodo), r.mb]));
+  const mbValues = d.map(r=> mbMap.has(String(r.periodo)) ? mbMap.get(String(r.periodo)) : null);
+  const ppiValues = d.map(r=>r.ppi);
+  const cfrValues = d.map(r=>r.cfr);
+
+  const wrap = document.getElementById('ppiCfrChips');
+  const rMbPpi = pearson(mbValues, ppiValues);
+  const rMbCfr = pearson(mbValues, cfrValues);
+  const rPpiCfr = pearson(ppiValues, cfrValues);
+  const fmtR = v => v===null ? '—' : v.toFixed(2);
+  wrap.innerHTML = `
+    <div class="chip">Correlación MB–PPI <b>${fmtR(rMbPpi)}</b></div>
+    <div class="chip">Correlación MB–CFR <b>${fmtR(rMbCfr)}</b></div>
+    <div class="chip">Correlación PPI–CFR <b>${fmtR(rPpiCfr)}</b></div>
+  `;
+
   destroyChart('chartPPICFR');
   const ctx = document.getElementById('chartPPICFR');
   charts.chartPPICFR = new Chart(ctx, {
@@ -866,8 +887,9 @@ function renderPPICFR(){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'PPI', data:d.map(r=>r.ppi), borderColor:COLORS.blue, backgroundColor:'transparent', tension:.3, pointRadius:2},
-        {label:'CFR', data:d.map(r=>r.cfr), borderColor:COLORS.teal, backgroundColor:'transparent', tension:.3, pointRadius:2},
+        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:'transparent', tension:.3, pointRadius:2, yAxisID:'y'},
+        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:'transparent', tension:.3, pointRadius:2, yAxisID:'y'},
+        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:'transparent', tension:.3, pointRadius:2, yAxisID:'y1'},
       ]
     },
     options:{
@@ -887,8 +909,9 @@ function renderPPICFR(){
         }
       },
       scales:{
-        ...baseLineOpts().scales,
-        y:{...baseLineOpts('USD/TM').scales.y, ticks:{precision:0}}
+        x:{grid:{display:false}},
+        y:{grid:{color:'#eef1f6'}, position:'left', title:{display:true,text:'USD/TM'}, ticks:{precision:0}},
+        y1:{grid:{display:false}, position:'right', title:{display:true,text:'MB'}}
       }
     }
   });
@@ -915,6 +938,21 @@ function stddev(arr){
   const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
   const variance = valid.reduce((a,b)=>a+Math.pow(b-mean,2),0) / (valid.length-1);
   return Math.sqrt(variance);
+}
+
+function pearson(xs, ys){
+  const pairs = xs.map((x,i)=>[x, ys[i]]).filter(([x,y])=>x!=null && y!=null && !isNaN(x) && !isNaN(y));
+  if(pairs.length < 2) return null;
+  const n = pairs.length;
+  const mx = pairs.reduce((s,p)=>s+p[0],0) / n;
+  const my = pairs.reduce((s,p)=>s+p[1],0) / n;
+  let num=0, dx=0, dy=0;
+  for(const [x,y] of pairs){
+    const ex = x-mx, ey = y-my;
+    num += ex*ey; dx += ex*ex; dy += ey*ey;
+  }
+  const denom = Math.sqrt(dx*dy);
+  return denom===0 ? null : num/denom;
 }
 
 function renderVariacion(){
