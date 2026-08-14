@@ -9,38 +9,44 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --blue-dark:#123258;
-    --blue:#1e4f8f;
-    --blue-mid:#2563a8;
-    --blue-light:#4a7fc9;
-    --teal:#4fb8d1;
-    --orange:#e0862e;
-    --purple:#8e6fce;
-    --green:#1f9254;
-    --red:#c0392b;
-    --bg:#eef1f6;
+    --blue-dark:#4B3F91;
+    --blue:#2E6DB4;
+    --blue-mid:#3B7FC4;
+    --blue-light:#3FA0D8;
+    --teal:#2FAE8B;
+    --orange:#E15B77;
+    --purple:#7C6FCF;
+    --green:#3EC17A;
+    --red:#D9455C;
+    --gray:#9aa5b1;
+    --bg:#f3f4f6;
     --card-bg:#ffffff;
-    --text-dark:#1b2733;
-    --text-muted:#64748b;
-    --border:#e3e8ef;
+    --text-dark:#20272f;
+    --text-muted:#6b7280;
+    --border:#e4e6ea;
+    --font-serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --font-sans:'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    font-family:'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    font-family:var(--font-sans);
     background:var(--bg);
     color:var(--text-dark);
   }
   header.topbar{
-    background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dark) 100%);
+    background:linear-gradient(135deg,var(--purple) 0%,var(--blue) 100%);
     color:#fff;
-    padding:22px 20px 18px;
+    padding:20px 20px 16px;
     text-align:center;
     position:relative;
   }
   header.topbar h1{
     margin:0;
-    font-size:22px;
+    font-family:var(--font-serif);
+    font-size:21px;
+    font-weight:600;
+    letter-spacing:0.2px;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -48,8 +54,8 @@
   }
   header.topbar p{
     margin:4px 0 0;
-    font-size:13px;
-    color:#cfe0f5;
+    font-size:12.5px;
+    color:#aebccb;
   }
   .meta-row{
     position:absolute;
@@ -117,17 +123,19 @@
   }
   .card{
     background:var(--card-bg);
-    border-radius:14px;
+    border-radius:0;
     padding:18px 18px 14px;
-    box-shadow:0 1px 3px rgba(16,24,40,0.08),0 1px 2px rgba(16,24,40,0.04);
-    border-top:4px solid var(--blue-light);
+    box-shadow:0 1px 2px rgba(16,24,40,0.05);
+    border:1px solid var(--border);
+    border-top:3px solid var(--blue-light);
     opacity:0;
     animation:fadein .4s ease forwards;
   }
   @keyframes fadein{to{opacity:1;}}
   .card h3{
     margin:0 0 2px;
-    font-size:15px;
+    font-family:var(--font-serif);
+    font-size:16px;
     font-weight:400;
     color:var(--text-dark);
   }
@@ -168,8 +176,9 @@
     color:var(--text-dark);
   }
   .stat-card .big{
+    font-family:var(--font-serif);
     font-size:28px;
-    font-weight:800;
+    font-weight:700;
     margin:6px 0 2px;
   }
   .stat-card .sub-text{
@@ -222,6 +231,47 @@
   }
   .hidden{display:none !important;}
   .legend-note{font-size:11px;color:#94a3b8;margin-top:6px;}
+  .mini-kpi-title{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:0.3px;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:6px;
+  }
+  .mini-kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+  }
+  .prima-kpi-top, .prima-kpi-bottom{ display:flex; flex-direction:column; justify-content:center; }
+  .prima-kpi-bottom{ margin-top:14px; }
+  @media(min-width:760px){
+    .prima-kpi-top{ height:230px; }
+    .prima-kpi-bottom{ height:190px; margin-top:2px; }
+  }
+  .mini-kpi{
+    border-radius:0;
+    padding:8px 10px;
+    color:#fff;
+    min-height:52px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .mini-kpi .mk-label{
+    font-size:9.5px;
+    opacity:0.92;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .mini-kpi .mk-value{
+    font-family:var(--font-serif);
+    font-size:15px;
+    font-weight:700;
+    margin-top:2px;
+  }
   .alert-badge{
     display:inline-flex;
     align-items:center;
@@ -246,6 +296,20 @@
     color:var(--green);
   }
   .alert-badge.ok .dot{background:var(--green);}
+  .wed-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    border-radius:6px;
+    padding:4px 9px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+    white-space:nowrap;
+  }
+  .wed-badge .wed-label{font-weight:400; opacity:0.85; font-size:10.5px;}
+  .wed-badge.pos{background:var(--green);}
+  .wed-badge.neg{background:var(--red);}
   .corr-badge{
     font-size:11px;
     color:#94a3b8;
@@ -343,8 +407,8 @@
   <div id="dashboardContent" class="hidden">
 
     <div class="tabbar">
-      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">📊 Dashboard</button>
-      <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">📋 Detalle de datos</button>
+      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">Dashboard</button>
+      <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">Detalle de datos</button>
     </div>
 
     <div id="viewResumen">
@@ -380,6 +444,7 @@
             <h3>PPI - CFR - FCA - MB</h3>
             <div class="sub">USD/TM</div>
           </div>
+          <div id="wedVarBadge"></div>
         </div>
         <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
         <div class="footer-row">
@@ -400,13 +465,28 @@
                 </g>
                 <path d="M4,66 Q17,58 30,66 T56,66 T82,66 T96,66" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round"/>
               </svg>
-              Prima ponderada vs competencia
+              Prima de importación vs mercado y volumen por competidor
             </h3>
-            <div class="sub" id="primaSub">Solgas vs PPI y competencia</div>
+            <div class="sub" id="primaSub">Solgas vs PPI, competencia y volumen importado</div>
           </div>
         </div>
-        <div class="chart-wrap"><canvas id="chartPrima"></canvas></div>
-        <div class="legend-note">*PPI sin RAD, MB</div>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:stretch;">
+          <div style="flex:2 1 340px; min-width:280px;">
+            <div class="chart-wrap" style="height:230px;"><canvas id="chartPrima"></canvas></div>
+            <div class="chart-wrap" style="height:190px; margin-top:2px;"><canvas id="chartPrimaVol"></canvas></div>
+          </div>
+          <div style="flex:1 1 170px; max-width:220px; min-width:160px; display:flex; flex-direction:column;">
+            <div class="prima-kpi-top">
+              <div class="mini-kpi-title">Prima ponderada YTD</div>
+              <div class="mini-kpi-grid" id="primaYtdGrid"></div>
+            </div>
+            <div class="prima-kpi-bottom">
+              <div class="mini-kpi-title">Volumen YTD</div>
+              <div class="mini-kpi-grid" id="volYtdGrid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend-note">*PPI sin RAD, MB · Franja inferior: volumen importado por competidor (kTM)</div>
       </div>
 
       <div class="card" style="border-top-color:var(--purple);">
@@ -479,7 +559,7 @@
     </div>
 
     <div id="viewDetalle" class="hidden">
-      <div class="section-title">📋 Detalle de datos</div>
+      <div class="section-title">Detalle de datos</div>
       <div id="detalleTables"></div>
     </div>
 
@@ -489,14 +569,14 @@
 
 <script>
 const COLORS = {
-  blue:'#1e4f8f', blueLight:'#4a7fc9', blueMid:'#2563a8',
-  teal:'#4fb8d1', orange:'#e0862e', purple:'#8e6fce',
-  green:'#1f9254', red:'#c0392b', gray:'#94a3b8'
+  blue:'#2E6DB4', blueLight:'#3FA0D8', blueMid:'#3B7FC4',
+  teal:'#2FAE8B', orange:'#E15B77', purple:'#7C6FCF',
+  green:'#3EC17A', red:'#D9455C', gray:'#9aa5b1'
 };
 
 Chart.defaults.font.family = "'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
 Chart.defaults.font.size = 11;
-Chart.defaults.color = '#64748b';
+Chart.defaults.color = '#6b7280';
 
 if(typeof ChartDataLabels !== 'undefined'){
   Chart.register(ChartDataLabels);
@@ -543,14 +623,18 @@ async function loadAllFromSupabase(){
       if(res.error) throw res.error;
     }
     DATA.stock = stock.data.map(r=>({fecha:r.fecha, inventario:num(r.inventario), despPlaneado:num(r.desp_planeado), poa:num(r.poa)}));
-    DATA.prima = prima.data.map(r=>({fecha:r.Fecha ?? r.fecha, solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas)}));
+    DATA.prima = prima.data.map(r=>({
+      fecha:r.Fecha ?? r.fecha,
+      solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas),
+      volSolgas:num(r.volumen_solgas), volPlus:num(r.volumen_plus), volPrimax:num(r.volumen_primax), volZeta:num(r.volumen_zeta)
+    }));
     DATA.margen = margen.data.map(r=>({mes:r.mes, mesMM:num(r.mes_mm), mesUSDTM:num(r.mes_usdtm), ytdMM:num(r.ytd_mm), ytdUSDTM:num(r.ytd_usdtm)}));
     DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
     DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb), fca:num(r.FCA ?? r.fca)}));
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
     DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc)}));
 
-    document.getElementById('dataStatus').textContent = '✅ Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dataStatus').textContent = 'Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('dashboardContent').classList.remove('hidden');
     renderAll();
@@ -581,6 +665,14 @@ function num(v){
   if(v===null||v===undefined||v==='') return null;
   const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',','.'));
   return isNaN(n) ? null : n;
+}
+
+function parseLocalDate(v){
+  if(v instanceof Date) return v;
+  const s = String(v);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+  return null;
 }
 
 function fmtDDMM(v){
@@ -666,8 +758,14 @@ function renderDetalle(){
   );
 
   const primaTable = buildTable(
-    ['Fecha','PPI','Solgas','PlusPetrol','Primax','Zeta Gas'],
-    DATA.prima.map(r=>[fmtPeriodo(r.fecha), fmt1(r.ppi), fmt1(r.solgas), fmt1(r.plusPetrol), fmt1(r.primax), fmt1(r.zetaGas)])
+    ['Fecha','PPI','Solgas','Vol. Solgas (kTM)','PlusPetrol','Vol. PlusPetrol (kTM)','Primax','Vol. Primax (kTM)','Zeta Gas','Vol. Zeta Gas (kTM)'],
+    DATA.prima.map(r=>[
+      fmtPeriodo(r.fecha), fmt1(r.ppi),
+      fmt1(r.solgas), fmt1(r.volSolgas!=null?r.volSolgas/1000:null),
+      fmt1(r.plusPetrol), fmt1(r.volPlus!=null?r.volPlus/1000:null),
+      fmt1(r.primax), fmt1(r.volPrimax!=null?r.volPrimax/1000:null),
+      fmt1(r.zetaGas), fmt1(r.volZeta!=null?r.volZeta/1000:null)
+    ])
   );
 
   const margenTable = buildTable(
@@ -697,7 +795,7 @@ function renderDetalle(){
 
   el.innerHTML =
     dataCard('TERMINAL | Proyección de inventarios + 30 d', COLORS.blue, stockTable) +
-    dataCard('Prima ponderada vs competencia', COLORS.orange, primaTable) +
+    dataCard('Prima de importación vs mercado y volumen por competidor', COLORS.orange, primaTable) +
     dataCard('Margen mensual', COLORS.green, margenTable) +
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
     dataCard('PPI - CFR - FCA - MB', COLORS.teal, ppiCfrTable) +
@@ -747,50 +845,120 @@ function renderStock(){
   });
 }
 
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+const MCK = {
+  solgas:'#E8973B', plusPetrol:COLORS.blueLight, primax:COLORS.orange, zetaGas:COLORS.green, ppi:COLORS.gray
+};
+
 function renderPrima(){
   const d = DATA.prima;
   const sub = document.getElementById('primaSub');
   destroyChart('chartPrima');
+  destroyChart('chartPrimaVol');
   if(!d.length){ sub.textContent = 'Sin datos'; return; }
-  sub.textContent = `${fmtPeriodo(d[0].fecha)} – ${fmtPeriodo(d[d.length-1].fecha)}`;
+  sub.textContent = `Prima (USD/TM) y volumen importado (kTM) · ${fmtPeriodo(d[0].fecha)} – ${fmtPeriodo(d[d.length-1].fecha)}`;
 
   const companies = [
-    {key:'solgas', label:'Solgas', color:COLORS.blue},
-    {key:'plusPetrol', label:'PlusPetrol', color:COLORS.teal},
-    {key:'primax', label:'Primax', color:COLORS.orange},
-    {key:'zetaGas', label:'Zeta Gas', color:COLORS.green},
+    {key:'solgas', volKey:'volSolgas', label:'Solgas', color:MCK.solgas},
+    {key:'plusPetrol', volKey:'volPlus', label:'PlusPetrol', color:MCK.plusPetrol},
+    {key:'primax', volKey:'volPrimax', label:'Primax', color:MCK.primax},
+    {key:'zetaGas', volKey:'volZeta', label:'Zeta Gas', color:MCK.zetaGas},
   ];
+  const labels = d.map(r=>fmtPeriodo(r.fecha));
 
-  const datasets = [
-    {
-      label:'PPI', data:d.map(r=>r.ppi), type:'line',
-      borderColor:COLORS.gray, backgroundColor:COLORS.gray,
-      borderWidth:2, pointRadius:0, pointHoverRadius:0,
-      tension:.25, fill:false, order:1
-    },
+  // --- Mini-KPIs: prima ponderada YTD y volumen acumulado YTD ---
+  const weightedAvg = (priceKey, volKey) => {
+    let sumWV=0, sumV=0;
+    d.forEach(r=>{ const p=r[priceKey], v=r[volKey]; if(p!=null && v!=null){ sumWV += p*v; sumV += v; } });
+    return sumV>0 ? sumWV/sumV : null;
+  };
+  const totalVolKTM = (volKey) => {
+    let sum=0, any=false;
+    d.forEach(r=>{ if(r[volKey]!=null){ sum += r[volKey]; any=true; } });
+    return any ? sum/1000 : null;
+  };
+
+  const primaYtdGrid = document.getElementById('primaYtdGrid');
+  primaYtdGrid.innerHTML = companies.map(c=>{
+    const v = weightedAvg(c.key, c.volKey);
+    return `<div class="mini-kpi" style="background:${c.color};">
+      <div class="mk-label">${c.label}</div>
+      <div class="mk-value">${v===null?'—':fmt1(v)}</div>
+    </div>`;
+  }).join('');
+
+  const volYtdGrid = document.getElementById('volYtdGrid');
+  volYtdGrid.innerHTML = companies.map(c=>{
+    const v = totalVolKTM(c.volKey);
+    return `<div class="mini-kpi" style="background:${c.color};">
+      <div class="mk-label">${c.label}</div>
+      <div class="mk-value">${v===null?'—':fmt1(v)+' kTM'}</div>
+    </div>`;
+  }).join('');
+
+
+  // --- Panel principal: prima por competidor + PPI ---
+  const mainDatasets = [
     ...companies.map(c=>({
       label:c.label, data:d.map(r=>r[c.key]), type:'line',
       borderColor:c.color, backgroundColor:c.color,
       showLine:false, spanGaps:false,
-      pointRadius:3, pointHoverRadius:4.5, order:0
-    }))
+      pointRadius:3.5, pointHoverRadius:5, order:1
+    })),
+    {
+      label:'PPI', data:d.map(r=>r.ppi), type:'line',
+      borderColor:MCK.ppi, backgroundColor:MCK.ppi,
+      borderWidth:1.75, pointRadius:0, pointHoverRadius:0,
+      tension:.2, fill:false, order:0
+    }
   ];
 
-  const ctx = document.getElementById('chartPrima');
-  charts.chartPrima = new Chart(ctx, {
-    type:'line',
-    data:{labels:d.map(r=>fmtPeriodo(r.fecha)), datasets},
+  charts.chartPrima = new Chart(document.getElementById('chartPrima'), {
+    data:{labels, datasets:mainDatasets},
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'nearest', intersect:true},
+      layout:{padding:{bottom:0}},
       plugins:{
-        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
+        legend:{
+          position:'bottom',
+          labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:12, font:{size:10.5}}
+        },
         tooltip:{callbacks:{label:c=> c.raw==null ? undefined : ` ${c.dataset.label}: ${fmt1(c.raw)} USD/TM`}},
         datalabels:{display:false}
       },
       scales:{
-        x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9.5}}},
-        y:{grid:{color:'#eef1f6'}, title:{display:true,text:'USD/TM'}}
+        x:{grid:{display:false}, ticks:{display:false}},
+        y:{position:'left', grid:{color:'#f0f1f3', drawBorder:false}, title:{display:true,text:'USD/TM', font:{size:10.5}}}
+      }
+    }
+  });
+
+  // --- Franja inferior: volumen por competidor, eje x compartido ---
+  const volDatasets = companies.map(c=>({
+    label:c.label, data:d.map(r=> r[c.volKey]!=null ? r[c.volKey]/1000 : null),
+    backgroundColor:c.color, borderWidth:0, borderRadius:0,
+    categoryPercentage:1.0, barPercentage:1.0
+  }));
+
+  charts.chartPrimaVol = new Chart(document.getElementById('chartPrimaVol'), {
+    type:'bar',
+    data:{labels, datasets:volDatasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=> c.raw==null ? undefined : ` ${c.dataset.label}: ${fmt1(c.raw)} kTM`}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9}}},
+        y:{display:false, grid:{display:false}}
       }
     }
   });
@@ -858,7 +1026,7 @@ function drawMix(week){
       return total ? (vol/total*100) : 0;
     }),
     backgroundColor: palette[i % palette.length],
-    borderRadius:4
+    borderRadius:0
   }));
   const ctx = document.getElementById('chartMix');
   charts.chartMix = new Chart(ctx, {
@@ -889,6 +1057,24 @@ function renderPPICFR(){
   const ppiValues = d.map(r=>r.ppi);
   const cfrValues = d.map(r=>r.cfr);
   const fcaValues = d.map(r=>r.fca);
+
+  const wedBadge = document.getElementById('wedVarBadge');
+  let wedRow = null, wedDiff = null;
+  for(let i=d.length-1;i>=1;i--){
+    const dt = parseLocalDate(d[i].periodo);
+    if(dt && dt.getDay()===3 && d[i].ppi!=null && d[i-1].ppi!=null){
+      wedRow = d[i];
+      wedDiff = d[i].ppi - d[i-1].ppi;
+      break;
+    }
+  }
+  if(wedDiff===null){
+    wedBadge.innerHTML = '';
+  } else {
+    const sign = wedDiff >= 0 ? '+' : '';
+    const cls = wedDiff >= 0 ? 'pos' : 'neg';
+    wedBadge.innerHTML = `<div class="wed-badge ${cls}"><span class="wed-label">Var. miércoles ${fmtPeriodo(wedRow.periodo)}</span> ${sign}${fmt1(wedDiff)}</div>`;
+  }
 
   const wrap = document.getElementById('ppiCfrChips');
   const rMbPpi = pearson(mbValues, ppiValues);
@@ -941,7 +1127,7 @@ function renderEspera(){
   const ctx = document.getElementById('chartEspera');
   charts.chartEspera = new Chart(ctx, {
     type:'bar',
-    data:{labels:d.map(r=>fmtPeriodo(r.semana)), datasets:[{label:'Horas de espera', data:d.map(r=>r.horas), backgroundColor:COLORS.orange, borderRadius:6}]},
+    data:{labels:d.map(r=>fmtPeriodo(r.semana)), datasets:[{label:'Horas de espera', data:d.map(r=>r.horas), backgroundColor:COLORS.orange, borderRadius:0}]},
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} h`}}},
@@ -982,8 +1168,8 @@ function renderVariacion(){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'Variación MB', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:4},
-        {label:'Variación PlusPetrol CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:4},
+        {label:'Variación MB', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:0},
+        {label:'Variación PlusPetrol CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:0},
       ]
     },
     options:{
