@@ -247,18 +247,17 @@
   }
   .alert-badge.ok .dot{background:var(--green);}
   .corr-badge{
-    padding:0;
-    font-size:11.5px;
-    line-height:1.5;
-    color:var(--text-dark);
+    font-size:11px;
+    color:#94a3b8;
     white-space:nowrap;
-    text-align:right;
   }
-  .corr-badge .corr-title{
-    font-weight:700;
-    color:var(--blue-dark);
-    display:block;
-    margin-bottom:1px;
+  .footer-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:6px;
   }
   .tabbar{
     display:flex;
@@ -381,10 +380,12 @@
             <h3>PPI vs CFR vs MB</h3>
             <div class="sub">USD/TM</div>
           </div>
-          <div id="ppiCfrChips"></div>
         </div>
         <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
-        <div class="legend-note">*PPI sin RAD</div>
+        <div class="footer-row">
+          <div class="legend-note">*PPI sin RAD</div>
+          <div class="corr-badge" id="ppiCfrChips"></div>
+        </div>
       </div>
 
       <div class="card" style="border-top-color:var(--orange);">
@@ -887,15 +888,9 @@ function renderPPICFR(){
   const rMbPpi = pearson(mbValues, ppiValues);
   const rMbCfr = pearson(mbValues, cfrValues);
   const rPpiCfr = pearson(ppiValues, cfrValues);
+  const rFcaMb = pearson(fcaValues, mbValues);
   const fmtR = v => v===null ? '—' : v.toFixed(2);
-  wrap.innerHTML = `
-    <div class="corr-badge">
-      <span class="corr-title">Correlación</span>
-      PPI-MB: ${fmtR(rMbPpi)}<br>
-      CFR-MB: ${fmtR(rMbCfr)}<br>
-      PPI-CFR: ${fmtR(rPpiCfr)}
-    </div>
-  `;
+  wrap.textContent = `Correlación · PPI-MB: ${fmtR(rMbPpi)} | CFR-MB: ${fmtR(rMbCfr)} | PPI-CFR: ${fmtR(rPpiCfr)} | FCA-MB: ${fmtR(rFcaMb)}`;
 
   destroyChart('chartPPICFR');
   const ctx = document.getElementById('chartPPICFR');
