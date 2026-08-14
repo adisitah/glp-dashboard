@@ -404,7 +404,6 @@
             </h3>
             <div class="sub" id="primaSub">Solgas vs PPI y competencia</div>
           </div>
-          <select id="primaMonthSelect"></select>
         </div>
         <div class="chart-wrap"><canvas id="chartPrima"></canvas></div>
         <div class="legend-note">*PPI sin RAD, MB</div>
@@ -532,7 +531,7 @@ async function loadAllFromSupabase(){
   try{
     const [stock, prima, margen, mix, ppiCfr, espera, variacion] = await Promise.all([
       sb.from('stock_diario').select('*').order('fecha'),
-      sb.from('prima_mensual').select('*').order('mes'),
+      sb.from('prima_mensual').select('*').order('Fecha'),
       sb.from('margen_mensual').select('*').order('mes'),
       sb.from('mix_abastecimiento').select('*').order('semana'),
       sb.from('ppi_cfr').select('*').order('periodo'),
@@ -543,7 +542,7 @@ async function loadAllFromSupabase(){
       if(res.error) throw res.error;
     }
     DATA.stock = stock.data.map(r=>({fecha:r.fecha, inventario:num(r.inventario), despPlaneado:num(r.desp_planeado), poa:num(r.poa)}));
-    DATA.prima = prima.data.map(r=>({mes:r.mes, solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas)}));
+    DATA.prima = prima.data.map(r=>({fecha:r.Fecha ?? r.fecha, solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas)}));
     DATA.margen = margen.data.map(r=>({mes:r.mes, mesMM:num(r.mes_mm), mesUSDTM:num(r.mes_usdtm), ytdMM:num(r.ytd_mm), ytdUSDTM:num(r.ytd_usdtm)}));
     DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
     DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb), fca:num(r.FCA ?? r.fca)}));
@@ -665,8 +664,8 @@ function renderDetalle(){
   );
 
   const primaTable = buildTable(
-    ['Mes','Solgas','PPI','PlusPetrol','Primax','Zeta Gas'],
-    DATA.prima.map(r=>[fmtMes(r.mes), fmt1(r.solgas), fmt1(r.ppi), fmt1(r.plusPetrol), fmt1(r.primax), fmt1(r.zetaGas)])
+    ['Fecha','PPI','Solgas','PlusPetrol','Primax','Zeta Gas'],
+    DATA.prima.map(r=>[fmtPeriodo(r.fecha), fmt1(r.ppi), fmt1(r.solgas), fmt1(r.plusPetrol), fmt1(r.primax), fmt1(r.zetaGas)])
   );
 
   const margenTable = buildTable(
@@ -749,43 +748,48 @@ function renderStock(){
 function renderPrima(){
   const d = DATA.prima;
   const sub = document.getElementById('primaSub');
-  const select = document.getElementById('primaMonthSelect');
   destroyChart('chartPrima');
-  if(!d.length){ sub.textContent = 'Sin datos'; select.innerHTML=''; return; }
-  const months = [...new Set(d.map(r=>r.mes))];
-  select.innerHTML = months.map(m=>`<option value="${m}">${fmtMes(m)}</option>`).join('');
-  select.value = months[months.length-1];
-  select.onchange = ()=>drawPrima(select.value);
-  drawPrima(select.value);
-}
+  if(!d.length){ sub.textContent = 'Sin datos'; return; }
+  sub.textContent = `${fmtPeriodo(d[0].fecha)} – ${fmtPeriodo(d[d.length-1].fecha)}`;
 
-function drawPrima(month){
-  const d = DATA.prima;
-  const sub = document.getElementById('primaSub');
-  destroyChart('chartPrima');
-  const row = d.find(r=>String(r.mes)===String(month)) || d[d.length-1];
-  sub.textContent = 'Mes: ' + fmtMes(row.mes);
-  const labels = ['Solgas','PlusPetrol','Primax','Zeta Gas','PPI'];
-  const values = [row.solgas,row.plusPetrol,row.primax,row.zetaGas,row.ppi];
-  const colors = [COLORS.blue, COLORS.teal, COLORS.orange, COLORS.green, COLORS.gray];
+  const companies = [
+    {key:'solgas', label:'Solgas', color:COLORS.blue},
+    {key:'plusPetrol', label:'PlusPetrol', color:COLORS.teal},
+    {key:'primax', label:'Primax', color:COLORS.orange},
+    {key:'zetaGas', label:'Zeta Gas', color:COLORS.green},
+  ];
+
+  const datasets = [
+    {
+      label:'PPI', data:d.map(r=>r.ppi), type:'line',
+      borderColor:COLORS.gray, backgroundColor:COLORS.gray,
+      borderWidth:2, pointRadius:0, pointHoverRadius:0,
+      tension:.25, fill:false, order:1
+    },
+    ...companies.map(c=>({
+      label:c.label, data:d.map(r=>r[c.key]), type:'line',
+      borderColor:c.color, backgroundColor:c.color,
+      showLine:false, spanGaps:false,
+      pointRadius:3, pointHoverRadius:4.5, order:0
+    }))
+  ];
+
   const ctx = document.getElementById('chartPrima');
   charts.chartPrima = new Chart(ctx, {
-    type:'bar',
-    data:{labels, datasets:[{label:'Prima (USD/TM)', data:values, backgroundColor:colors, borderRadius:6}]},
+    type:'line',
+    data:{labels:d.map(r=>fmtPeriodo(r.fecha)), datasets},
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{padding:{top:22}},
+      interaction:{mode:'nearest', intersect:true},
       plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:c=>` ${Math.round(c.raw)} USD/TM`}},
-        datalabels:{
-          display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
-          anchor:'end', align:'top',
-          color:'#1b2733', font:{weight:'700', size:11},
-          formatter:v=>Math.round(v)
-        }
+        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
+        tooltip:{callbacks:{label:c=> c.raw==null ? undefined : ` ${c.dataset.label}: ${fmt1(c.raw)} USD/TM`}},
+        datalabels:{display:false}
       },
-      scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
+      scales:{
+        x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9.5}}},
+        y:{grid:{color:'#eef1f6'}, title:{display:true,text:'USD/TM'}}
+      }
     }
   });
 }
