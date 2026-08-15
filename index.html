@@ -145,6 +145,58 @@
     margin-bottom:12px;
   }
   .card .chart-wrap{position:relative;height:230px;}
+  .detail-btn{
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--text-muted);
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .detail-btn:hover{
+    background:var(--teal);
+    border-color:var(--teal);
+    color:#fff;
+  }
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(16,24,40,0.55);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:var(--card-bg);
+    border-radius:0;
+    border-top:3px solid var(--blue-light);
+    width:100%;
+    max-width:880px;
+    max-height:90vh;
+    overflow:auto;
+    padding:18px 18px 14px;
+    box-shadow:0 10px 30px rgba(16,24,40,0.25);
+  }
+  .modal-box .chart-wrap{height:320px;}
+  .modal-close{
+    border:none;
+    background:transparent;
+    color:var(--text-muted);
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 6px;
+  }
+  .modal-close:hover{ color:var(--text-dark); }
   .card select{
     font-size:12px;
     border:1px solid var(--border);
@@ -241,20 +293,16 @@
   }
   .mini-kpi-grid{
     display:grid;
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:1fr;
     gap:8px;
   }
-  .prima-kpi-top, .prima-kpi-bottom{ display:flex; flex-direction:column; justify-content:center; }
+  .prima-kpi-top, .prima-kpi-bottom{ display:flex; flex-direction:column; justify-content:flex-start; }
   .prima-kpi-bottom{ margin-top:14px; }
-  @media(min-width:760px){
-    .prima-kpi-top{ height:230px; }
-    .prima-kpi-bottom{ height:190px; margin-top:2px; }
-  }
   .mini-kpi{
     border-radius:0;
-    padding:8px 10px;
+    padding:6px 10px;
     color:#fff;
-    min-height:52px;
+    min-height:40px;
     display:flex;
     flex-direction:column;
     justify-content:center;
@@ -267,7 +315,7 @@
     text-overflow:ellipsis;
   }
   .mini-kpi .mk-value{
-    font-family:var(--font-serif);
+    font-family:var(--font-sans);
     font-size:15px;
     font-weight:700;
     margin-top:2px;
@@ -408,6 +456,7 @@
 
     <div class="tabbar">
       <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">Dashboard</button>
+      <button class="tab-btn" id="tabBtnTPG" onclick="switchTab('tpg')">TPG</button>
       <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">Detalle de datos</button>
     </div>
 
@@ -444,7 +493,12 @@
             <h3>PPI - CFR - FCA - MB</h3>
             <div class="sub">USD/TM</div>
           </div>
-          <div id="wedVarBadge"></div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div id="wedVarBadge"></div>
+            <button class="detail-btn" title="Ver detalle: Variación de precio" onclick="openVariacionModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+            </button>
+          </div>
         </div>
         <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
         <div class="footer-row">
@@ -475,7 +529,7 @@
             <div class="chart-wrap" style="height:230px;"><canvas id="chartPrima"></canvas></div>
             <div class="chart-wrap" style="height:190px; margin-top:2px;"><canvas id="chartPrimaVol"></canvas></div>
           </div>
-          <div style="flex:1 1 170px; max-width:220px; min-width:160px; display:flex; flex-direction:column;">
+          <div style="flex:0 1 120px; max-width:120px; min-width:110px; display:flex; flex-direction:column;">
             <div class="prima-kpi-top">
               <div class="mini-kpi-title">Prima ponderada YTD</div>
               <div class="mini-kpi-grid" id="primaYtdGrid"></div>
@@ -488,7 +542,27 @@
         </div>
         <div class="legend-note">*PPI sin RAD, MB · Franja inferior: volumen importado por competidor (kTM)</div>
       </div>
+    </div>
 
+    <div class="grid stats">
+      <div class="card stat-card" id="cardMargenMes" style="border-top-color:var(--green);">
+        <div class="kpi-label">MARGEN DEL MES PROYECTADO <span id="margenMesLabel"></span></div>
+        <div class="big" id="margenMesMM">—</div>
+        <div class="sub-text" id="margenMesUSDTM">—</div>
+        <div class="progress-track"><div class="progress-fill" id="margenMesBar"></div></div>
+      </div>
+      <div class="card stat-card" id="cardMargenYTD" style="border-top-color:var(--green);">
+        <div class="kpi-label">MARGEN ACUMULADO YTD</div>
+        <div class="big" id="margenYTDMM">—</div>
+        <div class="sub-text" id="margenYTDUSDTM">—</div>
+        <div class="progress-track"><div class="progress-fill" id="margenYTDBar"></div></div>
+      </div>
+    </div>
+
+    </div>
+
+    <div id="viewTPG" class="hidden">
+    <div class="grid">
       <div class="card" style="border-top-color:var(--purple);">
         <div class="card-head">
           <div>
@@ -528,34 +602,6 @@
         <div class="chart-wrap"><canvas id="chartEspera"></canvas></div>
       </div>
     </div>
-
-    <div class="grid stats">
-      <div class="card stat-card" id="cardMargenMes" style="border-top-color:var(--green);">
-        <div class="kpi-label">MARGEN DEL MES PROYECTADO <span id="margenMesLabel"></span></div>
-        <div class="big" id="margenMesMM">—</div>
-        <div class="sub-text" id="margenMesUSDTM">—</div>
-        <div class="progress-track"><div class="progress-fill" id="margenMesBar"></div></div>
-      </div>
-      <div class="card stat-card" id="cardMargenYTD" style="border-top-color:var(--green);">
-        <div class="kpi-label">MARGEN ACUMULADO YTD</div>
-        <div class="big" id="margenYTDMM">—</div>
-        <div class="sub-text" id="margenYTDUSDTM">—</div>
-        <div class="progress-track"><div class="progress-fill" id="margenYTDBar"></div></div>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div class="card" style="border-top-color:var(--blue-light); grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3>Variación de precio: PlusPetrol vs MB</h3>
-            <div class="sub">Variación por período USD/TM</div>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartVariacion"></canvas></div>
-      </div>
-    </div>
-
     </div>
 
     <div id="viewDetalle" class="hidden">
@@ -565,6 +611,19 @@
 
   </div>
 </main>
+
+<div class="modal-overlay" id="variacionModalOverlay" onclick="if(event.target===this) closeVariacionModal()">
+  <div class="modal-box">
+    <div class="card-head">
+      <div>
+        <h3>Variación de precio: PlusPetrol vs MB</h3>
+        <div class="sub">Variación por período USD/TM</div>
+      </div>
+      <button class="modal-close" title="Cerrar" onclick="closeVariacionModal()">&times;</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chartVariacionModal"></canvas></div>
+  </div>
+</div>
 
 
 <script>
@@ -632,7 +691,7 @@ async function loadAllFromSupabase(){
     DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
     DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb), fca:num(r.FCA ?? r.fca)}));
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
-    DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc)}));
+    DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc), proyectada:num(r.proyectada), ppcFcaCallao:num(r.ppc_fca_callao)}));
 
     document.getElementById('dataStatus').textContent = 'Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('emptyState').classList.add('hidden');
@@ -722,16 +781,20 @@ function renderAll(){
   renderMargen();
   renderPPICFR();
   renderEspera();
-  renderVariacion();
   renderDetalle();
 }
 
 function switchTab(tab){
-  const isResumen = tab === 'resumen';
-  document.getElementById('viewResumen').classList.toggle('hidden', !isResumen);
-  document.getElementById('viewDetalle').classList.toggle('hidden', isResumen);
-  document.getElementById('tabBtnResumen').classList.toggle('active', isResumen);
-  document.getElementById('tabBtnDetalle').classList.toggle('active', !isResumen);
+  document.getElementById('viewResumen').classList.toggle('hidden', tab !== 'resumen');
+  document.getElementById('viewTPG').classList.toggle('hidden', tab !== 'tpg');
+  document.getElementById('viewDetalle').classList.toggle('hidden', tab !== 'detalle');
+  document.getElementById('tabBtnResumen').classList.toggle('active', tab === 'resumen');
+  document.getElementById('tabBtnTPG').classList.toggle('active', tab === 'tpg');
+  document.getElementById('tabBtnDetalle').classList.toggle('active', tab === 'detalle');
+  if(tab === 'tpg'){
+    if(charts.chartMix) charts.chartMix.resize(); else renderMix();
+    if(charts.chartEspera) charts.chartEspera.resize(); else renderEspera();
+  }
 }
 
 function buildTable(headers, rows){
@@ -789,8 +852,8 @@ function renderDetalle(){
   );
 
   const variacionTable = buildTable(
-    ['Periodo','Variación MB (USD/TM)','Variación PlusPetrol CFR Callao (USD/TM)'],
-    DATA.variacion.map(r=>[fmtPeriodo(r.periodo), fmt1(r.mb), fmt1(r.ppc)])
+    ['Periodo','Variación MB (USD/TM)','Variación PlusPetrol CFR Callao (USD/TM)','Variación PlusPetrol FCA Callao (USD/TM)'],
+    DATA.variacion.map(r=>[fmtPeriodo(r.periodo), fmt1(r.mb), fmt1(r.ppc), fmt1(r.ppcFcaCallao)])
   );
 
   el.innerHTML =
@@ -1059,21 +1122,31 @@ function renderPPICFR(){
   const fcaValues = d.map(r=>r.fca);
 
   const wedBadge = document.getElementById('wedVarBadge');
-  let wedRow = null, wedDiff = null;
-  for(let i=d.length-1;i>=1;i--){
-    const dt = parseLocalDate(d[i].periodo);
-    if(dt && dt.getDay()===3 && d[i].ppi!=null && d[i-1].ppi!=null){
-      wedRow = d[i];
-      wedDiff = d[i].ppi - d[i-1].ppi;
-      break;
+  const vd = DATA.variacion;
+  const today = new Date(); today.setHours(0,0,0,0);
+  let target = null, isProjected = false;
+  for(const r of vd){
+    const dt = parseLocalDate(r.periodo);
+    if(dt && dt.getDay()===3 && dt >= today && (r.ppc!=null || r.proyectada!=null)){
+      if(!target || dt < parseLocalDate(target.periodo)) target = r;
     }
   }
-  if(wedDiff===null){
+  if(target){
+    isProjected = target.ppc==null && target.proyectada!=null;
+  } else {
+    for(let i=vd.length-1;i>=0;i--){
+      const dt = parseLocalDate(vd[i].periodo);
+      if(dt && dt.getDay()===3 && vd[i].ppc!=null){ target = vd[i]; break; }
+    }
+  }
+  if(!target){
     wedBadge.innerHTML = '';
   } else {
-    const sign = wedDiff >= 0 ? '+' : '';
-    const cls = wedDiff >= 0 ? 'pos' : 'neg';
-    wedBadge.innerHTML = `<div class="wed-badge ${cls}"><span class="wed-label">Var. miércoles ${fmtPeriodo(wedRow.periodo)}</span> ${sign}${fmt1(wedDiff)}</div>`;
+    const val = isProjected ? target.proyectada : target.ppc;
+    const sign = val >= 0 ? '+' : '';
+    const cls = val >= 0 ? 'pos' : 'neg';
+    const label = `Var. miércoles ${fmtPeriodo(target.periodo)}${isProjected ? ' (proy.)' : ''}`;
+    wedBadge.innerHTML = `<div class="wed-badge ${cls}"><span class="wed-label">${label}</span> ${sign}${fmt1(val)}</div>`;
   }
 
   const wrap = document.getElementById('ppiCfrChips');
@@ -1159,17 +1232,15 @@ function pearson(xs, ys){
   return denom===0 ? null : num/denom;
 }
 
-function renderVariacion(){
-  const d = DATA.variacion;
-  destroyChart('chartVariacion');
-  const ctx = document.getElementById('chartVariacion');
-  charts.chartVariacion = new Chart(ctx, {
+function variacionChartConfig(d){
+  return {
     type:'bar',
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
         {label:'Variación MB', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:0},
-        {label:'Variación PlusPetrol CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:0},
+        {label:'Variación CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:0},
+        {label:'Variación FCA Callao', data:d.map(r=>r.ppcFcaCallao), backgroundColor:COLORS.purple, borderRadius:0},
       ]
     },
     options:{
@@ -1186,7 +1257,19 @@ function renderVariacion(){
       },
       scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
     }
-  });
+  };
+}
+
+function openVariacionModal(){
+  document.getElementById('variacionModalOverlay').classList.add('open');
+  destroyChart('chartVariacionModal');
+  const ctx = document.getElementById('chartVariacionModal');
+  charts.chartVariacionModal = new Chart(ctx, variacionChartConfig(DATA.variacion));
+}
+
+function closeVariacionModal(){
+  document.getElementById('variacionModalOverlay').classList.remove('open');
+  destroyChart('chartVariacionModal');
 }
 
 function baseLineOpts(yTitle){
