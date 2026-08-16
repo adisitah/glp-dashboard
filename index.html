@@ -542,6 +542,22 @@
         </div>
         <div class="legend-note">*PPI sin RAD, MB · Franja inferior: volumen importado por competidor (kTM)</div>
       </div>
+
+      <div class="card" style="border-top-color:var(--purple); grid-column: 1 / -1;">
+        <div class="card-head">
+          <div>
+            <h3>Ocupación de inventarios Mercado</h3>
+            <div class="sub">TM</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <select id="capacidadFechaSelect"></select>
+            <button class="detail-btn" title="Ver dato del lunes anterior" onclick="openCapacidadModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+            </button>
+          </div>
+        </div>
+        <div id="capacidadGrid" style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 4px;"></div>
+      </div>
     </div>
 
     <div class="grid stats">
@@ -625,6 +641,19 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="capacidadModalOverlay" onclick="if(event.target===this) closeCapacidadModal()">
+  <div class="modal-box">
+    <div class="card-head">
+      <div>
+        <h3>Capacidad de proveedores · Semana anterior</h3>
+        <div class="sub" id="capacidadModalSub">—</div>
+      </div>
+      <button class="modal-close" title="Cerrar" onclick="closeCapacidadModal()">&times;</button>
+    </div>
+    <div id="capacidadModalBody"></div>
+  </div>
+</div>
+
 
 <script>
 const COLORS = {
@@ -693,12 +722,43 @@ async function loadAllFromSupabase(){
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
     DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc), proyectada:num(r.proyectada), ppcFcaCallao:num(r.ppc_fca_callao)}));
 
+    await loadCapacidadProveedores();
+
     document.getElementById('dataStatus').textContent = 'Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('dashboardContent').classList.remove('hidden');
     renderAll();
   }catch(err){
     showError('No se pudo conectar con la base de datos: ' + err.message);
+  }
+}
+
+// Detecta la columna de capacidad de cada tabla (cap_zeta, cap_tdp, cap_plus, o "capacidad" genérico)
+function extractCapRow(r){
+  const capKey = Object.keys(r).find(k=>/^cap/i.test(k));
+  return {
+    fecha: r.fecha,
+    capacidad: num(capKey ? r[capKey] : r.capacidad),
+    inventario: num(r.inventario)
+  };
+}
+
+async function loadCapacidadProveedores(){
+  DATA.capacidad = {zeta:[], tdp:[], plus:[]};
+  try{
+    const [zeta, tdp, plus] = await Promise.all([
+      sb.from('inv_zeta').select('*').order('fecha'),
+      sb.from('inv_tdp').select('*').order('fecha'),
+      sb.from('inv_plus').select('*').order('fecha'),
+    ]);
+    for(const res of [zeta, tdp, plus]){
+      if(res.error) throw res.error;
+    }
+    DATA.capacidad.zeta = zeta.data.map(extractCapRow);
+    DATA.capacidad.tdp = tdp.data.map(extractCapRow);
+    DATA.capacidad.plus = plus.data.map(extractCapRow);
+  }catch(err){
+    console.warn('No se pudo cargar capacidad de proveedores:', err.message);
   }
 }
 
@@ -781,7 +841,81 @@ function renderAll(){
   renderMargen();
   renderPPICFR();
   renderEspera();
+  renderCapacidad();
   renderDetalle();
+}
+
+const CAPACIDAD_PROVEEDORES = [
+  {key:'zeta', label:'Zeta Gas', color:'#1B7A43'},
+  {key:'tdp', label:'TDP', color:COLORS.blue},
+  {key:'plus', label:'PlusPetrol', color:COLORS.orange},
+];
+
+function renderCapacidad(){
+  const select = document.getElementById('capacidadFechaSelect');
+  const grid = document.getElementById('capacidadGrid');
+  if(!select || !grid) return;
+
+  const allDates = [...new Set(CAPACIDAD_PROVEEDORES.flatMap(p=>DATA.capacidad[p.key].map(r=>String(r.fecha))))]
+    .sort((a,b)=> a<b ? 1 : -1);
+
+  if(!allDates.length){
+    select.innerHTML = '';
+    grid.innerHTML = '<div class="empty-msg">Sin datos de capacidad todavía</div>';
+    return;
+  }
+  select.innerHTML = allDates.map(f=>`<option value="${f}">${fmtPeriodo(f)}</option>`).join('');
+  select.value = allDates[0];
+  select.onchange = ()=>drawCapacidad(select.value);
+  drawCapacidad(select.value);
+}
+
+function drawCapacidad(fecha){
+  const grid = document.getElementById('capacidadGrid');
+  grid.innerHTML = CAPACIDAD_PROVEEDORES.map(p=>{
+    const row = DATA.capacidad[p.key].find(r=>String(r.fecha)===fecha);
+    return capacidadIcon(p.label, p.color, row);
+  }).join('');
+}
+
+let capIconUid = 0;
+
+function capacidadIcon(label, color, row, extraInfo){
+  const size = 184, svgH = 206, cx = size/2, cy = 110, rOuter = 76;
+  if(!row || row.capacidad==null || row.inventario==null || row.capacidad<=0){
+    return `
+    <div style="display:flex; flex-direction:column; align-items:center; width:200px;" title="${label}: sin datos">
+      <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
+        <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="#d8dce2" stroke-width="4"/>
+      </svg>
+      <div style="font-size:13px; font-weight:700; color:var(--text-dark); margin-top:8px;">${label}</div>
+      <div style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">Sin datos</div>
+    </div>`;
+  }
+  const pct = row.inventario / row.capacidad;
+  const pctClamped = Math.min(Math.max(pct,0),1);
+  const rInner = rOuter * Math.sqrt(pctClamped) * 0.9;
+  const fillColor = pct > 1 ? COLORS.red : color;
+  const uid = capIconUid++;
+  const title = `${label}: ${fmt1(row.inventario)} / ${fmt1(row.capacidad)} TM · ${(pct*100).toFixed(0)}%${extraInfo ? ' · ' + extraInfo : ''}`;
+  return `
+  <div style="display:flex; flex-direction:column; align-items:center; width:200px; cursor:default;" title="${title}">
+    <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
+      <defs>
+        <pattern id="hatch-${uid}" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+          <rect width="6" height="6" fill="#ffffff"/>
+          <line x1="0" y1="0" x2="0" y2="6" stroke="${fillColor}" stroke-width="3"/>
+        </pattern>
+      </defs>
+      <text x="${cx}" y="${cy-rOuter-10}" text-anchor="middle" font-size="11" font-weight="700" fill="#20272f">Cap ${fmt1(row.capacidad)}</text>
+      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="${color}" stroke-width="4"/>
+      <circle cx="${cx}" cy="${cy}" r="${rInner}" fill="url(#hatch-${uid})" stroke="${fillColor}" stroke-width="1.5"/>
+      <rect x="${cx-32}" y="${cy-18}" width="64" height="34" rx="6" fill="rgba(255,255,255,0.88)"/>
+      <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${color}">${fmt1(row.inventario)}</text>
+      <text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${fillColor}">${(pct*100).toFixed(0)}%</text>
+    </svg>
+    <div style="font-size:13px; font-weight:700; color:var(--text-dark); margin-top:2px;">${label}</div>
+  </div>`;
 }
 
 function switchTab(tab){
@@ -856,6 +990,11 @@ function renderDetalle(){
     DATA.variacion.map(r=>[fmtPeriodo(r.periodo), fmt1(r.mb), fmt1(r.ppc), fmt1(r.ppcFcaCallao)])
   );
 
+  const capacidadTable = (rows) => buildTable(
+    ['Fecha','Capacidad (TM)','Inventario (TM)','% ocupado'],
+    rows.map(r=>[fmtPeriodo(r.fecha), fmt1(r.capacidad), fmt1(r.inventario), r.capacidad>0 ? (r.inventario/r.capacidad*100).toFixed(0)+'%' : '—'])
+  );
+
   el.innerHTML =
     dataCard('TERMINAL | Proyección de inventarios + 30 d', COLORS.blue, stockTable) +
     dataCard('Prima de importación vs mercado y volumen por competidor', COLORS.orange, primaTable) +
@@ -863,7 +1002,10 @@ function renderDetalle(){
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
     dataCard('PPI - CFR - FCA - MB', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
-    dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable);
+    dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable) +
+    dataCard('Capacidad Zeta Gas', COLORS.green, capacidadTable(DATA.capacidad.zeta)) +
+    dataCard('Capacidad TDP', COLORS.blue, capacidadTable(DATA.capacidad.tdp)) +
+    dataCard('Capacidad PlusPetrol', COLORS.orange, capacidadTable(DATA.capacidad.plus));
 }
 
 function renderStock(){
@@ -915,7 +1057,7 @@ function hexToRgba(hex, alpha){
 }
 
 const MCK = {
-  solgas:'#E8973B', plusPetrol:COLORS.blueLight, primax:COLORS.orange, zetaGas:COLORS.green, ppi:COLORS.gray
+  solgas:'#E8973B', plusPetrol:COLORS.blueLight, primax:COLORS.orange, zetaGas:'#1B7A43', ppi:COLORS.gray
 };
 
 function renderPrima(){
@@ -1258,6 +1400,45 @@ function variacionChartConfig(d){
       scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
     }
   };
+}
+
+function openCapacidadModal(){
+  const select = document.getElementById('capacidadFechaSelect');
+  const currentFecha = select.value;
+  const allDates = [...new Set(CAPACIDAD_PROVEEDORES.flatMap(p=>DATA.capacidad[p.key].map(r=>String(r.fecha))))]
+    .sort((a,b)=> a<b ? 1 : -1);
+  const idx = allDates.indexOf(currentFecha);
+  const prevFecha = (idx>=0 && idx+1<allDates.length) ? allDates[idx+1] : null;
+
+  const sub = document.getElementById('capacidadModalSub');
+  const body = document.getElementById('capacidadModalBody');
+
+  if(!prevFecha){
+    sub.textContent = 'No hay una semana anterior registrada';
+    body.innerHTML = '';
+    document.getElementById('capacidadModalOverlay').classList.add('open');
+    return;
+  }
+
+  sub.textContent = `Semana del ${fmtPeriodo(prevFecha)} (vs. semana seleccionada: ${fmtPeriodo(currentFecha)})`;
+
+  const circlesHtml = `<div style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 10px;">${
+    CAPACIDAD_PROVEEDORES.map(p=>{
+      const prevRow = DATA.capacidad[p.key].find(r=>String(r.fecha)===prevFecha);
+      const currRow = DATA.capacidad[p.key].find(r=>String(r.fecha)===currentFecha);
+      const delta = (prevRow && currRow && prevRow.inventario!=null && currRow.inventario!=null)
+        ? currRow.inventario - prevRow.inventario : null;
+      const extra = delta!=null ? `variación vs. ${fmtPeriodo(currentFecha)}: ${(delta>=0?'+':'')+fmt1(delta)} TM` : null;
+      return capacidadIcon(p.label, p.color, prevRow, extra);
+    }).join('')
+  }</div>`;
+
+  body.innerHTML = circlesHtml;
+  document.getElementById('capacidadModalOverlay').classList.add('open');
+}
+
+function closeCapacidadModal(){
+  document.getElementById('capacidadModalOverlay').classList.remove('open');
 }
 
 function openVariacionModal(){
