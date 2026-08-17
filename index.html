@@ -419,6 +419,35 @@
   table.data-table tbody tr:nth-child(even){background:#fafbfd;}
   table.data-table tbody tr:hover{background:#eef4fc;}
   .data-card{margin-bottom:16px;}
+.ppi-vol-popup{
+  position:absolute; display:none; z-index:20; pointer-events:none;
+  background:#20242e; color:#fff; border-radius:10px; padding:10px 14px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.28); min-width:190px;
+  font-size:12px; transition:opacity .1s ease;
+}
+.ppi-vol-popup .pvp-title{font-weight:700; font-size:12.5px; margin-bottom:6px; color:#fff;}
+.ppi-vol-popup .pvp-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:3px 0;}
+.ppi-vol-popup .pvp-name{display:flex; align-items:center; gap:6px; color:#c7cbd4;}
+.ppi-vol-popup .pvp-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.ppi-vol-popup .pvp-val{font-weight:700; color:#fff;}
+.ppi-vol-popup .pvp-delta{font-size:10.5px; font-weight:700; margin-left:6px;}
+.ppi-vol-popup .pvp-delta.pos{color:#33d69f;}
+.ppi-vol-popup .pvp-delta.neg{color:#f2726f;}
+.kpi-strip{
+  display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:16px;
+}
+@media (max-width: 900px){ .kpi-strip{ grid-template-columns:repeat(2, 1fr); } }
+.kpi-strip-item{
+  background:#fff; border-radius:12px; padding:14px 16px; border-top:3px solid var(--c, #ccc);
+  box-shadow:0 1px 3px rgba(20,25,35,0.06); position:relative; overflow:hidden; min-height:88px;
+}
+.kpi-strip-item.is-empty{ opacity:0.62; }
+.ksi-label{font-size:11px; font-weight:700; letter-spacing:.02em; color:#6b7280; text-transform:uppercase;}
+.ksi-value{font-size:21px; font-weight:800; color:#1b2733; margin-top:4px;}
+.ksi-delta{font-size:11px; font-weight:700; margin-top:2px;}
+.ksi-delta.pos{color:#3EC17A;} .ksi-delta.neg{color:#D9455C;} .ksi-delta.neutral{color:#9aa5b1;}
+.ksi-spark{position:absolute; right:10px; bottom:10px; width:76px; height:28px; opacity:0.85;}
+.ksi-note{font-size:10.5px; color:#9aa5b1; margin-top:4px;}
 </style>
 </head>
 <body>
@@ -461,6 +490,30 @@
     </div>
 
     <div id="viewResumen">
+    <div class="kpi-strip" id="kpiStrip">
+      <div class="kpi-strip-item" style="--c:#2E6DB4;">
+        <div class="ksi-label">Volumen Despachado (YTD)</div>
+        <div class="ksi-value" id="kpiVolDespVal">—</div>
+        <div class="ksi-delta neutral" id="kpiVolDespDelta"></div>
+        <svg class="ksi-spark" id="kpiVolDespSpark" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="kpi-strip-item" style="--c:#2FAE8B;">
+        <div class="ksi-label">Margen del Importado</div>
+        <div class="ksi-value" id="kpiMargenVal">—</div>
+        <div class="ksi-delta neutral" id="kpiMargenDelta"></div>
+        <svg class="ksi-spark" id="kpiMargenSpark" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="kpi-strip-item is-empty" style="--c:#9aa5b1;">
+        <div class="ksi-label">Tiempo Medio de Atención de Clientes</div>
+        <div class="ksi-value">—</div>
+        <div class="ksi-note">Aún sin fuente de datos conectada</div>
+      </div>
+      <div class="kpi-strip-item is-empty" style="--c:#9aa5b1;">
+        <div class="ksi-label">Accidentes</div>
+        <div class="ksi-value">—</div>
+        <div class="ksi-note">Aún sin fuente de datos conectada</div>
+      </div>
+    </div>
     <div class="grid wide">
       <div class="card" style="border-top-color:var(--blue-light); grid-column: 1 / -1;">
         <div class="card-head">
@@ -540,6 +593,20 @@
           </div>
         </div>
         <div class="legend-note">*PPI sin RAD, MB · Franja inferior: volumen importado por competidor (kTM)</div>
+      </div>
+
+      <div class="card" style="border-top-color:#2FB6A6; grid-column: 1 / -1;">
+        <div class="card-head">
+          <div>
+            <h3>PPI y Volumen de Importación</h3>
+            <div class="sub">USD/TM (línea) · kTM total importado (barras)</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:260px; position:relative;">
+          <canvas id="chartPPIVol"></canvas>
+          <div id="ppiVolPopup" class="ppi-vol-popup"></div>
+        </div>
+        <div class="legend-note">Pasa el cursor sobre una barra para ver el detalle de importación por competidor</div>
       </div>
 
       <div class="card" style="border-top-color:var(--purple); grid-column: 1 / -1;">
@@ -835,9 +902,81 @@ function fmtMes(v){
 
 function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
 
+function sparkPath(values, w, h){
+  const vals = values.filter(v=>v!=null);
+  if(vals.length < 2) return '';
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max-min) || 1;
+  const step = w / (values.length-1);
+  let d = '', started = false;
+  values.forEach((v,i)=>{
+    if(v==null) return;
+    const x = i*step;
+    const y = h - ((v-min)/range)*h;
+    d += (started ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    started = true;
+  });
+  return d.trim();
+}
+function drawSpark(svgId, values, color){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  const w=100, h=30;
+  const d = sparkPath(values, w, h);
+  svg.innerHTML = d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` : '';
+}
+
+function renderKPIHeader(){
+  // --- Volumen Despachado (YTD): suma de FC/desp. planeado del año en curso ---
+  const stock = DATA.stock || [];
+  const lastStockDate = stock.length ? parseLocalDate(stock[stock.length-1].fecha) : null;
+  if(lastStockDate){
+    const year = lastStockDate.getFullYear();
+    const ytdRows = stock.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===year; });
+    const totalDesp = ytdRows.reduce((s,r)=> s + (r.despPlaneado||0), 0);
+    document.getElementById('kpiVolDespVal').textContent = fmt0(totalDesp/1000) + ' kTM';
+    drawSpark('kpiVolDespSpark', ytdRows.map(r=>r.despPlaneado), '#2E6DB4');
+
+    // % variación: mes actual vs mes anterior
+    const curMonth = lastStockDate.getMonth();
+    const curMonthRows = ytdRows.filter(r=>parseLocalDate(r.fecha).getMonth()===curMonth);
+    let prevMonth = curMonth-1, prevYear = year; if(prevMonth<0){ prevMonth=11; prevYear=year-1; }
+    const prevMonthRows = stock.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===prevYear && dt.getMonth()===prevMonth; });
+    const curSum = curMonthRows.reduce((s,r)=>s+(r.despPlaneado||0),0);
+    const prevSum = prevMonthRows.reduce((s,r)=>s+(r.despPlaneado||0),0);
+    const elDelta = document.getElementById('kpiVolDespDelta');
+    if(prevSum>0){
+      const pct = ((curSum-prevSum)/prevSum)*100;
+      elDelta.textContent = `${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}% vs mes anterior`;
+      elDelta.className = 'ksi-delta ' + (pct>=0?'pos':'neg');
+    } else {
+      elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
+    }
+  }
+
+  // --- Margen del Importado: YTD USD/TM, con histórico mensual como sparkline ---
+  const margen = DATA.margen || [];
+  if(margen.length){
+    const last = margen[margen.length-1];
+    document.getElementById('kpiMargenVal').textContent = last.ytdUSDTM==null ? '—' : fmt1(last.ytdUSDTM)+' USD/TM';
+    drawSpark('kpiMargenSpark', margen.map(r=>r.mesUSDTM), '#2FAE8B');
+    const prev = margen.length>1 ? margen[margen.length-2] : null;
+    const elDelta = document.getElementById('kpiMargenDelta');
+    if(prev && prev.mesUSDTM!=null && last.mesUSDTM!=null){
+      const diff = last.mesUSDTM - prev.mesUSDTM;
+      elDelta.textContent = `${diff>=0?'▲':'▼'} ${fmt1(Math.abs(diff))} USD/TM vs mes anterior`;
+      elDelta.className = 'ksi-delta ' + (diff>=0?'pos':'neg');
+    } else {
+      elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
+    }
+  }
+}
+
 function renderAll(){
+  renderKPIHeader();
   renderStock();
   renderPrima();
+  renderPPIVol();
   renderMix();
   renderMargen();
   renderPPICFR();
@@ -1198,6 +1337,106 @@ function renderPrima(){
   });
 }
 
+const PPI_VOL_PALETTE = {line:'#F2726F', bar:'rgba(47,182,166,0.32)', barBorder:'#2FB6A6'};
+const PPI_VOL_COMPANIES = [
+  {key:'solgas', volKey:'volSolgas', label:'Solgas', color:'#2FB6A6'},
+  {key:'plusPetrol', volKey:'volPlus', label:'PlusPetrol', color:'#4F8FD1'},
+  {key:'primax', volKey:'volPrimax', label:'Primax', color:'#F2726F'},
+  {key:'zetaGas', volKey:'volZeta', label:'Zeta Gas', color:'#F4C04E'},
+];
+
+function renderPPIVol(){
+  const d = DATA.prima;
+  destroyChart('chartPPIVol');
+  const popup = document.getElementById('ppiVolPopup');
+  popup.style.display = 'none';
+  if(!d.length) return;
+
+  const labels = d.map(r=>fmtPeriodo(r.fecha));
+  const ppiValues = d.map(r=>r.ppi);
+  const totalVolValues = d.map(r=>{
+    let sum=0, any=false;
+    PPI_VOL_COMPANIES.forEach(c=>{ const v=r[c.volKey]; if(v!=null){ sum+=v; any=true; } });
+    return any ? sum/1000 : null;
+  });
+
+  const buildPopup = (index)=>{
+    const row = d[index];
+    const prevRow = index>0 ? d[index-1] : null;
+    const rowsHtml = PPI_VOL_COMPANIES.map(c=>{
+      const v = row[c.volKey];
+      const vK = v!=null ? v/1000 : null;
+      const prevV = prevRow ? prevRow[c.volKey] : null;
+      const prevVK = prevV!=null ? prevV/1000 : null;
+      const delta = (vK!=null && prevVK!=null) ? vK - prevVK : null;
+      const deltaHtml = delta!=null
+        ? `<span class="pvp-delta ${delta>=0?'pos':'neg'}">${delta>=0?'▲':'▼'} ${fmt1(Math.abs(delta))}</span>`
+        : '';
+      return `<div class="pvp-row">
+        <span class="pvp-name"><span class="pvp-dot" style="background:${c.color}"></span>${c.label}</span>
+        <span>${vK==null ? '<span style=\"color:#8a8f9a\">— </span>' : `<span class="pvp-val">${fmt1(vK)} kTM</span>${deltaHtml}`}</span>
+      </div>`;
+    }).join('');
+    const total = totalVolValues[index];
+    return `<div class="pvp-title">${labels[index]} · Importación</div>
+      ${rowsHtml}
+      <div class="pvp-row pvp-total"><span>Total</span><span>${total==null?'—':fmt1(total)+' kTM'}</span></div>`;
+  };
+
+  charts.chartPPIVol = new Chart(document.getElementById('chartPPIVol'), {
+    data:{
+      labels,
+      datasets:[
+        {
+          type:'bar', label:'Volumen total', data:totalVolValues, yAxisID:'y1',
+          backgroundColor:PPI_VOL_PALETTE.bar, borderColor:PPI_VOL_PALETTE.barBorder, borderWidth:1.5, borderRadius:3,
+          categoryPercentage:0.55, barPercentage:0.9
+        },
+        {
+          type:'line', label:'PPI', data:ppiValues, yAxisID:'y',
+          borderColor:PPI_VOL_PALETTE.line, backgroundColor:PPI_VOL_PALETTE.line,
+          tension:.3, pointRadius:2, pointHoverRadius:5, borderWidth:2, fill:false
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      onHover:(evt, elements, chart)=>{
+        const points = chart.getElementsAtEventForMode(evt, 'index', {intersect:false}, false);
+        if(!points.length){ popup.style.display = 'none'; return; }
+        const index = points[0].index;
+        popup.innerHTML = buildPopup(index);
+        popup.style.display = 'block';
+        const chartArea = chart.chartArea;
+        const barEl = points.find(p=>p.datasetIndex===0) || points[0];
+        let left = barEl.element.x + 12;
+        const popupWidth = 210;
+        if(left + popupWidth > chart.width) left = barEl.element.x - popupWidth - 12;
+        let top = chartArea.top + 4;
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+      },
+      plugins:{
+        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
+        tooltip:{enabled:false},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false}, border:{display:false}},
+        y:{position:'left', grid:{display:false}, border:{display:false}, title:{display:true,text:'USD/TM'}},
+        y1:{position:'right', grid:{display:false}, border:{display:false}, title:{display:true,text:'kTM'}}
+      }
+    },
+    plugins:[{
+      id:'ppiVolLeaveHandler',
+      afterEvent:(chart, args)=>{
+        if(args.event.type==='mouseout'){ popup.style.display = 'none'; }
+      }
+    }]
+  });
+}
+
 function renderMargen(){
   const d = DATA.margen;
   if(!d.length) return;
@@ -1298,7 +1537,7 @@ function renderPPICFR(){
   for(let i=d.length-1;i>=0;i--){
     if(fcaValues[i]!=null && cfrValues[i]!=null){ radLast = fcaValues[i]-cfrValues[i]; break; }
   }
-  radBadge.textContent = radLast===null ? '' : `RAD: ${fmt1(radLast)} USD/TM`;
+  radBadge.textContent = radLast===null ? '' : `RAD: ${fmt0(radLast)} USD/TM`;
 
   const wedBadge = document.getElementById('wedVarBadge');
   const vd = DATA.variacion;
