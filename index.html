@@ -519,9 +519,8 @@
                 </g>
                 <path d="M4,66 Q17,58 30,66 T56,66 T82,66 T96,66" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round"/>
               </svg>
-              Prima de importación vs mercado y volumen por competidor
+              Primas y volumen de importación
             </h3>
-            <div class="sub" id="primaSub">Solgas vs PPI, competencia y volumen importado</div>
           </div>
         </div>
         <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:stretch;">
@@ -881,14 +880,14 @@ function drawCapacidad(fecha){
 }
 
 let capIconUid = 0;
-const CAP_R_MAX = 76, CAP_R_MIN = 34;
+const CAP_R_MAX = 96;
 
 function capacidadIcon(label, color, row, extraInfo, rOuter){
   rOuter = rOuter || CAP_R_MAX;
-  const size = 184, svgH = 206, cx = size/2, cy = 110;
+  const size = 224, svgH = 250, cx = size/2, cy = 132;
   if(!row || row.capacidad==null || row.inventario==null || row.capacidad<=0){
     return `
-    <div style="display:flex; flex-direction:column; align-items:center; width:200px;" title="${label}: sin datos">
+    <div style="display:flex; flex-direction:column; align-items:center; width:240px;" title="${label}: sin datos">
       <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
         <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="#d8dce2" stroke-width="4"/>
       </svg>
@@ -903,7 +902,7 @@ function capacidadIcon(label, color, row, extraInfo, rOuter){
   const uid = capIconUid++;
   const title = `${label}: ${fmt1(row.inventario)} / ${fmt1(row.capacidad)} TM · ${(pct*100).toFixed(0)}%${extraInfo ? ' · ' + extraInfo : ''}`;
   return `
-  <div style="display:flex; flex-direction:column; align-items:center; width:200px; cursor:default;" title="${title}">
+  <div style="display:flex; flex-direction:column; align-items:center; width:240px; cursor:default;" title="${title}">
     <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
       <defs>
         <pattern id="hatch-${uid}" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
@@ -922,13 +921,13 @@ function capacidadIcon(label, color, row, extraInfo, rOuter){
   </div>`;
 }
 
-// Calcula el radio de cada proveedor proporcional a su capacidad (área ∝ capacidad), con piso legible
+// Calcula el radio de cada proveedor: área del círculo estrictamente proporcional a su capacidad
 function capRadiosFor(rows){
   const caps = rows.map(r=> r && r.capacidad>0 ? r.capacidad : null).filter(v=>v!=null);
   const capMax = caps.length ? Math.max(...caps) : null;
   return rows.map(r=>{
     if(!r || !(r.capacidad>0) || !capMax) return CAP_R_MAX;
-    return CAP_R_MIN + (CAP_R_MAX - CAP_R_MIN) * Math.sqrt(r.capacidad / capMax);
+    return CAP_R_MAX * Math.sqrt(r.capacidad / capMax);
   });
 }
 
@@ -1039,9 +1038,9 @@ function renderStock(){
     data:{
       labels: d.map(r=>fmtDDMM(r.fecha)),
       datasets:[
-        {label:'Inventario', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:COLORS.blue, fill:false, tension:.3, pointRadius:2},
-        {label:'FC', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:COLORS.orange, fill:false, tension:.3, pointRadius:0},
-        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:COLORS.green, fill:false, tension:.3, pointRadius:0},
+        {label:'Inventario', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:COLORS.blue, fill:false, tension:.3, pointRadius:2, borderWidth:1.75},
+        {label:'FC', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:COLORS.orange, fill:false, tension:.3, pointRadius:2, borderWidth:1.75},
+        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:COLORS.green, fill:false, tension:.3, pointRadius:0, borderWidth:1.75},
       ]
     },
     options: {
@@ -1077,11 +1076,9 @@ const MCK = {
 
 function renderPrima(){
   const d = DATA.prima;
-  const sub = document.getElementById('primaSub');
   destroyChart('chartPrima');
   destroyChart('chartPrimaVol');
-  if(!d.length){ sub.textContent = 'Sin datos'; return; }
-  sub.textContent = `Prima (USD/TM) y volumen importado (kTM) · ${fmtPeriodo(d[0].fecha)} – ${fmtPeriodo(d[d.length-1].fecha)}`;
+  if(!d.length){ return; }
 
   const companies = [
     {key:'solgas', volKey:'volSolgas', label:'Solgas', color:MCK.solgas},
@@ -1323,11 +1320,11 @@ function renderPPICFR(){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:COLORS.blue, tension:.3, pointRadius:2, fill:false},
-        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:COLORS.teal, tension:.3, pointRadius:2, fill:false},
-        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:COLORS.purple, tension:.3, pointRadius:2, fill:false},
-        {label:'FCA', data:fcaValues, borderColor:COLORS.orange, backgroundColor:COLORS.orange, tension:.3, pointRadius:2, fill:false},
-        {label:'CFR Teórico', data:cfrTeoricoValues, borderColor:COLORS.gray, backgroundColor:COLORS.gray, tension:.3, pointRadius:2, borderDash:[5,4], fill:false},
+        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:COLORS.blue, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
+        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:COLORS.teal, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
+        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:COLORS.purple, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
+        {label:'FCA', data:fcaValues, borderColor:COLORS.orange, backgroundColor:COLORS.orange, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
+        {label:'CFR Teórico', data:cfrTeoricoValues, borderColor:COLORS.gray, backgroundColor:COLORS.gray, tension:.3, pointRadius:2, borderWidth:1.75, borderDash:[5,4], fill:false},
       ]
     },
     options:{
