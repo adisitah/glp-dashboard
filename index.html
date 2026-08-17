@@ -490,7 +490,7 @@
       <div class="card" style="border-top-color:var(--teal); grid-column: 1 / -1;">
         <div class="card-head">
           <div>
-            <h3>PPI - CFR - FCA - MB</h3>
+            <h3>Costos de Referencia del GLP</h3>
             <div class="sub">USD/TM</div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
@@ -1000,7 +1000,7 @@ function renderDetalle(){
     dataCard('Prima de importación vs mercado y volumen por competidor', COLORS.orange, primaTable) +
     dataCard('Margen mensual', COLORS.green, margenTable) +
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
-    dataCard('PPI - CFR - FCA - MB', COLORS.teal, ppiCfrTable) +
+    dataCard('Costos de Referencia del GLP', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
     dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable) +
     dataCard('Capacidad Zeta Gas', COLORS.green, capacidadTable(DATA.capacidad.zeta)) +
@@ -1287,8 +1287,9 @@ function renderPPICFR(){
     const val = isProjected ? target.proyectada : target.ppc;
     const sign = val >= 0 ? '+' : '';
     const cls = val >= 0 ? 'pos' : 'neg';
-    const label = `Var. miércoles ${fmtPeriodo(target.periodo)}${isProjected ? ' (proy.)' : ''}`;
-    wedBadge.innerHTML = `<div class="wed-badge ${cls}"><span class="wed-label">${label}</span> ${sign}${fmt1(val)}</div>`;
+    const triangle = val >= 0 ? '▲' : '▼';
+    const label = `${fmtDDMM(target.periodo)}`;
+    wedBadge.innerHTML = `<div class="wed-badge ${cls}"><span class="wed-label">${triangle} ${label}</span> ${sign}${fmt1(val)}</div>`;
   }
 
   const wrap = document.getElementById('ppiCfrChips');
@@ -1297,7 +1298,7 @@ function renderPPICFR(){
   const rPpiCfr = pearson(ppiValues, cfrValues);
   const rFcaMb = pearson(fcaValues, mbValues);
   const fmtR = v => v===null ? '—' : v.toFixed(2);
-  wrap.textContent = `Correlación · PPI-MB: ${fmtR(rMbPpi)} | CFR-MB: ${fmtR(rMbCfr)} | PPI-CFR: ${fmtR(rPpiCfr)} | FCA-MB: ${fmtR(rFcaMb)}`;
+  wrap.textContent = `Correlación · PPI-MB: ${fmtR(rMbPpi)} | CFR-MB: ${fmtR(rMbCfr)} | FCA-MB: ${fmtR(rFcaMb)} | PPI-CFR: ${fmtR(rPpiCfr)}`;
 
   destroyChart('chartPPICFR');
   const ctx = document.getElementById('chartPPICFR');
