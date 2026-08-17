@@ -632,7 +632,7 @@
   <div class="modal-box">
     <div class="card-head">
       <div>
-        <h3>Variación de precio: PlusPetrol vs MB</h3>
+        <h3>Precios de Referencia del Mercado | Tendencia</h3>
         <div class="sub">Variación por período USD/TM</div>
       </div>
       <button class="modal-close" title="Cerrar" onclick="closeVariacionModal()">&times;</button>
@@ -744,16 +744,18 @@ function extractCapRow(r){
 }
 
 async function loadCapacidadProveedores(){
-  DATA.capacidad = {zeta:[], tdp:[], plus:[]};
+  DATA.capacidad = {solgas:[], zeta:[], tdp:[], plus:[]};
   try{
-    const [zeta, tdp, plus] = await Promise.all([
+    const [solgas, zeta, tdp, plus] = await Promise.all([
+      sb.from('inv_solgas').select('*').order('fecha'),
       sb.from('inv_zeta').select('*').order('fecha'),
       sb.from('inv_tdp').select('*').order('fecha'),
       sb.from('inv_plus').select('*').order('fecha'),
     ]);
-    for(const res of [zeta, tdp, plus]){
+    for(const res of [solgas, zeta, tdp, plus]){
       if(res.error) throw res.error;
     }
+    DATA.capacidad.solgas = solgas.data.map(extractCapRow);
     DATA.capacidad.zeta = zeta.data.map(extractCapRow);
     DATA.capacidad.tdp = tdp.data.map(extractCapRow);
     DATA.capacidad.plus = plus.data.map(extractCapRow);
@@ -846,6 +848,7 @@ function renderAll(){
 }
 
 const CAPACIDAD_PROVEEDORES = [
+  {key:'solgas', label:'Solgas', color:'#E8973B'},
   {key:'zeta', label:'Zeta Gas', color:'#1B7A43'},
   {key:'tdp', label:'TDP', color:COLORS.blue},
   {key:'plus', label:'PlusPetrol', color:COLORS.orange},
@@ -872,16 +875,17 @@ function renderCapacidad(){
 
 function drawCapacidad(fecha){
   const grid = document.getElementById('capacidadGrid');
-  grid.innerHTML = CAPACIDAD_PROVEEDORES.map(p=>{
-    const row = DATA.capacidad[p.key].find(r=>String(r.fecha)===fecha);
-    return capacidadIcon(p.label, p.color, row);
-  }).join('');
+  const rows = CAPACIDAD_PROVEEDORES.map(p=> DATA.capacidad[p.key].find(r=>String(r.fecha)===fecha));
+  const radios = capRadiosFor(rows);
+  grid.innerHTML = CAPACIDAD_PROVEEDORES.map((p,i)=> capacidadIcon(p.label, p.color, rows[i], null, radios[i])).join('');
 }
 
 let capIconUid = 0;
+const CAP_R_MAX = 76, CAP_R_MIN = 34;
 
-function capacidadIcon(label, color, row, extraInfo){
-  const size = 184, svgH = 206, cx = size/2, cy = 110, rOuter = 76;
+function capacidadIcon(label, color, row, extraInfo, rOuter){
+  rOuter = rOuter || CAP_R_MAX;
+  const size = 184, svgH = 206, cx = size/2, cy = 110;
   if(!row || row.capacidad==null || row.inventario==null || row.capacidad<=0){
     return `
     <div style="display:flex; flex-direction:column; align-items:center; width:200px;" title="${label}: sin datos">
@@ -916,6 +920,16 @@ function capacidadIcon(label, color, row, extraInfo){
     </svg>
     <div style="font-size:13px; font-weight:700; color:var(--text-dark); margin-top:2px;">${label}</div>
   </div>`;
+}
+
+// Calcula el radio de cada proveedor proporcional a su capacidad (área ∝ capacidad), con piso legible
+function capRadiosFor(rows){
+  const caps = rows.map(r=> r && r.capacidad>0 ? r.capacidad : null).filter(v=>v!=null);
+  const capMax = caps.length ? Math.max(...caps) : null;
+  return rows.map(r=>{
+    if(!r || !(r.capacidad>0) || !capMax) return CAP_R_MAX;
+    return CAP_R_MIN + (CAP_R_MAX - CAP_R_MIN) * Math.sqrt(r.capacidad / capMax);
+  });
 }
 
 function switchTab(tab){
@@ -1003,6 +1017,7 @@ function renderDetalle(){
     dataCard('Costos de Referencia del GLP', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
     dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable) +
+    dataCard('Capacidad Solgas', '#E8973B', capacidadTable(DATA.capacidad.solgas)) +
     dataCard('Capacidad Zeta Gas', COLORS.green, capacidadTable(DATA.capacidad.zeta)) +
     dataCard('Capacidad TDP', COLORS.blue, capacidadTable(DATA.capacidad.tdp)) +
     dataCard('Capacidad PlusPetrol', COLORS.orange, capacidadTable(DATA.capacidad.plus));
@@ -1139,7 +1154,7 @@ function renderPrima(){
       },
       scales:{
         x:{grid:{display:false}, ticks:{display:false}},
-        y:{position:'left', grid:{color:'#f0f1f3', drawBorder:false}, title:{display:true,text:'USD/TM', font:{size:10.5}}}
+        y:{position:'left', grid:{color:'#f0f1f3', drawBorder:false}, title:{display:true,text:'USD/TM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
       }
     }
   });
@@ -1163,7 +1178,7 @@ function renderPrima(){
       },
       scales:{
         x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9}}},
-        y:{display:false, grid:{display:false}}
+        y:{position:'left', display:true, grid:{color:'#f0f1f3', drawBorder:false}, title:{display:true,text:'kTM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
       }
     }
   });
@@ -1262,6 +1277,7 @@ function renderPPICFR(){
   const ppiValues = d.map(r=>r.ppi);
   const cfrValues = d.map(r=>r.cfr);
   const fcaValues = d.map(r=>r.fca);
+  const cfrTeoricoValues = fcaValues.map(v=> v!=null ? v-40 : null);
 
   const wedBadge = document.getElementById('wedVarBadge');
   const vd = DATA.variacion;
@@ -1311,6 +1327,7 @@ function renderPPICFR(){
         {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:COLORS.teal, tension:.3, pointRadius:2, fill:false},
         {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:COLORS.purple, tension:.3, pointRadius:2, fill:false},
         {label:'FCA', data:fcaValues, borderColor:COLORS.orange, backgroundColor:COLORS.orange, tension:.3, pointRadius:2, fill:false},
+        {label:'CFR Teórico', data:cfrTeoricoValues, borderColor:COLORS.gray, backgroundColor:COLORS.gray, tension:.3, pointRadius:2, borderDash:[5,4], fill:false},
       ]
     },
     options:{
@@ -1381,13 +1398,14 @@ function variacionChartConfig(d){
     data:{
       labels:d.map(r=>fmtPeriodo(r.periodo)),
       datasets:[
-        {label:'Variación MB', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:0},
+        {label:'Estimación', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:0},
         {label:'Variación CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:0},
         {label:'Variación FCA Callao', data:d.map(r=>r.ppcFcaCallao), backgroundColor:COLORS.purple, borderRadius:0},
       ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:20, bottom:8}},
       plugins:{
         legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
         datalabels:{
@@ -1398,7 +1416,13 @@ function variacionChartConfig(d){
           formatter:v=>fmt1(v)
         }
       },
-      scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}}}
+      scales:{
+        x:{grid:{display:false}},
+        y:{
+          grid:{color:'#eef1f6'},
+          grace:'12%'
+        }
+      }
     }
   };
 }
@@ -1423,14 +1447,16 @@ function openCapacidadModal(){
 
   sub.textContent = `Semana del ${fmtPeriodo(prevFecha)} (vs. semana seleccionada: ${fmtPeriodo(currentFecha)})`;
 
+  const prevRows = CAPACIDAD_PROVEEDORES.map(p=> DATA.capacidad[p.key].find(r=>String(r.fecha)===prevFecha));
+  const radios = capRadiosFor(prevRows);
   const circlesHtml = `<div style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 10px;">${
-    CAPACIDAD_PROVEEDORES.map(p=>{
-      const prevRow = DATA.capacidad[p.key].find(r=>String(r.fecha)===prevFecha);
+    CAPACIDAD_PROVEEDORES.map((p,i)=>{
+      const prevRow = prevRows[i];
       const currRow = DATA.capacidad[p.key].find(r=>String(r.fecha)===currentFecha);
       const delta = (prevRow && currRow && prevRow.inventario!=null && currRow.inventario!=null)
         ? currRow.inventario - prevRow.inventario : null;
       const extra = delta!=null ? `variación vs. ${fmtPeriodo(currentFecha)}: ${(delta>=0?'+':'')+fmt1(delta)} TM` : null;
-      return capacidadIcon(p.label, p.color, prevRow, extra);
+      return capacidadIcon(p.label, p.color, prevRow, extra, radios[i]);
     }).join('')
   }</div>`;
 
