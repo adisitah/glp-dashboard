@@ -491,7 +491,7 @@
         <div class="card-head">
           <div>
             <h3>Costos de Referencia del GLP</h3>
-            <div class="sub">USD/TM</div>
+            <div class="sub" id="radBadge"></div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <div id="wedVarBadge"></div>
@@ -530,7 +530,7 @@
           </div>
           <div style="flex:0 1 120px; max-width:120px; min-width:110px; display:flex; flex-direction:column;">
             <div class="prima-kpi-top">
-              <div class="mini-kpi-title">Prima ponderada YTD</div>
+              <div class="mini-kpi-title" id="primaYtdTitle">Prima ponderada</div>
               <div class="mini-kpi-grid" id="primaYtdGrid"></div>
             </div>
             <div class="prima-kpi-bottom">
@@ -1088,10 +1088,27 @@ function renderPrima(){
   ];
   const labels = d.map(r=>fmtPeriodo(r.fecha));
 
-  // --- Mini-KPIs: prima ponderada YTD y volumen acumulado YTD ---
+  // --- Mini-KPIs: prima ponderada (último mes completo) y volumen acumulado YTD ---
+  const lastDate = d.length ? parseLocalDate(d[d.length-1].fecha) : null;
+  let targetYear = null, targetMonth = null;
+  if(lastDate){
+    targetMonth = lastDate.getMonth() - 1;
+    targetYear = lastDate.getFullYear();
+    if(targetMonth < 0){ targetMonth = 11; targetYear -= 1; }
+  }
+  const dLastMonth = lastDate
+    ? d.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===targetYear && dt.getMonth()===targetMonth; })
+    : [];
+  const primaYtdTitle = document.getElementById('primaYtdTitle');
+  if(lastDate){
+    const monthName = new Date(targetYear, targetMonth, 1).toLocaleDateString('es-PE',{month:'long'});
+    primaYtdTitle.textContent = `Prima ponderada (${monthName.charAt(0).toUpperCase()+monthName.slice(1)})`;
+  } else {
+    primaYtdTitle.textContent = 'Prima ponderada';
+  }
   const weightedAvg = (priceKey, volKey) => {
     let sumWV=0, sumV=0;
-    d.forEach(r=>{ const p=r[priceKey], v=r[volKey]; if(p!=null && v!=null){ sumWV += p*v; sumV += v; } });
+    dLastMonth.forEach(r=>{ const p=r[priceKey], v=r[volKey]; if(p!=null && v!=null){ sumWV += p*v; sumV += v; } });
     return sumV>0 ? sumWV/sumV : null;
   };
   const totalVolKTM = (volKey) => {
@@ -1151,7 +1168,7 @@ function renderPrima(){
       },
       scales:{
         x:{grid:{display:false}, ticks:{display:false}},
-        y:{position:'left', grid:{color:'#f0f1f3', drawBorder:false}, title:{display:true,text:'USD/TM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
+        y:{position:'left', grid:{display:false, drawBorder:false}, title:{display:true,text:'USD/TM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
       }
     }
   });
@@ -1175,7 +1192,7 @@ function renderPrima(){
       },
       scales:{
         x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9}}},
-        y:{position:'left', display:true, grid:{color:'#f0f1f3', drawBorder:false}, title:{display:true,text:'kTM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
+        y:{position:'left', display:true, grid:{display:false, drawBorder:false}, title:{display:true,text:'kTM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
       }
     }
   });
@@ -1262,7 +1279,7 @@ function drawMix(week){
       },
       scales:{
         x:{stacked:true, grid:{display:false}},
-        y:{stacked:true, grid:{color:'#eef1f6'}, title:{display:true,text:'%'}, max:100}
+        y:{stacked:true, grid:{display:false}, title:{display:true,text:'%'}, max:100}
       }
     }
   });
@@ -1275,6 +1292,13 @@ function renderPPICFR(){
   const cfrValues = d.map(r=>r.cfr);
   const fcaValues = d.map(r=>r.fca);
   const cfrTeoricoValues = fcaValues.map(v=> v!=null ? v-40 : null);
+
+  const radBadge = document.getElementById('radBadge');
+  let radLast = null;
+  for(let i=d.length-1;i>=0;i--){
+    if(fcaValues[i]!=null && cfrValues[i]!=null){ radLast = fcaValues[i]-cfrValues[i]; break; }
+  }
+  radBadge.textContent = radLast===null ? '' : `RAD: ${fmt1(radLast)} USD/TM`;
 
   const wedBadge = document.getElementById('wedVarBadge');
   const vd = DATA.variacion;
@@ -1332,6 +1356,9 @@ function renderPPICFR(){
       layout:{padding:{top:20}},
       plugins:{
         ...baseLineOpts().plugins,
+        tooltip:{
+          itemSort:(a,b)=> (b.raw ?? -Infinity) - (a.raw ?? -Infinity)
+        },
         datalabels:{
           display:c=>{
             const v=c.dataset.data[c.dataIndex];
@@ -1344,8 +1371,8 @@ function renderPPICFR(){
         }
       },
       scales:{
-        x:{grid:{display:false}},
-        y:{grid:{color:'#eef1f6'}, title:{display:true,text:'USD/TM'}, ticks:{precision:0}}
+        x:{grid:{display:false}, border:{display:false}},
+        y:{grid:{display:false}, border:{display:false}, title:{display:true,text:'USD/TM'}, ticks:{precision:0}}
       }
     }
   });
@@ -1361,7 +1388,7 @@ function renderEspera(){
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} h`}}},
-      scales:{x:{grid:{display:false}}, y:{grid:{color:'#eef1f6'}, title:{display:true,text:'Horas'}}}
+      scales:{x:{grid:{display:false}}, y:{grid:{display:false}, title:{display:true,text:'Horas'}}}
     }
   });
 }
@@ -1416,7 +1443,7 @@ function variacionChartConfig(d){
       scales:{
         x:{grid:{display:false}},
         y:{
-          grid:{color:'#eef1f6'},
+          grid:{display:false},
           grace:'12%'
         }
       }
@@ -1484,7 +1511,7 @@ function baseLineOpts(yTitle){
     plugins:{legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}}},
     scales:{
       x:{grid:{display:false}},
-      y:{grid:{color:'#eef1f6'}, title: yTitle?{display:true,text:yTitle}:{display:false}}
+      y:{grid:{display:false}, title: yTitle?{display:true,text:yTitle}:{display:false}}
     }
   };
 }
