@@ -419,20 +419,6 @@
   table.data-table tbody tr:nth-child(even){background:#fafbfd;}
   table.data-table tbody tr:hover{background:#eef4fc;}
   .data-card{margin-bottom:16px;}
-.ppi-vol-popup{
-  position:absolute; display:none; z-index:20; pointer-events:none;
-  background:#20242e; color:#fff; border-radius:10px; padding:10px 14px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.28); min-width:190px;
-  font-size:12px; transition:opacity .1s ease;
-}
-.ppi-vol-popup .pvp-title{font-weight:700; font-size:12.5px; margin-bottom:6px; color:#fff;}
-.ppi-vol-popup .pvp-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:3px 0;}
-.ppi-vol-popup .pvp-name{display:flex; align-items:center; gap:6px; color:#c7cbd4;}
-.ppi-vol-popup .pvp-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
-.ppi-vol-popup .pvp-val{font-weight:700; color:#fff;}
-.ppi-vol-popup .pvp-delta{font-size:10.5px; font-weight:700; margin-left:6px;}
-.ppi-vol-popup .pvp-delta.pos{color:#33d69f;}
-.ppi-vol-popup .pvp-delta.neg{color:#f2726f;}
 .kpi-strip{
   display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:16px;
 }
@@ -487,6 +473,7 @@
       <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">Dashboard</button>
       <button class="tab-btn" id="tabBtnTPG" onclick="switchTab('tpg')">TPG</button>
       <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">Detalle de datos</button>
+      <button class="tab-btn" id="tabBtnAgregar" onclick="switchTab('agregar')">Agregar datos</button>
     </div>
 
     <div id="viewResumen">
@@ -495,7 +482,6 @@
         <div class="ksi-label">Volumen Despachado (YTD)</div>
         <div class="ksi-value" id="kpiVolDespVal">—</div>
         <div class="ksi-delta neutral" id="kpiVolDespDelta"></div>
-        <svg class="ksi-spark" id="kpiVolDespSpark" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
       </div>
       <div class="kpi-strip-item" style="--c:#2FAE8B;">
         <div class="ksi-label">Margen del Importado</div>
@@ -503,15 +489,15 @@
         <div class="ksi-delta neutral" id="kpiMargenDelta"></div>
         <svg class="ksi-spark" id="kpiMargenSpark" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
       </div>
-      <div class="kpi-strip-item is-empty" style="--c:#9aa5b1;">
+      <div class="kpi-strip-item" id="kpiAtencionCard" style="--c:#7C6FCF;">
         <div class="ksi-label">Tiempo Medio de Atención de Clientes</div>
-        <div class="ksi-value">—</div>
-        <div class="ksi-note">Aún sin fuente de datos conectada</div>
+        <div class="ksi-value" id="kpiAtencionVal">—</div>
+        <div class="ksi-note" id="kpiAtencionNote">Aún sin fuente de datos conectada</div>
       </div>
-      <div class="kpi-strip-item is-empty" style="--c:#9aa5b1;">
+      <div class="kpi-strip-item" id="kpiAccidentesCard" style="--c:#D9455C;">
         <div class="ksi-label">Accidentes</div>
-        <div class="ksi-value">—</div>
-        <div class="ksi-note">Aún sin fuente de datos conectada</div>
+        <div class="ksi-value" id="kpiAccidentesVal">—</div>
+        <div class="ksi-note" id="kpiAccidentesNote">Aún sin fuente de datos conectada</div>
       </div>
     </div>
     <div class="grid wide">
@@ -575,38 +561,29 @@
               Primas y volumen de importación
             </h3>
           </div>
+          <button class="detail-btn" title="Ver prima ponderada y volumen YTD por competidor" onclick="openPrimaYtdModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          </button>
         </div>
-        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:stretch;">
-          <div style="flex:2 1 340px; min-width:280px;">
-            <div class="chart-wrap" style="height:230px;"><canvas id="chartPrima"></canvas></div>
-            <div class="chart-wrap" style="height:190px; margin-top:2px;"><canvas id="chartPrimaVol"></canvas></div>
-          </div>
-          <div style="flex:0 1 120px; max-width:120px; min-width:110px; display:flex; flex-direction:column;">
-            <div class="prima-kpi-top">
-              <div class="mini-kpi-title" id="primaYtdTitle">Prima ponderada</div>
-              <div class="mini-kpi-grid" id="primaYtdGrid"></div>
-            </div>
-            <div class="prima-kpi-bottom">
-              <div class="mini-kpi-title">Volumen YTD</div>
-              <div class="mini-kpi-grid" id="volYtdGrid"></div>
-            </div>
-          </div>
-        </div>
+        <div class="chart-wrap" style="height:230px;"><canvas id="chartPrima"></canvas></div>
+        <div class="chart-wrap" style="height:190px; margin-top:2px;"><canvas id="chartPrimaVol"></canvas></div>
         <div class="legend-note">*PPI sin RAD, MB · Franja inferior: volumen importado por competidor (kTM)</div>
       </div>
 
-      <div class="card" style="border-top-color:#2FB6A6; grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3>PPI y Volumen de Importación</h3>
-            <div class="sub">USD/TM (línea) · kTM total importado (barras)</div>
+      <div class="modal-overlay" id="primaYtdModalOverlay" onclick="if(event.target===this) closePrimaYtdModal()">
+        <div class="modal-box" style="max-width:360px;">
+          <div class="card-head">
+            <div>
+              <h3 id="primaYtdModalTitle">Prima ponderada</h3>
+              <div class="sub">Por competidor</div>
+            </div>
+            <button class="modal-close" title="Cerrar" onclick="closePrimaYtdModal()">&times;</button>
           </div>
+          <div class="mini-kpi-title" id="primaYtdTitle" style="margin-top:4px;">Prima ponderada</div>
+          <div class="mini-kpi-grid" id="primaYtdGrid"></div>
+          <div class="mini-kpi-title" style="margin-top:16px;">Volumen YTD</div>
+          <div class="mini-kpi-grid" id="volYtdGrid"></div>
         </div>
-        <div class="chart-wrap" style="height:260px; position:relative;">
-          <canvas id="chartPPIVol"></canvas>
-          <div id="ppiVolPopup" class="ppi-vol-popup"></div>
-        </div>
-        <div class="legend-note">Pasa el cursor sobre una barra para ver el detalle de importación por competidor</div>
       </div>
 
       <div class="card" style="border-top-color:var(--purple); grid-column: 1 / -1;">
@@ -623,21 +600,6 @@
           </div>
         </div>
         <div id="capacidadGrid" style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 4px;"></div>
-      </div>
-    </div>
-
-    <div class="grid stats">
-      <div class="card stat-card" id="cardMargenMes" style="border-top-color:var(--green);">
-        <div class="kpi-label">MARGEN DEL MES PROYECTADO <span id="margenMesLabel"></span></div>
-        <div class="big" id="margenMesMM">—</div>
-        <div class="sub-text" id="margenMesUSDTM">—</div>
-        <div class="progress-track"><div class="progress-fill" id="margenMesBar"></div></div>
-      </div>
-      <div class="card stat-card" id="cardMargenYTD" style="border-top-color:var(--green);">
-        <div class="kpi-label">MARGEN ACUMULADO YTD</div>
-        <div class="big" id="margenYTDMM">—</div>
-        <div class="sub-text" id="margenYTDUSDTM">—</div>
-        <div class="progress-track"><div class="progress-fill" id="margenYTDBar"></div></div>
       </div>
     </div>
 
@@ -689,6 +651,40 @@
     <div id="viewDetalle" class="hidden">
       <div class="section-title">Detalle de datos</div>
       <div id="detalleTables"></div>
+    </div>
+
+    <div id="viewAgregar" class="hidden">
+      <div class="section-title">Agregar / editar datos</div>
+      <div class="card" style="grid-column: 1 / -1; margin-bottom:16px;">
+        <div class="card-head">
+          <div>
+            <h3>Fuente de datos</h3>
+            <div class="sub">Elige la tabla de Supabase que quieres revisar, editar o completar</div>
+          </div>
+        </div>
+        <select id="agregarTableSelect" style="margin-top:6px; padding:8px 12px; border-radius:8px; border:1px solid #d8dce2; font-size:13px; min-width:280px;"></select>
+        <span id="agregarStatus" style="margin-left:12px; font-size:12.5px; color:#6b7280;"></span>
+      </div>
+
+      <div class="card" id="agregarNewRowCard" style="grid-column: 1 / -1; margin-bottom:16px; border-top-color:var(--green);">
+        <div class="card-head">
+          <div>
+            <h3>Agregar fila nueva</h3>
+            <div class="sub">Completa los campos y presiona Agregar</div>
+          </div>
+        </div>
+        <div id="agregarNewRowForm" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;"></div>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-head">
+          <div>
+            <h3>Registros existentes</h3>
+            <div class="sub" id="agregarGridSub">—</div>
+          </div>
+        </div>
+        <div id="agregarGridWrap"></div>
+      </div>
     </div>
 
   </div>
@@ -764,7 +760,7 @@ async function loadAllFromSupabase(){
     return;
   }
   try{
-    const [stock, prima, margen, mix, ppiCfr, espera, variacion] = await Promise.all([
+    const [stock, prima, margen, mix, ppiCfr, espera, variacion, despacho, datosPpal] = await Promise.all([
       sb.from('stock_diario').select('*').order('fecha'),
       sb.from('prima_mensual').select('*').order('Fecha'),
       sb.from('margen_mensual').select('*').order('mes'),
@@ -772,8 +768,10 @@ async function loadAllFromSupabase(){
       sb.from('ppi_cfr').select('*').order('periodo'),
       sb.from('espera_pluspetrol').select('*').order('semana'),
       sb.from('variacion_precio').select('*').order('periodo'),
+      sb.from('despacho').select('*').order('fecha'),
+      sb.from('datos_ppal').select('*').order('mes'),
     ]);
-    for(const res of [stock, prima, margen, mix, ppiCfr, espera, variacion]){
+    for(const res of [stock, prima, margen, mix, ppiCfr, espera, variacion, despacho, datosPpal]){
       if(res.error) throw res.error;
     }
     DATA.stock = stock.data.map(r=>({fecha:r.fecha, inventario:num(r.inventario), despPlaneado:num(r.desp_planeado), poa:num(r.poa)}));
@@ -787,6 +785,8 @@ async function loadAllFromSupabase(){
     DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb), fca:num(r.FCA ?? r.fca)}));
     DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
     DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc), proyectada:num(r.proyectada), ppcFcaCallao:num(r.ppc_fca_callao)}));
+    DATA.despacho = despacho.data.map(r=>({fecha:r.fecha, despacho:num(r.despacho), despacho2025:num(r.despacho_2025)}));
+    DATA.datosPpal = datosPpal.data.map(r=>({mes:r.mes, tiempoAtencion:num(r.tiempo_atencion), accidentes:num(r.accidentes)}));
 
     await loadCapacidadProveedores();
 
@@ -927,27 +927,20 @@ function drawSpark(svgId, values, color){
 }
 
 function renderKPIHeader(){
-  // --- Volumen Despachado (YTD): suma de FC/desp. planeado del año en curso ---
-  const stock = DATA.stock || [];
-  const lastStockDate = stock.length ? parseLocalDate(stock[stock.length-1].fecha) : null;
-  if(lastStockDate){
-    const year = lastStockDate.getFullYear();
-    const ytdRows = stock.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===year; });
-    const totalDesp = ytdRows.reduce((s,r)=> s + (r.despPlaneado||0), 0);
+  // --- Volumen Despachado (YTD): tabla 'despacho', comparado vs. despacho_2025 ---
+  const desp = DATA.despacho || [];
+  const lastDespDate = desp.length ? parseLocalDate(desp[desp.length-1].fecha) : null;
+  if(lastDespDate){
+    const year = lastDespDate.getFullYear();
+    const ytdRows = desp.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===year; });
+    const totalDesp = ytdRows.reduce((s,r)=> s + (r.despacho||0), 0);
+    const totalDesp2025 = ytdRows.reduce((s,r)=> s + (r.despacho2025||0), 0);
     document.getElementById('kpiVolDespVal').textContent = fmt0(totalDesp/1000) + ' kTM';
-    drawSpark('kpiVolDespSpark', ytdRows.map(r=>r.despPlaneado), '#2E6DB4');
 
-    // % variación: mes actual vs mes anterior
-    const curMonth = lastStockDate.getMonth();
-    const curMonthRows = ytdRows.filter(r=>parseLocalDate(r.fecha).getMonth()===curMonth);
-    let prevMonth = curMonth-1, prevYear = year; if(prevMonth<0){ prevMonth=11; prevYear=year-1; }
-    const prevMonthRows = stock.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===prevYear && dt.getMonth()===prevMonth; });
-    const curSum = curMonthRows.reduce((s,r)=>s+(r.despPlaneado||0),0);
-    const prevSum = prevMonthRows.reduce((s,r)=>s+(r.despPlaneado||0),0);
     const elDelta = document.getElementById('kpiVolDespDelta');
-    if(prevSum>0){
-      const pct = ((curSum-prevSum)/prevSum)*100;
-      elDelta.textContent = `${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}% vs mes anterior`;
+    if(totalDesp2025>0){
+      const pct = ((totalDesp-totalDesp2025)/totalDesp2025)*100;
+      elDelta.textContent = `${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}% vs 2025`;
       elDelta.className = 'ksi-delta ' + (pct>=0?'pos':'neg');
     } else {
       elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
@@ -970,15 +963,24 @@ function renderKPIHeader(){
       elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
     }
   }
+
+  // --- Tiempo Medio de Atención de Clientes y Accidentes: tabla 'datos_ppal', último mes ---
+  const ppal = DATA.datosPpal || [];
+  if(ppal.length){
+    const last = ppal[ppal.length-1];
+    const mesLabel = fmtMes(last.mes);
+    document.getElementById('kpiAtencionVal').textContent = last.tiempoAtencion==null ? '—' : fmt1(last.tiempoAtencion);
+    document.getElementById('kpiAtencionNote').textContent = mesLabel;
+    document.getElementById('kpiAccidentesVal').textContent = last.accidentes==null ? '—' : fmt0(last.accidentes);
+    document.getElementById('kpiAccidentesNote').textContent = mesLabel;
+  }
 }
 
 function renderAll(){
   renderKPIHeader();
   renderStock();
   renderPrima();
-  renderPPIVol();
   renderMix();
-  renderMargen();
   renderPPICFR();
   renderEspera();
   renderCapacidad();
@@ -1074,12 +1076,17 @@ function switchTab(tab){
   document.getElementById('viewResumen').classList.toggle('hidden', tab !== 'resumen');
   document.getElementById('viewTPG').classList.toggle('hidden', tab !== 'tpg');
   document.getElementById('viewDetalle').classList.toggle('hidden', tab !== 'detalle');
+  document.getElementById('viewAgregar').classList.toggle('hidden', tab !== 'agregar');
   document.getElementById('tabBtnResumen').classList.toggle('active', tab === 'resumen');
   document.getElementById('tabBtnTPG').classList.toggle('active', tab === 'tpg');
   document.getElementById('tabBtnDetalle').classList.toggle('active', tab === 'detalle');
+  document.getElementById('tabBtnAgregar').classList.toggle('active', tab === 'agregar');
   if(tab === 'tpg'){
     if(charts.chartMix) charts.chartMix.resize(); else renderMix();
     if(charts.chartEspera) charts.chartEspera.resize(); else renderEspera();
+  }
+  if(tab === 'agregar'){
+    initAgregarTab();
   }
 }
 
@@ -1147,6 +1154,16 @@ function renderDetalle(){
     rows.map(r=>[fmtPeriodo(r.fecha), fmt1(r.capacidad), fmt1(r.inventario), r.capacidad>0 ? (r.inventario/r.capacidad*100).toFixed(0)+'%' : '—'])
   );
 
+  const despachoTable = buildTable(
+    ['Fecha','Despacho (TM)','Despacho 2025 (TM)'],
+    DATA.despacho.map(r=>[fmtPeriodo(r.fecha), fmt1(r.despacho), fmt1(r.despacho2025)])
+  );
+
+  const datosPpalTable = buildTable(
+    ['Mes','Tiempo de Atención','Accidentes'],
+    DATA.datosPpal.map(r=>[fmtMes(r.mes), fmt1(r.tiempoAtencion), fmt0(r.accidentes)])
+  );
+
   el.innerHTML =
     dataCard('TERMINAL | Proyección de inventarios + 30 d', COLORS.blue, stockTable) +
     dataCard('Prima de importación vs mercado y volumen por competidor', COLORS.orange, primaTable) +
@@ -1155,6 +1172,8 @@ function renderDetalle(){
     dataCard('Costos de Referencia del GLP', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
     dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable) +
+    dataCard('Despacho (vs. 2025)', '#2E6DB4', despachoTable) +
+    dataCard('Tiempo de Atención y Accidentes', '#7C6FCF', datosPpalTable) +
     dataCard('Capacidad Solgas', '#E8973B', capacidadTable(DATA.capacidad.solgas)) +
     dataCard('Capacidad Zeta Gas', COLORS.green, capacidadTable(DATA.capacidad.zeta)) +
     dataCard('Capacidad TDP', COLORS.blue, capacidadTable(DATA.capacidad.tdp)) +
@@ -1270,7 +1289,7 @@ function renderPrima(){
     const v = totalVolKTM(c.volKey);
     return `<div class="mini-kpi" style="background:${c.color};">
       <div class="mk-label">${c.label}</div>
-      <div class="mk-value">${v===null?'—':fmt1(v)+' kTM'}</div>
+      <div class="mk-value">${v===null?'—':fmt0(v)+' kTM'}</div>
     </div>`;
   }).join('');
 
@@ -1335,129 +1354,6 @@ function renderPrima(){
       }
     }
   });
-}
-
-const PPI_VOL_PALETTE = {line:'#F2726F', bar:'rgba(47,182,166,0.32)', barBorder:'#2FB6A6'};
-const PPI_VOL_COMPANIES = [
-  {key:'solgas', volKey:'volSolgas', label:'Solgas', color:'#2FB6A6'},
-  {key:'plusPetrol', volKey:'volPlus', label:'PlusPetrol', color:'#4F8FD1'},
-  {key:'primax', volKey:'volPrimax', label:'Primax', color:'#F2726F'},
-  {key:'zetaGas', volKey:'volZeta', label:'Zeta Gas', color:'#F4C04E'},
-];
-
-function renderPPIVol(){
-  const d = DATA.prima;
-  destroyChart('chartPPIVol');
-  const popup = document.getElementById('ppiVolPopup');
-  popup.style.display = 'none';
-  if(!d.length) return;
-
-  const labels = d.map(r=>fmtPeriodo(r.fecha));
-  const ppiValues = d.map(r=>r.ppi);
-  const totalVolValues = d.map(r=>{
-    let sum=0, any=false;
-    PPI_VOL_COMPANIES.forEach(c=>{ const v=r[c.volKey]; if(v!=null){ sum+=v; any=true; } });
-    return any ? sum/1000 : null;
-  });
-
-  const buildPopup = (index)=>{
-    const row = d[index];
-    const prevRow = index>0 ? d[index-1] : null;
-    const rowsHtml = PPI_VOL_COMPANIES.map(c=>{
-      const v = row[c.volKey];
-      const vK = v!=null ? v/1000 : null;
-      const prevV = prevRow ? prevRow[c.volKey] : null;
-      const prevVK = prevV!=null ? prevV/1000 : null;
-      const delta = (vK!=null && prevVK!=null) ? vK - prevVK : null;
-      const deltaHtml = delta!=null
-        ? `<span class="pvp-delta ${delta>=0?'pos':'neg'}">${delta>=0?'▲':'▼'} ${fmt1(Math.abs(delta))}</span>`
-        : '';
-      return `<div class="pvp-row">
-        <span class="pvp-name"><span class="pvp-dot" style="background:${c.color}"></span>${c.label}</span>
-        <span>${vK==null ? '<span style=\"color:#8a8f9a\">— </span>' : `<span class="pvp-val">${fmt1(vK)} kTM</span>${deltaHtml}`}</span>
-      </div>`;
-    }).join('');
-    const total = totalVolValues[index];
-    return `<div class="pvp-title">${labels[index]} · Importación</div>
-      ${rowsHtml}
-      <div class="pvp-row pvp-total"><span>Total</span><span>${total==null?'—':fmt1(total)+' kTM'}</span></div>`;
-  };
-
-  charts.chartPPIVol = new Chart(document.getElementById('chartPPIVol'), {
-    data:{
-      labels,
-      datasets:[
-        {
-          type:'bar', label:'Volumen total', data:totalVolValues, yAxisID:'y1',
-          backgroundColor:PPI_VOL_PALETTE.bar, borderColor:PPI_VOL_PALETTE.barBorder, borderWidth:1.5, borderRadius:3,
-          categoryPercentage:0.55, barPercentage:0.9
-        },
-        {
-          type:'line', label:'PPI', data:ppiValues, yAxisID:'y',
-          borderColor:PPI_VOL_PALETTE.line, backgroundColor:PPI_VOL_PALETTE.line,
-          tension:.3, pointRadius:2, pointHoverRadius:5, borderWidth:2, fill:false
-        }
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'index', intersect:false},
-      onHover:(evt, elements, chart)=>{
-        const points = chart.getElementsAtEventForMode(evt, 'index', {intersect:false}, false);
-        if(!points.length){ popup.style.display = 'none'; return; }
-        const index = points[0].index;
-        popup.innerHTML = buildPopup(index);
-        popup.style.display = 'block';
-        const chartArea = chart.chartArea;
-        const barEl = points.find(p=>p.datasetIndex===0) || points[0];
-        let left = barEl.element.x + 12;
-        const popupWidth = 210;
-        if(left + popupWidth > chart.width) left = barEl.element.x - popupWidth - 12;
-        let top = chartArea.top + 4;
-        popup.style.left = left + 'px';
-        popup.style.top = top + 'px';
-      },
-      plugins:{
-        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
-        tooltip:{enabled:false},
-        datalabels:{display:false}
-      },
-      scales:{
-        x:{grid:{display:false}, border:{display:false}},
-        y:{position:'left', grid:{display:false}, border:{display:false}, title:{display:true,text:'USD/TM'}},
-        y1:{position:'right', grid:{display:false}, border:{display:false}, title:{display:true,text:'kTM'}}
-      }
-    },
-    plugins:[{
-      id:'ppiVolLeaveHandler',
-      afterEvent:(chart, args)=>{
-        if(args.event.type==='mouseout'){ popup.style.display = 'none'; }
-      }
-    }]
-  });
-}
-
-function renderMargen(){
-  const d = DATA.margen;
-  if(!d.length) return;
-  const last = d[d.length-1];
-  document.getElementById('margenMesLabel').textContent = '· ' + fmtMes(last.mes);
-  setStat('margenMesMM','margenMesUSDTM','cardMargenMes','margenMesBar', last.mesMM, last.mesUSDTM);
-  setStat('margenYTDMM','margenYTDUSDTM','cardMargenYTD','margenYTDBar', last.ytdMM, last.ytdUSDTM);
-}
-
-function setStat(idMM, idUSDTM, cardId, barId, mm, usdtm){
-  const elMM = document.getElementById(idMM);
-  const elUSDTM = document.getElementById(idUSDTM);
-  const card = document.getElementById(cardId);
-  const bar = document.getElementById(barId);
-  const ok = mm !== null && mm >= 0;
-  const statusColor = mm===null ? COLORS.blueLight : (ok ? COLORS.green : COLORS.red);
-  elMM.textContent = (mm===null?'—': (mm>=0?'+':'') + fmt1(mm) + ' MM USD');
-  elMM.style.color = mm===null ? '#1b2733' : statusColor;
-  elUSDTM.textContent = usdtm===null ? '' : fmt1(usdtm) + ' USD/TM';
-  card.style.borderTopColor = statusColor;
-  bar.style.backgroundColor = statusColor;
 }
 
 function renderMix(){
@@ -1731,6 +1627,14 @@ function closeCapacidadModal(){
   document.getElementById('capacidadModalOverlay').classList.remove('open');
 }
 
+function openPrimaYtdModal(){
+  document.getElementById('primaYtdModalOverlay').classList.add('open');
+}
+
+function closePrimaYtdModal(){
+  document.getElementById('primaYtdModalOverlay').classList.remove('open');
+}
+
 function openVariacionModal(){
   document.getElementById('variacionModalOverlay').classList.add('open');
   destroyChart('chartVariacionModal');
@@ -1762,6 +1666,234 @@ function fmt1(v){
 function fmt0(v){
   if(v===null||v===undefined||isNaN(v)) return '—';
   return Number(v).toLocaleString('es-PE',{minimumFractionDigits:0,maximumFractionDigits:0});
+}
+
+// ================= Agregar / editar datos =================
+const AGREGAR_TABLES = [
+  {key:'stock_diario', label:'Stock diario (Terminal)', pk:'fecha', columns:[
+    {field:'fecha', label:'Fecha', type:'date'},
+    {field:'desp_planeado', label:'Desp. Planeado', type:'number'},
+    {field:'poa', label:'POA', type:'number'},
+    {field:'inventario', label:'Inventario', type:'number'},
+  ]},
+  {key:'prima_mensual', label:'Prima mensual (Prima + Volumen)', pk:'Fecha', columns:[
+    {field:'Fecha', label:'Fecha', type:'date'},
+    {field:'ppi', label:'PPI', type:'number'},
+    {field:'solgas', label:'Solgas', type:'number'},
+    {field:'volumen_solgas', label:'Vol. Solgas', type:'number'},
+    {field:'plus_petrol', label:'PlusPetrol', type:'number'},
+    {field:'volumen_plus', label:'Vol. PlusPetrol', type:'number'},
+    {field:'primax', label:'Primax', type:'number'},
+    {field:'volumen_primax', label:'Vol. Primax', type:'number'},
+    {field:'zeta_gas', label:'Zeta Gas', type:'number'},
+    {field:'volumen_zeta', label:'Vol. Zeta Gas', type:'number'},
+  ]},
+  {key:'margen_mensual', label:'Margen mensual', pk:'mes', columns:[
+    {field:'mes', label:'Mes', type:'date'},
+    {field:'mes_mm', label:'Margen Mes (MM USD)', type:'number'},
+    {field:'mes_usdtm', label:'Margen Mes (USD/TM)', type:'number'},
+    {field:'ytd_mm', label:'Margen YTD (MM USD)', type:'number'},
+    {field:'ytd_usdtm', label:'Margen YTD (USD/TM)', type:'number'},
+  ]},
+  {key:'mix_abastecimiento', label:'Mix de abastecimiento semanal', pk:null, columns:[
+    {field:'semana', label:'Semana', type:'date'},
+    {field:'destino', label:'Destino', type:'text'},
+    {field:'fuente', label:'Fuente', type:'text'},
+    {field:'volumen', label:'Volumen', type:'number'},
+  ]},
+  {key:'ppi_cfr', label:'Costos de Referencia (PPI/CFR/MB/FCA)', pk:'periodo', columns:[
+    {field:'periodo', label:'Periodo', type:'date'},
+    {field:'ppi', label:'PPI', type:'number'},
+    {field:'cfr', label:'CFR', type:'number'},
+    {field:'mb', label:'MB', type:'number'},
+    {field:'fca', label:'FCA', type:'number'},
+  ]},
+  {key:'espera_pluspetrol', label:'Tiempo de espera PlusPetrol', pk:'semana', columns:[
+    {field:'semana', label:'Semana', type:'date'},
+    {field:'horas', label:'Horas', type:'number'},
+  ]},
+  {key:'variacion_precio', label:'Variación de precio PlusPetrol vs MB', pk:'periodo', columns:[
+    {field:'periodo', label:'Periodo', type:'date'},
+    {field:'mb', label:'Variación MB', type:'number'},
+    {field:'ppc', label:'Variación CFR Callao', type:'number'},
+    {field:'proyectada', label:'Proyectada', type:'number'},
+    {field:'ppc_fca_callao', label:'Variación FCA Callao', type:'number'},
+  ]},
+  {key:'despacho', label:'Despacho (vs 2025)', pk:'fecha', columns:[
+    {field:'fecha', label:'Fecha', type:'date'},
+    {field:'despacho', label:'Despacho', type:'number'},
+    {field:'despacho_2025', label:'Despacho 2025', type:'number'},
+  ]},
+  {key:'datos_ppal', label:'Tiempo de atención y Accidentes', pk:'mes', columns:[
+    {field:'mes', label:'Mes', type:'date'},
+    {field:'tiempo_atencion', label:'Tiempo de Atención', type:'number'},
+    {field:'accidentes', label:'Accidentes', type:'number'},
+  ]},
+  {key:'inv_solgas', label:'Capacidad Solgas', pk:'fecha', columns:null},
+  {key:'inv_zeta', label:'Capacidad Zeta Gas', pk:'fecha', columns:null},
+  {key:'inv_tdp', label:'Capacidad TDP', pk:'fecha', columns:null},
+  {key:'inv_plus', label:'Capacidad PlusPetrol', pk:'fecha', columns:null},
+];
+
+let AGREGAR_STATE = {table:null, config:null, columns:[], rows:[]};
+
+function initAgregarTab(){
+  const select = document.getElementById('agregarTableSelect');
+  if(!select.dataset.initialized){
+    select.innerHTML = AGREGAR_TABLES.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
+    select.onchange = ()=> loadAgregarTable(select.value);
+    select.dataset.initialized = '1';
+    loadAgregarTable(select.value);
+  }
+}
+
+function agregarInputType(type){ return type==='number' ? 'number' : (type==='date' ? 'date' : 'text'); }
+
+async function loadAgregarTable(tableKey){
+  if(!sb) return;
+  const config = AGREGAR_TABLES.find(t=>t.key===tableKey);
+  const status = document.getElementById('agregarStatus');
+  const gridWrap = document.getElementById('agregarGridWrap');
+  const gridSub = document.getElementById('agregarGridSub');
+  status.textContent = 'Cargando…';
+  gridWrap.innerHTML = '';
+  try{
+    const orderCol = config.pk || 'id';
+    const {data, error} = await sb.from(config.key).select('*').order(orderCol, {ascending:false}).limit(300);
+    if(error) throw error;
+    let columns = config.columns;
+    if(!columns){
+      const sample = data[0] || {};
+      columns = Object.keys(sample).filter(k=>k!=='id').map(k=>({
+        field:k, label:k,
+        type: typeof sample[k]==='number' ? 'number' : (/^\d{4}-\d{2}-\d{2}/.test(String(sample[k]??'')) ? 'date' : 'text')
+      }));
+    }
+    AGREGAR_STATE = {table:config.key, config, columns, rows:data};
+    gridSub.textContent = `${data.length} registro(s) · tabla "${config.key}"`;
+    renderAgregarGrid();
+    renderAgregarNewRowForm();
+    status.textContent = '';
+  }catch(err){
+    status.textContent = 'Error al cargar: ' + err.message;
+    gridWrap.innerHTML = '';
+  }
+}
+
+function renderAgregarGrid(){
+  const {columns, rows, config} = AGREGAR_STATE;
+  const wrap = document.getElementById('agregarGridWrap');
+  if(!rows.length){
+    wrap.innerHTML = '<div style="padding:14px; color:#9aa5b1; font-size:13px;">Sin registros aún. Agrega el primero desde el formulario de arriba.</div>';
+    return;
+  }
+  const canEditRow = (row)=> (config.pk && row[config.pk]!=null) || row.id!=null;
+  const theadHtml = '<thead><tr>' + columns.map(c=>`<th>${c.label}</th>`).join('') + '<th>Acciones</th></tr></thead>';
+  const rowsHtml = rows.map((row, idx)=>{
+    const cellsHtml = columns.map(c=>{
+      const val = row[c.field];
+      const inputType = agregarInputType(c.type);
+      const safeVal = val==null ? '' : String(val);
+      return `<td><input type="${inputType}" ${c.type==='number'?'step="any"':''} value="${safeVal.replace(/"/g,'&quot;')}" data-field="${c.field}" style="width:100%; min-width:90px; border:1px solid #e2e5ea; border-radius:6px; padding:4px 6px; font-size:12px;"/></td>`;
+    }).join('');
+    const editable = canEditRow(row);
+    const actionsHtml = editable
+      ? `<button onclick="saveAgregarRow(${idx})" style="background:var(--blue); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer;">Guardar</button>
+         <button onclick="deleteAgregarRow(${idx})" style="background:var(--red); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer; margin-left:4px;">Eliminar</button>`
+      : `<span style="font-size:10.5px; color:#9aa5b1;" title="No se detectó un identificador único en esta tabla">Solo lectura</span>`;
+    return `<tr data-row-idx="${idx}">${cellsHtml}<td style="white-space:nowrap;">${actionsHtml}</td></tr>`;
+  }).join('');
+  wrap.innerHTML = `<div class="data-table-wrap"><table class="data-table">${theadHtml}<tbody>${rowsHtml}</tbody></table></div>`;
+}
+
+function renderAgregarNewRowForm(){
+  const {columns} = AGREGAR_STATE;
+  const form = document.getElementById('agregarNewRowForm');
+  form.innerHTML = columns.map(c=>{
+    const inputType = agregarInputType(c.type);
+    return `<div style="display:flex; flex-direction:column; gap:4px;">
+      <label style="font-size:10.5px; font-weight:700; color:#6b7280; text-transform:uppercase;">${c.label}</label>
+      <input type="${inputType}" ${c.type==='number'?'step="any"':''} data-new-field="${c.field}" style="border:1px solid #d8dce2; border-radius:6px; padding:6px 8px; font-size:13px; min-width:120px;"/>
+    </div>`;
+  }).join('') + `<button onclick="addAgregarRow()" style="background:var(--green); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">+ Agregar</button>`;
+}
+
+function readAgregarValue(inputEl, type){
+  const raw = inputEl.value;
+  if(raw === '') return null;
+  if(type === 'number'){ const n = Number(raw); return isNaN(n) ? null : n; }
+  return raw;
+}
+
+async function saveAgregarRow(idx){
+  const {table, columns, rows, config} = AGREGAR_STATE;
+  const row = rows[idx];
+  const trEl = document.querySelector(`tr[data-row-idx="${idx}"]`);
+  const changes = {};
+  columns.forEach(c=>{
+    const input = trEl.querySelector(`input[data-field="${c.field}"]`);
+    changes[c.field] = readAgregarValue(input, c.type);
+  });
+  const pkField = (config.pk && row[config.pk]!=null) ? config.pk : 'id';
+  const pkValue = row[pkField];
+  const status = document.getElementById('agregarStatus');
+  status.textContent = 'Guardando…';
+  try{
+    const {error} = await sb.from(table).update(changes).eq(pkField, pkValue);
+    if(error) throw error;
+    status.textContent = 'Guardado ✓';
+    await loadAllFromSupabase();
+    renderAll();
+    loadAgregarTable(table);
+  }catch(err){
+    status.textContent = 'Error al guardar: ' + err.message;
+  }
+}
+
+async function deleteAgregarRow(idx){
+  const {table, rows, config} = AGREGAR_STATE;
+  const row = rows[idx];
+  if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
+  const pkField = (config.pk && row[config.pk]!=null) ? config.pk : 'id';
+  const pkValue = row[pkField];
+  const status = document.getElementById('agregarStatus');
+  status.textContent = 'Eliminando…';
+  try{
+    const {error} = await sb.from(table).delete().eq(pkField, pkValue);
+    if(error) throw error;
+    status.textContent = 'Eliminado ✓';
+    await loadAllFromSupabase();
+    renderAll();
+    loadAgregarTable(table);
+  }catch(err){
+    status.textContent = 'Error al eliminar: ' + err.message;
+  }
+}
+
+async function addAgregarRow(){
+  const {table, columns} = AGREGAR_STATE;
+  const form = document.getElementById('agregarNewRowForm');
+  const newRow = {};
+  let hasAny = false;
+  columns.forEach(c=>{
+    const input = form.querySelector(`input[data-new-field="${c.field}"]`);
+    const val = readAgregarValue(input, c.type);
+    if(val !== null) hasAny = true;
+    newRow[c.field] = val;
+  });
+  if(!hasAny){ alert('Completa al menos un campo antes de agregar.'); return; }
+  const status = document.getElementById('agregarStatus');
+  status.textContent = 'Agregando…';
+  try{
+    const {error} = await sb.from(table).insert(newRow);
+    if(error) throw error;
+    status.textContent = 'Agregado ✓';
+    await loadAllFromSupabase();
+    renderAll();
+    loadAgregarTable(table);
+  }catch(err){
+    status.textContent = 'Error al agregar: ' + err.message;
+  }
 }
 </script>
 </body>
