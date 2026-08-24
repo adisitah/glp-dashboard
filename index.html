@@ -3,850 +3,947 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GLP Dashboard · Abastecimiento</title>
+<title>Abastecimiento | Resumen Semanal</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --blue-dark:#4B3F91;
-    --blue:#2E6DB4;
-    --blue-mid:#3B7FC4;
-    --blue-light:#3FA0D8;
-    --teal:#2FAE8B;
-    --orange:#E15B77;
-    --purple:#7C6FCF;
-    --green:#3EC17A;
-    --red:#D9455C;
-    --gray:#9aa5b1;
-    --bg:#f3f4f6;
+    --navy:#0c1526;
+    --navy-2:#16233d;
+    --navy-3:#22314f;
+    --red:#e2492d;
+    --red-dark:#c53a22;
+    --orange:#f2994a;
+    --green:#1ca860;
+    --green-bg:#e7f7ee;
+    --orange-bg:#fef3e6;
+    --red-bg:#fdeae7;
+    --blue:#2f6fed;
+    --yellow:#eab308;
+    --gray:#98a2b3;
+    --bg:#f3f5f8;
     --card-bg:#ffffff;
-    --text-dark:#20272f;
-    --text-muted:#6b7280;
-    --border:#e4e6ea;
-    --font-serif:Georgia,'Iowan Old Style','Times New Roman',serif;
-    --font-sans:'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    --border:#e6e9ee;
+    --text-dark:#101828;
+    --text-muted:#667085;
+    --text-faint:#98a2b3;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    font-family:var(--font-sans);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
     background:var(--bg);
     color:var(--text-dark);
-  }
-  header.topbar{
-    background:linear-gradient(135deg,var(--purple) 0%,var(--blue) 100%);
-    color:#fff;
-    padding:20px 20px 16px;
-    text-align:center;
-    position:relative;
-  }
-  header.topbar h1{
-    margin:0;
-    font-family:var(--font-serif);
-    font-size:21px;
-    font-weight:600;
-    letter-spacing:0.2px;
     display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
+    min-height:100vh;
   }
-  header.topbar p{
-    margin:4px 0 0;
-    font-size:12.5px;
-    color:#aebccb;
-  }
-  .meta-row{
-    position:absolute;
-    top:12px;
-    right:14px;
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-    gap:10px;
-    align-items:center;
-  }
-  .pill{
-    background:rgba(255,255,255,0.15);
-    border:1px solid rgba(255,255,255,0.3);
-    border-radius:20px;
-    padding:3px 9px;
-    font-size:10px;
-    color:#fff;
-  }
-  .btn{
-    border:none;
-    border-radius:10px;
-    padding:9px 16px;
-    font-size:13px;
-    font-weight:600;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-  }
-  .btn-primary{
-    background:#fff;
-    color:var(--blue-dark);
-  }
-  .btn-primary:hover{background:#eaf1fb;}
-  main{
-    max-width:1180px;
-    margin:0 auto;
-    padding:20px 16px 60px;
-  }
-  .section-title{
-    font-size:15px;
-    font-weight:700;
-    color:var(--blue-dark);
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    margin:28px 0 12px;
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .section-title:first-of-type{margin-top:8px;}
-  .grid{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:16px;
-  }
-  .grid.stats{margin-top:28px; margin-bottom:28px;}
-  @media(min-width:760px){
-    .grid{grid-template-columns:repeat(2,1fr);}
-    .grid.stats{grid-template-columns:repeat(2,1fr);}
-  }
-  @media(min-width:1080px){
-    .grid.wide{grid-template-columns:repeat(2,1fr);}
-  }
-  .card{
-    background:var(--card-bg);
-    border-radius:0;
-    padding:18px 18px 14px;
-    box-shadow:0 1px 2px rgba(16,24,40,0.05);
-    border:1px solid var(--border);
-    border-top:3px solid var(--blue-light);
-    opacity:0;
-    animation:fadein .4s ease forwards;
-  }
-  @keyframes fadein{to{opacity:1;}}
-  .card h3{
-    margin:0 0 2px;
-    font-family:var(--font-serif);
-    font-size:16px;
-    font-weight:400;
-    color:var(--text-dark);
-  }
-  .card .sub{
-    font-size:12px;
-    color:var(--text-muted);
-    margin-bottom:12px;
-  }
-  .card .chart-wrap{position:relative;height:230px;}
-  .detail-btn{
-    border:1px solid var(--border);
-    background:#fff;
-    color:var(--text-muted);
-    width:26px;
-    height:26px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
+
+  /* ---------- Sidebar ---------- */
+  aside.sidebar{
+    width:236px;
     flex-shrink:0;
-    transition:background .15s,color .15s,border-color .15s;
+    background:var(--navy);
+    color:#cbd5e1;
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:0;
+    height:100vh;
   }
-  .detail-btn:hover{
-    background:var(--teal);
-    border-color:var(--teal);
+  .sidebar-logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:20px 20px 18px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-logo .flame{ flex-shrink:0; }
+  .sidebar-logo .name{
+    font-size:17px;
+    font-weight:800;
+    letter-spacing:.04em;
     color:#fff;
   }
-  .modal-overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(16,24,40,0.55);
-    z-index:1000;
+  nav.sidebar-nav{
+    flex:1;
+    padding:14px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    overflow-y:auto;
+  }
+  .nav-item{
+    display:flex;
     align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
-  .modal-overlay.open{ display:flex; }
-  .modal-box{
-    background:var(--card-bg);
-    border-radius:0;
-    border-top:3px solid var(--blue-light);
-    width:100%;
-    max-width:880px;
-    max-height:90vh;
-    overflow:auto;
-    padding:18px 18px 14px;
-    box-shadow:0 10px 30px rgba(16,24,40,0.25);
-  }
-  .modal-box .chart-wrap{height:320px;}
-  .modal-close{
-    border:none;
-    background:transparent;
-    color:var(--text-muted);
-    font-size:20px;
-    line-height:1;
-    cursor:pointer;
-    padding:2px 6px;
-  }
-  .modal-close:hover{ color:var(--text-dark); }
-  .card select{
-    font-size:12px;
-    border:1px solid var(--border);
+    gap:11px;
+    padding:10px 12px;
     border-radius:8px;
-    padding:4px 8px;
-    color:var(--text-dark);
-    background:#f8fafc;
+    font-size:13.5px;
+    font-weight:600;
+    color:#9aa7bd;
+    cursor:pointer;
+    border:none;
+    background:none;
+    text-align:left;
+    width:100%;
+    transition:background .12s, color .12s;
   }
-  .card-head{
+  .nav-item svg{ flex-shrink:0; opacity:.85; }
+  .nav-item:hover{ background:rgba(255,255,255,0.06); color:#e2e8f0; }
+  .nav-item.active{ background:var(--red); color:#fff; }
+  .nav-item.active svg{ opacity:1; }
+  .sidebar-foot{
+    padding:12px 10px 18px;
+    border-top:1px solid rgba(255,255,255,0.08);
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .sidebar-foot .nav-item{ position:relative; }
+  .badge-count{
+    margin-left:auto;
+    background:var(--red);
+    color:#fff;
+    font-size:10.5px;
+    font-weight:800;
+    border-radius:20px;
+    padding:1px 7px;
+  }
+
+  /* ---------- Main ---------- */
+  main.content{
+    flex:1;
+    min-width:0;
+    padding:22px 28px 50px;
+  }
+  .page-header{
     display:flex;
     justify-content:space-between;
     align-items:flex-start;
-    gap:8px;
     flex-wrap:wrap;
+    gap:14px;
+    margin-bottom:22px;
   }
-  .stat-card{
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    min-height:auto;
-    padding:16px 18px 14px;
-    border-top-width:3px;
-  }
-  .stat-card .kpi-label{
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:.03em;
-    text-transform:uppercase;
+  .page-header h1{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.01em;
     color:var(--text-dark);
   }
-  .stat-card .big{
-    font-family:var(--font-serif);
-    font-size:28px;
-    font-weight:700;
-    margin:6px 0 2px;
-  }
-  .stat-card .sub-text{
-    font-size:11px;
-    color:var(--text-muted);
-    margin-bottom:12px;
-  }
-  .stat-card .progress-track{
-    height:4px;
-    border-radius:3px;
-    background:#eef1f6;
-    overflow:hidden;
-  }
-  .stat-card .progress-fill{
-    height:100%;
-    border-radius:3px;
-    width:100%;
-    transition:background-color .3s;
-  }
-  .stat-card .label{
-    font-size:12px;
+  .page-header .subtitle{
+    margin:4px 0 0;
+    font-size:12.5px;
     color:var(--text-muted);
   }
-  .chips{
-    display:flex;
-    gap:10px;
-    margin-bottom:10px;
-    flex-wrap:wrap;
-  }
-  .chip{
-    background:#f5f8fd;
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:6px 10px;
-    font-size:12px;
-    color:var(--text-muted);
-  }
-  .chip b{color:var(--text-dark);font-size:13px;}
-  .empty-msg{
-    text-align:center;
-    color:var(--text-muted);
-    padding:60px 20px;
-    font-size:14px;
-  }
-  footer{
-    text-align:center;
-    color:#94a3b8;
-    font-size:12px;
-    padding:20px;
-  }
-  .hidden{display:none !important;}
-  .legend-note{font-size:11px;color:#94a3b8;margin-top:6px;}
-  .mini-kpi-title{
-    font-size:10.5px;
-    font-weight:700;
-    letter-spacing:0.3px;
-    text-transform:uppercase;
-    color:var(--text-muted);
-    margin-bottom:6px;
-  }
-  .mini-kpi-grid{
-    display:grid;
-    grid-template-columns:1fr;
+  .header-actions{ display:flex; align-items:center; gap:10px; }
+  .pill-btn{
+    display:inline-flex;
+    align-items:center;
     gap:8px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:9px 14px;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--text-dark);
+    cursor:pointer;
   }
-  .prima-kpi-top, .prima-kpi-bottom{ display:flex; flex-direction:column; justify-content:flex-start; }
-  .prima-kpi-bottom{ margin-top:14px; }
-  .mini-kpi{
-    border-radius:0;
-    padding:6px 10px;
-    color:#fff;
-    min-height:40px;
+  .pill-btn:hover{ border-color:#c9ced8; }
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 18px;
+    box-shadow:0 1px 2px rgba(16,24,40,0.04);
+  }
+  .card-title{
+    font-size:11.5px;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--text-dark);
     display:flex;
-    flex-direction:column;
-    justify-content:center;
-  }
-  .mini-kpi .mk-label{
-    font-size:9.5px;
-    opacity:0.92;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .mini-kpi .mk-value{
-    font-family:var(--font-sans);
-    font-size:15px;
-    font-weight:700;
-    margin-top:2px;
-  }
-  .alert-badge{
-    display:inline-flex;
     align-items:center;
-    gap:5px;
-    background:rgba(192,57,43,0.1);
-    border:1px solid rgba(192,57,43,0.35);
-    color:var(--red);
-    border-radius:20px;
-    padding:5px 11px;
-    font-size:12px;
-    font-weight:700;
-    white-space:nowrap;
+    gap:7px;
+    margin-bottom:2px;
   }
-  .alert-badge .dot{
-    width:6px;height:6px;border-radius:50%;
-    background:var(--red);
-    flex-shrink:0;
-  }
-  .alert-badge.ok{
-    background:rgba(31,146,84,0.1);
-    border-color:rgba(31,146,84,0.35);
-    color:var(--green);
-  }
-  .alert-badge.ok .dot{background:var(--green);}
-  .wed-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    border-radius:6px;
-    padding:4px 9px;
-    font-size:12px;
-    font-weight:700;
-    color:#fff;
-    white-space:nowrap;
-  }
-  .wed-badge .wed-label{font-weight:400; opacity:0.85; font-size:10.5px;}
-  .wed-badge.pos{background:var(--green);}
-  .wed-badge.neg{background:var(--red);}
-  .corr-badge{
+  .card-title .info-dot{
+    color:var(--text-faint);
     font-size:11px;
-    color:#94a3b8;
-    white-space:nowrap;
+    font-weight:700;
+    border:1px solid var(--text-faint);
+    border-radius:50%;
+    width:14px; height:14px;
+    display:inline-flex; align-items:center; justify-content:center;
+    cursor:default;
   }
-  .footer-row{
+  .row-head{
     display:flex;
     justify-content:space-between;
-    align-items:baseline;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-top:6px;
-  }
-  .tabbar{
-    display:flex;
-    gap:4px;
-    border-bottom:1px solid var(--border);
-    margin:8px 0 24px;
-  }
-  .tab-btn{
-    background:none;
-    border:none;
-    padding:10px 18px;
-    font-size:13px;
-    font-weight:700;
-    color:var(--text-muted);
-    cursor:pointer;
-    border-bottom:3px solid transparent;
-    margin-bottom:-1px;
-    display:inline-flex;
     align-items:center;
-    gap:6px;
+    margin-bottom:14px;
   }
-  .tab-btn:hover{color:var(--blue-mid);}
-  .tab-btn.active{color:var(--blue-dark); border-bottom-color:var(--blue);}
-  .data-table-wrap{
-    overflow:auto;
-    max-height:340px;
-    border:1px solid var(--border);
-    border-radius:10px;
+
+  /* ---------- KPI strip ---------- */
+  .kpi-strip{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:14px;
+    margin-bottom:18px;
   }
-  table.data-table{width:100%; border-collapse:collapse; font-size:12.5px;}
-  table.data-table th{
-    position:sticky; top:0;
-    background:#f5f8fd;
-    text-align:left;
-    padding:8px 10px;
-    font-weight:700;
-    color:var(--blue-dark);
-    border-bottom:1px solid var(--border);
-    white-space:nowrap;
+  .kpi-card{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
   }
-  table.data-table td{
-    padding:7px 10px;
-    border-bottom:1px solid #f1f4f8;
+  .kpi-icon{
+    width:40px; height:40px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .kpi-label{
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+  }
+  .kpi-value{
+    font-size:19px;
+    font-weight:800;
+    margin:3px 0 3px;
     color:var(--text-dark);
+  }
+  .kpi-note{
+    font-size:11px;
+    color:var(--text-muted);
+    line-height:1.4;
+  }
+
+  /* ---------- Grids ---------- */
+  .grid-3{
+    display:grid;
+    grid-template-columns:1.7fr 1fr 1.15fr;
+    gap:16px;
+    margin-bottom:16px;
+    align-items:stretch;
+  }
+  .grid-3b{
+    display:grid;
+    grid-template-columns:1fr 1.15fr 1.25fr;
+    gap:16px;
+    margin-bottom:16px;
+    align-items:stretch;
+  }
+  @media (max-width:1200px){
+    .grid-3, .grid-3b{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- Inventario chart card ---------- */
+  .chart-wrap{ position:relative; height:250px; }
+  .chart-legend{
+    display:flex; flex-wrap:wrap; gap:14px;
+    margin-top:10px; font-size:11px; color:var(--text-muted);
+  }
+  .chart-legend span{ display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+  .leg-line{ width:16px; height:0; border-top:2.5px solid; display:inline-block; }
+  .leg-line.dash{ border-top-style:dashed; }
+  .leg-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .leg-tri{ width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:8px solid; display:inline-block; }
+
+  /* ---------- Forward-looking risk ---------- */
+  .risk-item{
+    display:flex; gap:10px; padding:10px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .risk-item:last-child{ border-bottom:none; }
+  .risk-day{ font-size:11px; font-weight:800; color:var(--text-faint); width:34px; flex-shrink:0; padding-top:2px; }
+  .risk-dot{ width:9px; height:9px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+  .risk-level{ font-size:12.5px; font-weight:700; color:var(--text-dark); }
+  .risk-desc{ font-size:11.5px; color:var(--text-muted); margin-top:1px; }
+
+  /* ---------- Top 3 riesgos ---------- */
+  .top-risk{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:11px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .top-risk:last-of-type{ border-bottom:none; }
+  .top-risk .num{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--red); color:#fff;
+    font-size:10.5px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .top-risk .ico{ flex-shrink:0; margin-top:1px; }
+  .top-risk .body{ flex:1; min-width:0; }
+  .top-risk .title-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .top-risk .title{ font-size:12.5px; font-weight:700; color:var(--text-dark); }
+  .top-risk .desc{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+  .top-risk .impact{ font-size:10.5px; color:var(--text-faint); margin-top:2px; font-weight:600; }
+  .badge{
+    font-size:10px; font-weight:800; letter-spacing:.02em;
+    border-radius:6px; padding:3px 8px; flex-shrink:0;
+  }
+  .badge.alto{ background:var(--red-bg); color:var(--red-dark); }
+  .badge.medio{ background:var(--orange-bg); color:#b06a10; }
+  .ver-todos{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:12px; font-weight:700; color:var(--blue);
+    margin-top:8px; cursor:pointer;
+  }
+
+  /* ---------- Supply dependency donut ---------- */
+  .donut-row{ display:flex; align-items:center; gap:18px; }
+  .donut-wrap{ position:relative; width:130px; height:130px; flex-shrink:0; }
+  .donut-center{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .donut-center .big{ font-size:22px; font-weight:800; color:var(--text-dark); }
+  .donut-center .small{ font-size:9.5px; color:var(--text-muted); font-weight:700; letter-spacing:.03em; }
+  .legend-list{ display:flex; flex-direction:column; gap:9px; flex:1; }
+  .legend-list .li{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dark); }
+  .legend-list .sq{ width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+  .legend-list .pct{ margin-left:auto; font-weight:800; }
+  .note-text{ font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5; }
+
+  /* ---------- Are we sourcing competitively ---------- */
+  .sourcing-compare{
+    display:flex; align-items:center; gap:12px; margin-bottom:12px;
+  }
+  .sourcing-box{ flex:1; }
+  .sourcing-box .lbl{ font-size:10.5px; color:var(--text-muted); font-weight:700; }
+  .sourcing-box .val{ font-size:19px; font-weight:800; margin-top:3px; }
+  .sourcing-box.solgas .val{ color:var(--blue); }
+  .sourcing-box.mkt .val{ color:var(--text-dark); }
+  .vs-badge{
+    font-size:10.5px; font-weight:800; color:var(--text-faint);
+    background:var(--bg); border-radius:50%;
+    width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .advantage-box{
+    background:var(--green-bg);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:12px;
+  }
+  .advantage-box .a-lbl{ font-size:10px; font-weight:800; color:#0f7a45; letter-spacing:.03em; }
+  .advantage-box .a-val{ font-size:18px; font-weight:800; color:var(--green); margin:2px 0; }
+  .advantage-box .a-sub{ font-size:10px; font-weight:800; color:#0f7a45; letter-spacing:.02em; margin-top:4px; }
+  .advantage-box .a-sub-val{ font-size:14px; font-weight:800; color:var(--green); }
+
+  /* ---------- Market intelligence table ---------- */
+  table.mkt-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  table.mkt-table th{
+    text-align:left; font-size:10px; font-weight:800; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--text-faint); padding:6px 6px; border-bottom:1px solid var(--border);
+  }
+  table.mkt-table td{ padding:9px 6px; border-bottom:1px solid var(--border); color:var(--text-dark); }
+  table.mkt-table tr:last-child td{ border-bottom:none; }
+  table.mkt-table td.player{ font-weight:700; }
+  .pos-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+  /* ---------- Operational performance ---------- */
+  .op-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:18px;
+  }
+  @media (max-width:1200px){ .op-grid{ grid-template-columns:repeat(2, 1fr); } }
+  .op-item .lbl{ font-size:11.5px; font-weight:700; color:var(--text-dark); }
+  .op-item .sub{ font-size:10.5px; color:var(--text-muted); }
+  .op-item .big{ font-size:21px; font-weight:800; margin:6px 0 2px; }
+  .op-item .target{ font-size:10.5px; color:var(--text-faint); font-weight:600; }
+  .op-item svg.spark{ margin-top:8px; width:100%; height:26px; }
+
+  /* ---------- Management attention table ---------- */
+  table.mgmt-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.mgmt-table th{
+    text-align:left; font-size:10.5px; font-weight:800; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--text-faint); padding:8px 10px; border-bottom:1px solid var(--border);
+  }
+  table.mgmt-table td{ padding:11px 10px; border-bottom:1px solid var(--border); color:var(--text-dark); vertical-align:middle; }
+  table.mgmt-table tr:last-child td{ border-bottom:none; }
+  .mgmt-tema{ display:flex; align-items:center; gap:8px; font-weight:700; }
+  .mgmt-tema .warn-dot{ width:8px; height:8px; border-radius:50%; background:var(--red); flex-shrink:0; }
+  .impact-tag{ font-weight:800; font-size:11.5px; }
+  .impact-tag.alto{ color:var(--red-dark); }
+  .impact-tag.medio{ color:#b06a10; }
+  .decision-btn{
+    border:none; border-radius:7px; padding:7px 14px;
+    font-size:11.5px; font-weight:800; color:#fff; cursor:pointer;
     white-space:nowrap;
   }
-  table.data-table tbody tr:nth-child(even){background:#fafbfd;}
-  table.data-table tbody tr:hover{background:#eef4fc;}
-  .data-card{margin-bottom:16px;}
-.kpi-strip{
-  display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:16px;
-}
-@media (max-width: 900px){ .kpi-strip{ grid-template-columns:repeat(2, 1fr); } }
-.kpi-strip-item{
-  background:#fff; border-radius:12px; padding:14px 16px; border-top:3px solid var(--c, #ccc);
-  box-shadow:0 1px 3px rgba(20,25,35,0.06); position:relative; overflow:hidden; min-height:88px;
-}
-.kpi-strip-item.is-empty{ opacity:0.62; }
-.ksi-label{font-size:11px; font-weight:700; letter-spacing:.02em; color:#6b7280; text-transform:uppercase;}
-.ksi-value{font-size:21px; font-weight:800; color:#1b2733; margin-top:4px;}
-.ksi-delta{font-size:11px; font-weight:700; margin-top:2px;}
-.ksi-delta.pos{color:#3EC17A;} .ksi-delta.neg{color:#D9455C;} .ksi-delta.neutral{color:#9aa5b1;}
-.ksi-spark{position:absolute; right:10px; bottom:10px; width:76px; height:28px; opacity:0.85;}
-.ksi-note{font-size:10.5px; color:#9aa5b1; margin-top:4px;}
+  .decision-btn.aprobar{ background:var(--red); }
+  .decision-btn.soporte{ background:var(--orange); }
+  .decision-btn.evaluar{ background:var(--blue); }
+
+  .footer-note{
+    font-size:11px; color:var(--text-faint);
+    margin-top:20px; padding-top:14px; border-top:1px solid var(--border);
+  }
+
+  .placeholder-card{
+    padding:60px 20px; text-align:center; color:var(--text-muted); font-size:14px;
+  }
+  .hidden{ display:none !important; }
 </style>
 </head>
 <body>
 
-<header class="topbar">
-  <h1>
-    <svg width="34" height="30" viewBox="0 0 100 46" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-      <g fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="2.5">
-        <circle cx="18" cy="20" r="13"/>
-        <line x1="12" y1="31" x2="8" y2="40" stroke-width="1.6"/>
-        <line x1="24" y1="31" x2="28" y2="40" stroke-width="1.6"/>
-        <circle cx="50" cy="15" r="15.5"/>
-        <line x1="42" y1="28" x2="37" y2="40" stroke-width="1.6"/>
-        <line x1="58" y1="28" x2="63" y2="40" stroke-width="1.6"/>
-        <circle cx="82" cy="20" r="13"/>
-        <line x1="76" y1="31" x2="72" y2="40" stroke-width="1.6"/>
-        <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.6"/>
-      </g>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg class="flame" width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1.2-.5-2-1-2.6.8.2 3 1.8 3 5.6a6 6 0 0 1-12 0c0-4 2.2-6 3-7.4C11.3 4 12 3 12 2z" fill="#E2492D"/>
     </svg>
-    Abastecimiento | Resumen semanal
-  </h1>
-  <div class="meta-row" id="metaRow">
-    <span class="pill" id="dataStatus">Cargando datos…</span>
+    <span class="name">SOLGAS</span>
   </div>
-</header>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <button class="nav-item active" data-view="resumen">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Resumen Ejecutivo
+    </button>
+    <button class="nav-item" data-view="inventario">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      Inventario &amp; Riesgo
+    </button>
+    <button class="nav-item" data-view="abastecimiento">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17.5" cy="19" r="2"/></svg>
+      Abastecimiento
+    </button>
+    <button class="nav-item" data-view="economico">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Económico
+    </button>
+    <button class="nav-item" data-view="mercado">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg>
+      Mercado
+    </button>
+    <button class="nav-item" data-view="operaciones">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+      Operaciones
+    </button>
+    <button class="nav-item" data-view="proveedores">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Proveedores
+    </button>
+    <button class="nav-item" data-view="config">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      Datos &amp; Configuración
+    </button>
+  </nav>
+  <div class="sidebar-foot">
+    <button class="nav-item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar reporte
+    </button>
+    <button class="nav-item">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+      Notas de la semana
+      <span class="badge-count">3</span>
+    </button>
+  </div>
+</aside>
 
-<main>
-  <div id="errorBanner" class="hidden" style="background:#fdecea;border:1px solid #f5c2c0;color:#a3372c;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px;"></div>
+<main class="content">
 
-  <div id="emptyState" class="empty-msg">
-    Cargando datos desde Supabase…
+  <div class="page-header">
+    <div>
+      <h1>ABASTECIMIENTO | RESUMEN SEMANAL</h1>
+      <div class="subtitle" id="headerSubtitle">Cargando…</div>
+    </div>
+    <div class="header-actions">
+      <button class="pill-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Semana 34 (17 – 23 Ago)
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <button class="pill-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filtros
+      </button>
+    </div>
   </div>
 
-  <div id="dashboardContent" class="hidden">
+  <div id="viewResumen">
 
-    <div class="tabbar">
-      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">Dashboard</button>
-      <button class="tab-btn" id="tabBtnTPG" onclick="switchTab('tpg')">TPG</button>
-      <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">Detalle de datos</button>
-      <button class="tab-btn" id="tabBtnAgregar" onclick="switchTab('agregar')">Agregar datos</button>
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="card kpi-card" id="cardSupplySecurity">
+        <div class="kpi-icon" id="iconSupplySecurity" style="background:var(--green-bg);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><polyline points="9 12 11 14 15 10"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Supply Security</div>
+          <div class="kpi-value" id="kpiSupplyVal" style="color:var(--green);">—</div>
+          <div class="kpi-note" id="kpiSupplyNote">Cargando…</div>
+        </div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-icon" style="background:#eaf1ff;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Cobertura Actual</div>
+          <div class="kpi-value" id="kpiCoberturaVal">—</div>
+          <div class="kpi-note" id="kpiCoberturaNote">Cargando…</div>
+        </div>
+      </div>
+      <div class="card kpi-card" id="cardImpacto" style="cursor:default;">
+        <div class="kpi-icon" style="background:var(--navy); ">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Impacto Económico YTD</div>
+          <div class="kpi-value" id="kpiImpactoVal" style="color:var(--green);">—</div>
+          <div class="kpi-note" id="kpiImpactoNote">Cargando margen por línea de negocio…</div>
+        </div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-icon" style="background:var(--navy);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17.5" cy="19" r="2"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Nivel de Servicio</div>
+          <div class="kpi-value">—</div>
+          <div class="kpi-note">OTIF / NS</div>
+        </div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-icon" style="background:var(--navy);">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>
+        </div>
+        <div>
+          <div class="kpi-label">Seguridad</div>
+          <div class="kpi-value" id="kpiSeguridadVal">—</div>
+          <div class="kpi-note" id="kpiSeguridadNote">Incidentes YTD</div>
+        </div>
+      </div>
     </div>
 
-    <div id="viewResumen">
-    <div class="kpi-strip" id="kpiStrip">
-      <div class="kpi-strip-item" style="--c:#2E6DB4;">
-        <div class="ksi-label">Volumen Despachado (YTD)</div>
-        <div class="ksi-value" id="kpiVolDespVal">—</div>
-        <div class="ksi-delta neutral" id="kpiVolDespDelta"></div>
-      </div>
-      <div class="kpi-strip-item" style="--c:#2FAE8B;">
-        <div class="ksi-label">Margen del Importado</div>
-        <div class="ksi-value" id="kpiMargenVal">—</div>
-        <div class="ksi-delta neutral" id="kpiMargenDelta"></div>
-        <svg class="ksi-spark" id="kpiMargenSpark" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
-      </div>
-      <div class="kpi-strip-item" id="kpiAtencionCard" style="--c:#7C6FCF;">
-        <div class="ksi-label">Tiempo Medio de Atención de Clientes</div>
-        <div class="ksi-value" id="kpiAtencionVal">—</div>
-        <div class="ksi-note" id="kpiAtencionNote">Aún sin fuente de datos conectada</div>
-      </div>
-      <div class="kpi-strip-item" id="kpiAccidentesCard" style="--c:#D9455C;">
-        <div class="ksi-label">Accidentes</div>
-        <div class="ksi-value" id="kpiAccidentesVal">—</div>
-        <div class="ksi-note" id="kpiAccidentesNote">Aún sin fuente de datos conectada</div>
-      </div>
-    </div>
-    <div class="grid wide">
-      <div class="card" style="border-top-color:var(--blue-light); grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3 style="display:flex;align-items:center;gap:6px;">
-              <svg width="24" height="21" viewBox="0 0 100 46" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-                <g fill="rgba(30,79,143,0.12)" stroke="var(--blue)" stroke-width="3">
-                  <circle cx="18" cy="20" r="13"/>
-                  <line x1="12" y1="31" x2="8" y2="40" stroke-width="1.8"/>
-                  <line x1="24" y1="31" x2="28" y2="40" stroke-width="1.8"/>
-                  <circle cx="50" cy="15" r="15.5"/>
-                  <line x1="42" y1="28" x2="37" y2="40" stroke-width="1.8"/>
-                  <line x1="58" y1="28" x2="63" y2="40" stroke-width="1.8"/>
-                  <circle cx="82" cy="20" r="13"/>
-                  <line x1="76" y1="31" x2="72" y2="40" stroke-width="1.8"/>
-                  <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.8"/>
-                </g>
-              </svg>
-              TERMINAL | Proyección de inventarios + 30 d
-            </h3>
-          </div>
-          <div id="stockAlertBadge"></div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartStock"></canvas></div>
-      </div>
-
-      <div class="card" style="border-top-color:var(--teal); grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3>Costos de Referencia del GLP</h3>
-            <div class="sub" id="radBadge"></div>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div id="wedVarBadge"></div>
-            <button class="detail-btn" title="Ver detalle: Variación de precio" onclick="openVariacionModal()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="chart-wrap"><canvas id="chartPPICFR"></canvas></div>
-        <div class="footer-row">
-          <div class="legend-note">*PPI sin RAD</div>
-          <div class="corr-badge" id="ppiCfrChips"></div>
+    <!-- Row 2: Inventario proyectado / Forward-looking risk / Top 3 riesgos -->
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title">Inventario Proyectado | Próximos 30 días <span class="info-dot">i</span></div>
+        <div class="chart-wrap"><canvas id="chartInventario"></canvas></div>
+        <div class="chart-legend" id="chartInventarioLegend">
+          <span><i class="leg-line" style="border-color:var(--blue);"></i>Inventario real</span>
+          <span><i class="leg-line dash" style="border-color:var(--blue);"></i>Inventario proyectado</span>
+          <span><i class="leg-line dash" style="border-color:var(--orange);"></i>Desp. Planeado</span>
+          <span><i class="leg-line dash" style="border-color:var(--green);"></i>POA</span>
+          <span><i class="leg-tri" style="border-bottom-color:var(--green);"></i>Importaciones</span>
+          <span><i class="leg-dot" style="background:var(--navy-2);"></i>Compras Pluspetrol</span>
         </div>
       </div>
 
-      <div class="card" style="border-top-color:var(--orange); grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3 style="display:flex;align-items:center;gap:6px;">
-              <svg width="26" height="19" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-                <g fill="rgba(224,134,46,0.12)" stroke="var(--orange)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
-                  <path d="M8,42 L92,42 L80,60 L20,60 Z"/>
-                  <rect x="55" y="18" width="24" height="24" rx="2"/>
-                  <line x1="67" y1="18" x2="67" y2="6"/>
-                </g>
-                <path d="M4,66 Q17,58 30,66 T56,66 T82,66 T96,66" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round"/>
-              </svg>
-              Primas y volumen de importación
-            </h3>
-          </div>
-          <button class="detail-btn" title="Ver prima ponderada y volumen YTD por competidor" onclick="openPrimaYtdModal()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-          </button>
+      <div class="card">
+        <div class="card-title">Forward-Looking Risk</div>
+        <div class="risk-item">
+          <div class="risk-day">D+7</div>
+          <div class="risk-dot" style="background:var(--green);"></div>
+          <div><div class="risk-level">Riesgo bajo</div><div class="risk-desc">Inventario suficiente</div></div>
         </div>
-        <div class="chart-wrap" style="height:230px;"><canvas id="chartPrima"></canvas></div>
-        <div class="chart-wrap" style="height:190px; margin-top:2px;"><canvas id="chartPrimaVol"></canvas></div>
-        <div class="legend-note">*PPI sin RAD, MB · Franja inferior: volumen importado por competidor (kTM)</div>
+        <div class="risk-item">
+          <div class="risk-day">D+14</div>
+          <div class="risk-dot" style="background:var(--green);"></div>
+          <div><div class="risk-level">Riesgo bajo</div><div class="risk-desc">Arribo importación</div></div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-day">D+21</div>
+          <div class="risk-dot" style="background:var(--yellow);"></div>
+          <div><div class="risk-level">Riesgo medio</div><div class="risk-desc">Alta dependencia Pluspetrol</div></div>
+        </div>
+        <div class="risk-item">
+          <div class="risk-day">D+30</div>
+          <div class="risk-dot" style="background:var(--yellow);"></div>
+          <div><div class="risk-level">Riesgo medio</div><div class="risk-desc">Cobertura &lt; objetivo</div></div>
+        </div>
       </div>
 
-      <div class="modal-overlay" id="primaYtdModalOverlay" onclick="if(event.target===this) closePrimaYtdModal()">
-        <div class="modal-box" style="max-width:360px;">
-          <div class="card-head">
-            <div>
-              <h3 id="primaYtdModalTitle">Prima ponderada</h3>
-              <div class="sub">Por competidor</div>
+      <div class="card">
+        <div class="card-title">Top 3 Riesgos | Próximos 30 días</div>
+        <div class="top-risk">
+          <div class="num">01</div>
+          <div class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M6 22l1.5-9h9L18 22"/><path d="M8 13V9a4 4 0 0 1 8 0v4"/></svg>
+          </div>
+          <div class="body">
+            <div class="title-row">
+              <div class="title">Dependencia Pluspetrol</div>
+              <span class="badge alto">ALTO</span>
             </div>
-            <button class="modal-close" title="Cerrar" onclick="closePrimaYtdModal()">&times;</button>
+            <div class="desc">58% del suministro proyectado en próximos 30 días</div>
+            <div class="impact">Impacto Alto</div>
           </div>
-          <div class="mini-kpi-title" id="primaYtdTitle" style="margin-top:4px;">Prima ponderada</div>
-          <div class="mini-kpi-grid" id="primaYtdGrid"></div>
-          <div class="mini-kpi-title" style="margin-top:16px;">Volumen YTD</div>
-          <div class="mini-kpi-grid" id="volYtdGrid"></div>
         </div>
+        <div class="top-risk">
+          <div class="num" style="background:var(--orange);">02</div>
+          <div class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><path d="M4 20V10l6-3 6 3v10"/><path d="M10 7V4h2v3"/></svg>
+          </div>
+          <div class="body">
+            <div class="title-row">
+              <div class="title">Riesgo marítimo</div>
+              <span class="badge medio">MEDIO</span>
+            </div>
+            <div class="desc">2–3 días de exposición a restricciones operativas</div>
+            <div class="impact">Impacto Medio</div>
+          </div>
+        </div>
+        <div class="top-risk">
+          <div class="num" style="background:var(--orange);">03</div>
+          <div class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>
+          </div>
+          <div class="body">
+            <div class="title-row">
+              <div class="title">Cobertura de inventario</div>
+              <span class="badge medio">MEDIO</span>
+            </div>
+            <div class="desc">Mínimo proyectado 14 días (14 Sep 2026)</div>
+            <div class="impact">Impacto Medio</div>
+          </div>
+        </div>
+        <div class="ver-todos">Ver todos los riesgos <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Supply dependency / sourcing / market intelligence -->
+    <div class="grid-3b">
+      <div class="card">
+        <div class="card-title">Supply Dependency</div>
+        <div class="placeholder-card" style="padding:40px 10px; font-size:12.5px;">Sin fuente de datos conectada aún<br>(% de mercado por proveedor / HHI)</div>
       </div>
 
-      <div class="card" style="border-top-color:var(--purple); grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3>Ocupación de inventarios Mercado</h3>
-            <div class="sub">TM</div>
+      <div class="card">
+        <div class="card-title">Are we sourcing competitively? <span class="info-dot">i</span></div>
+        <div class="sourcing-compare">
+          <div class="sourcing-box solgas">
+            <div class="lbl">Costo ponderado Solgas</div>
+            <div class="val" id="srcSolgasVal">— <span style="font-size:11px; font-weight:600; color:var(--text-muted);">/TM</span></div>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <select id="capacidadFechaSelect"></select>
-            <button class="detail-btn" title="Ver dato del lunes anterior" onclick="openCapacidadModal()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-            </button>
+          <div class="vs-badge">vs.</div>
+          <div class="sourcing-box mkt">
+            <div class="lbl">Benchmark mercado (PPI)</div>
+            <div class="val" id="srcBenchVal">— <span style="font-size:11px; font-weight:600; color:var(--text-muted);">/TM</span></div>
           </div>
         </div>
-        <div id="capacidadGrid" style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 4px;"></div>
+        <div class="advantage-box">
+          <div class="a-lbl">VENTAJA SOLGAS</div>
+          <div class="a-val" id="srcVentajaVal">—</div>
+          <div class="a-sub">YTD VALUE CAPTURED</div>
+          <div class="a-sub-val" id="srcYtdVal">—</div>
+        </div>
+        <div class="chart-wrap" style="height:120px;"><canvas id="chartSourcing"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Market Intelligence</div>
+        <div class="placeholder-card" style="padding:40px 10px; font-size:12.5px;">Sin fuente de datos conectada aún<br>(inventario, importaciones y prima por competidor)</div>
       </div>
     </div>
 
-    </div>
-
-    <div id="viewTPG" class="hidden">
-    <div class="grid">
-      <div class="card" style="border-top-color:var(--purple);">
-        <div class="card-head">
-          <div>
-            <h3 style="display:flex;align-items:center;gap:6px;">
-              <svg width="30" height="18" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-                <g fill="rgba(142,111,206,0.12)" stroke="var(--purple)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
-                  <rect x="26" y="14" width="70" height="26" rx="13"/>
-                  <path d="M96,20 h14 l6,10 v10 h-20 z"/>
-                </g>
-                <line x1="26" y1="27" x2="96" y2="27" stroke="var(--purple)" stroke-width="2" opacity="0.5"/>
-                <circle cx="42" cy="46" r="7" fill="white" stroke="var(--purple)" stroke-width="4"/>
-                <circle cx="74" cy="46" r="7" fill="white" stroke="var(--purple)" stroke-width="4"/>
-                <circle cx="104" cy="46" r="7" fill="white" stroke="var(--purple)" stroke-width="4"/>
-              </svg>
-              Mix de abastecimiento semanal
-            </h3>
-            <div class="sub">Volumen por destino y fuente (%)</div>
-          </div>
-          <select id="mixWeekSelect"></select>
+    <!-- Row 4: Operational performance -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:14px;">Operational Performance</div>
+      <div class="op-grid">
+        <div class="op-item">
+          <div class="lbl">Nivel de servicio</div>
+          <div class="sub">OTIF / NS</div>
+          <div class="big" id="opNivelVal">—</div>
+          <div class="target" id="opNivelNote">Sin fuente de datos conectada aún</div>
+          <svg class="spark" id="spark1" viewBox="0 0 100 26" preserveAspectRatio="none"></svg>
         </div>
-        <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
-      </div>
-
-      <div class="card" style="border-top-color:var(--orange);">
-        <div class="card-head">
-          <div>
-            <h3 style="display:flex;align-items:center;gap:6px;">
-              <svg width="20" height="20" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-                <circle cx="30" cy="30" r="24" fill="rgba(224,134,46,0.12)" stroke="var(--orange)" stroke-width="4"/>
-                <path d="M30,14 V30 L41,38" fill="none" stroke="var(--orange)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Tiempo de espera PlusPetrol
-            </h3>
-            <div class="sub">Horas promedio por semana</div>
-          </div>
+        <div class="op-item">
+          <div class="lbl">Tiempo atención</div>
+          <div class="sub">Promedio</div>
+          <div class="big" id="opAtencionVal">—</div>
+          <div class="target" id="opAtencionNote">Cargando…</div>
+          <svg class="spark" id="spark2" viewBox="0 0 100 26" preserveAspectRatio="none"></svg>
         </div>
-        <div class="chart-wrap"><canvas id="chartEspera"></canvas></div>
+        <div class="op-item">
+          <div class="lbl">Espera Pluspetrol</div>
+          <div class="sub">Tiempo promedio</div>
+          <div class="big" id="opEsperaVal">—</div>
+          <div class="target" id="opEsperaNote">Cargando…</div>
+          <svg class="spark" id="spark3" viewBox="0 0 100 26" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="op-item">
+          <div class="lbl">Utilización de flota</div>
+          <div class="sub">Promedio</div>
+          <div class="big" id="opFlotaVal">—</div>
+          <div class="target" id="opFlotaNote">Sin fuente de datos conectada aún</div>
+          <svg class="spark" id="spark4" viewBox="0 0 100 26" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="op-item">
+          <div class="lbl">Confiabilidad PVEN</div>
+          <div class="sub">Disponibilidad</div>
+          <div class="big" id="opPvenVal">—</div>
+          <div class="target" id="opPvenNote">Sin fuente de datos conectada aún</div>
+          <svg class="spark" id="spark5" viewBox="0 0 100 26" preserveAspectRatio="none"></svg>
+        </div>
       </div>
     </div>
+
+    <!-- Row 5: Management attention required -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">Management Attention Required</div>
+      <table class="mgmt-table">
+        <thead><tr><th>Tema</th><th>Situación</th><th>Impacto</th><th>Acción propuesta</th><th>Decisión requerida</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="mgmt-tema"><span class="warn-dot"></span>Importación Sep</div></td>
+            <td>Cobertura cae a 14 días el 14-Sep</td>
+            <td><span class="impact-tag alto">Alto</span></td>
+            <td>Adelantar arribo de 3kTM desde buque Sep</td>
+            <td><button class="decision-btn aprobar">Aprobar</button></td>
+          </tr>
+          <tr>
+            <td><div class="mgmt-tema"><span class="warn-dot" style="background:var(--orange);"></span>Pluspetrol</div></td>
+            <td>Aumento de espera +2.1h vs semana anterior</td>
+            <td><span class="impact-tag medio">Medio</span></td>
+            <td>Escalar con proveedor y evaluar ventanas</td>
+            <td><button class="decision-btn soporte">Soporte GG</button></td>
+          </tr>
+          <tr>
+            <td><div class="mgmt-tema"><span class="warn-dot" style="background:var(--orange);"></span>PVEN</div></td>
+            <td>Capacidad limitada en periodos pico</td>
+            <td><span class="impact-tag medio">Medio</span></td>
+            <td>Evaluar mejora de capacidad (CAPEX US$650k)</td>
+            <td><button class="decision-btn evaluar">Evaluar</button></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <div id="viewDetalle" class="hidden">
-      <div class="section-title">Detalle de datos</div>
-      <div id="detalleTables"></div>
-    </div>
-
-    <div id="viewAgregar" class="hidden">
-      <div class="section-title">Agregar / editar datos</div>
-      <div class="card" style="grid-column: 1 / -1; margin-bottom:16px;">
-        <div class="card-head">
-          <div>
-            <h3>Fuente de datos</h3>
-            <div class="sub">Elige la tabla de Supabase que quieres revisar, editar o completar</div>
-          </div>
-        </div>
-        <select id="agregarTableSelect" style="margin-top:6px; padding:8px 12px; border-radius:8px; border:1px solid #d8dce2; font-size:13px; min-width:280px;"></select>
-        <span id="agregarStatus" style="margin-left:12px; font-size:12.5px; color:#6b7280;"></span>
-      </div>
-
-      <div class="card" id="agregarNewRowCard" style="grid-column: 1 / -1; margin-bottom:16px; border-top-color:var(--green);">
-        <div class="card-head">
-          <div>
-            <h3>Agregar fila nueva</h3>
-            <div class="sub">Completa los campos y presiona Agregar</div>
-          </div>
-        </div>
-        <div id="agregarNewRowForm" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;"></div>
-      </div>
-
-      <div class="card" style="grid-column: 1 / -1;">
-        <div class="card-head">
-          <div>
-            <h3>Registros existentes</h3>
-            <div class="sub" id="agregarGridSub">—</div>
-          </div>
-        </div>
-        <div id="agregarGridWrap"></div>
-      </div>
+    <div class="footer-note">
+      Notas: Coberturas calculadas en base a demanda promedio móvil 4 semanas. Inventario expresado en % del objetivo operativo. &nbsp;|&nbsp; Fuentes: Supabase, PVEN, Operaciones.
     </div>
 
   </div>
+
+  <div id="viewMercado" class="hidden">
+    <div class="card" style="border-top-color:var(--purple);">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <span>Ocupación de inventarios Mercado (TM)</span>
+        <select id="capacidadFechaSelect" style="font-size:12px; border:1px solid var(--border); border-radius:8px; padding:5px 10px; color:var(--text-dark); background:#f8fafc;"></select>
+      </div>
+      <div id="capacidadGrid" style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 4px;"></div>
+    </div>
+  </div>
+
+  <div id="viewPlaceholder" class="hidden">
+    <div class="card placeholder-card" id="placeholderCard">Próximamente</div>
+  </div>
+
 </main>
 
-<div class="modal-overlay" id="variacionModalOverlay" onclick="if(event.target===this) closeVariacionModal()">
-  <div class="modal-box">
-    <div class="card-head">
-      <div>
-        <h3>Precios de Referencia del Mercado | Tendencia</h3>
-        <div class="sub">Variación por período USD/TM</div>
-      </div>
-      <button class="modal-close" title="Cerrar" onclick="closeVariacionModal()">&times;</button>
-    </div>
-    <div class="chart-wrap"><canvas id="chartVariacionModal"></canvas></div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="capacidadModalOverlay" onclick="if(event.target===this) closeCapacidadModal()">
-  <div class="modal-box">
-    <div class="card-head">
-      <div>
-        <h3>Capacidad de proveedores · Semana anterior</h3>
-        <div class="sub" id="capacidadModalSub">—</div>
-      </div>
-      <button class="modal-close" title="Cerrar" onclick="closeCapacidadModal()">&times;</button>
-    </div>
-    <div id="capacidadModalBody"></div>
-  </div>
-</div>
-
-
 <script>
-const COLORS = {
-  blue:'#2E6DB4', blueLight:'#3FA0D8', blueMid:'#3B7FC4',
-  teal:'#2FAE8B', orange:'#E15B77', purple:'#7C6FCF',
-  green:'#3EC17A', red:'#D9455C', gray:'#9aa5b1'
+const NAV_LABELS = {
+  inventario:'Inventario & Riesgo', abastecimiento:'Abastecimiento', economico:'Económico',
+  mercado:'Mercado', operaciones:'Operaciones', proveedores:'Proveedores', config:'Datos & Configuración'
 };
 
-Chart.defaults.font.family = "'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
-Chart.defaults.font.size = 11;
-Chart.defaults.color = '#6b7280';
-
-if(typeof ChartDataLabels !== 'undefined'){
-  Chart.register(ChartDataLabels);
-  Chart.defaults.plugins.datalabels.display = false;
-}
-
-let charts = {};
-let DATA = {};
-
-// =====================================================================
-// CONFIGURACIÓN DE SUPABASE — reemplaza estos dos valores con los de tu
-// proyecto (Project Settings → API en supabase.com), y corre antes el
-// archivo supabase_setup.sql en el SQL Editor de tu proyecto.
-// =====================================================================
-const SUPABASE_URL = 'https://cbhikyyryeaciqxpflee.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_pYUMLyW60H16zNUORrWi_A_SNmjFrKi';
-
-const sb = (SUPABASE_URL.startsWith('http') && !SUPABASE_ANON_KEY.startsWith('TU_'))
-  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-
-window.addEventListener('load', async ()=>{
-  librariesReady();
-  await loadAllFromSupabase();
+document.querySelectorAll('#sidebarNav .nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#sidebarNav .nav-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.getElementById('viewResumen').classList.toggle('hidden', view!=='resumen');
+    document.getElementById('viewMercado').classList.toggle('hidden', view!=='mercado');
+    document.getElementById('viewPlaceholder').classList.toggle('hidden', view==='resumen' || view==='mercado');
+    if(view!=='resumen' && view!=='mercado'){
+      document.getElementById('placeholderCard').textContent = (NAV_LABELS[view] || view) + ' — Próximamente';
+    }
+  });
 });
 
-async function loadAllFromSupabase(){
-  if(!sb){
-    document.getElementById('dataStatus').textContent = 'Falta configurar Supabase';
-    document.getElementById('emptyState').textContent = 'Este archivo aún no tiene configurado Supabase: completa SUPABASE_URL y SUPABASE_ANON_KEY en el código (ver comentario arriba).';
+Chart.register(ChartDataLabels);
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
+Chart.defaults.plugins.datalabels.display = false;
+
+const COLORS = { blue:'#2f6fed', red:'#e2492d', green:'#1ca860', orange:'#f2994a', navy2:'#16233d', gray:'#98a2b3' };
+
+/* ---------------- Inventario proyectado (datos reales: tabla stock_diario) ---------------- */
+function pad2(n){ return String(n).padStart(2,'0'); }
+function isoDate(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function fmt1(v){ return Number(v).toLocaleString('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function fmtInt(v){ return String(Math.round(Number(v))); }
+function getISOWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(),0,4));
+  return 1 + Math.round((d - firstThursday) / (7*24*3600*1000));
+}
+
+const today = new Date(); today.setHours(0,0,0,0);
+
+let invChart = null;
+let invDates = [];
+let invLabels = [];
+let invValueByIndex = [];
+const importMarker = [];
+const importLabelVal = [];
+const compraMarker = [];
+const compraLabelVal = [];
+
+function renderInventarioChart(stockRows){
+  const wrap = document.querySelector('#chartInventario').closest('.chart-wrap');
+  if(!stockRows || !stockRows.length){
+    wrap.innerHTML = '<div class="placeholder-card" style="padding:30px 10px;">Sin datos aún en stock_diario</div>';
+    document.getElementById('chartInventarioLegend').classList.add('hidden');
     return;
   }
-  try{
-    const [stock, prima, margen, mix, ppiCfr, espera, variacion, despacho, datosPpal] = await Promise.all([
-      sb.from('stock_diario').select('*').order('fecha'),
-      sb.from('prima_mensual').select('*').order('Fecha'),
-      sb.from('margen_mensual').select('*').order('mes'),
-      sb.from('mix_abastecimiento').select('*').order('semana'),
-      sb.from('ppi_cfr').select('*').order('periodo'),
-      sb.from('espera_pluspetrol').select('*').order('semana'),
-      sb.from('variacion_precio').select('*').order('periodo'),
-      sb.from('despacho').select('*').order('fecha'),
-      sb.from('datos_ppal').select('*').order('mes'),
-    ]);
-    for(const res of [stock, prima, margen, mix, ppiCfr, espera, variacion, despacho, datosPpal]){
-      if(res.error) throw res.error;
+
+  invDates = stockRows.map(r=>{ const [y,m,d] = String(r.fecha).split('-').map(Number); return new Date(y, m-1, d); });
+  invLabels = invDates.map(d=> d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace('.',''));
+
+  const realVals = stockRows.map((r,i)=> invDates[i] <= today ? r.inventario : null);
+  const proyVals  = stockRows.map((r,i)=> invDates[i] >= today ? r.inventario : null);
+  const despVals  = stockRows.map(r=> r.despPlaneado);
+  const poaVals   = stockRows.map(r=> r.poa);
+  invValueByIndex = stockRows.map(r=> r.inventario);
+
+  importMarker.length = 0; importMarker.push(...new Array(invLabels.length).fill(null));
+  importLabelVal.length = 0; importLabelVal.push(...new Array(invLabels.length).fill(null));
+  compraMarker.length = 0; compraMarker.push(...new Array(invLabels.length).fill(null));
+  compraLabelVal.length = 0; compraLabelVal.push(...new Array(invLabels.length).fill(null));
+
+  let todayIdx = invDates.findIndex(d=> isoDate(d)===isoDate(today));
+  if(todayIdx===-1) todayIdx = invDates.findIndex(d=> d >= today);
+  const riskIdx = stockRows.findIndex((r,i)=> invDates[i] >= today && r.despPlaneado>0 && r.inventario!=null && r.inventario < r.despPlaneado);
+
+  const hoyMarker = new Array(invLabels.length).fill(null);
+  const hoyLabel = new Array(invLabels.length).fill(null);
+  if(todayIdx!==-1){
+    hoyMarker[todayIdx] = invValueByIndex[todayIdx];
+    const wd = today.toLocaleDateString('es-PE',{weekday:'long'});
+    hoyLabel[todayIdx] = `Hoy · ${wd.charAt(0).toUpperCase()+wd.slice(1)} ${today.getDate()}`;
+  }
+  const riesgoMarker = new Array(invLabels.length).fill(null);
+  const riesgoLabel = new Array(invLabels.length).fill(null);
+  if(riskIdx!==-1){
+    riesgoMarker[riskIdx] = invValueByIndex[riskIdx];
+    riesgoLabel[riskIdx] = `Riesgo · ${invLabels[riskIdx]}`;
+  }
+
+  invChart = new Chart(document.getElementById('chartInventario'), {
+    type:'line',
+    data:{
+      labels:invLabels,
+      datasets:[
+        {label:'Inventario real', data:realVals, borderColor:COLORS.blue, backgroundColor:'rgba(47,111,237,0.12)',
+          borderWidth:2.25, pointRadius:0, tension:.3, fill:true, order:1, datalabels:{display:false}},
+        {label:'Inventario proyectado', data:proyVals, borderColor:COLORS.blue, backgroundColor:'rgba(47,111,237,0.08)',
+          borderWidth:2.25, borderDash:[6,4], pointRadius:0, tension:.3, fill:true, order:1, datalabels:{display:false}},
+        {label:'Desp. Planeado', data:despVals, borderColor:COLORS.orange, backgroundColor:'transparent',
+          borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:0, fill:false, order:2, datalabels:{display:false}},
+        {label:'POA', data:poaVals, borderColor:COLORS.green, backgroundColor:'transparent',
+          borderWidth:1.5, borderDash:[5,4], pointRadius:0, tension:0, fill:false, order:2, datalabels:{display:false}},
+        {label:'Importación', data:importMarker, showLine:false, pointStyle:'triangle', pointRadius:7, pointBackgroundColor:COLORS.green, pointBorderColor:COLORS.green, order:0,
+          datalabels:{
+            display:ctx=>importMarker[ctx.dataIndex]!=null,
+            align:'top', anchor:'end', color:COLORS.green, font:{weight:'700',size:9.5},
+            formatter:(v,ctx)=>['Importación', fmt1(importLabelVal[ctx.dataIndex])+' kTM']
+          }},
+        {label:'Compra Pluspetrol', data:compraMarker, showLine:false, pointStyle:'circle', pointRadius:5, pointBackgroundColor:COLORS.navy2, pointBorderColor:COLORS.navy2, order:0,
+          datalabels:{
+            display:ctx=>compraMarker[ctx.dataIndex]!=null,
+            align:'top', anchor:'end', color:COLORS.navy2, font:{weight:'700',size:9.5},
+            formatter:(v,ctx)=>['Compra Pluspetrol', fmt1(compraLabelVal[ctx.dataIndex])+' kTM']
+          }},
+        {label:'Hoy', data:hoyMarker, showLine:false, pointStyle:'rectRot', pointRadius:5, pointBackgroundColor:COLORS.navy2, pointBorderColor:COLORS.navy2, order:0,
+          datalabels:{
+            display:ctx=>hoyMarker[ctx.dataIndex]!=null,
+            align:'top', anchor:'end', color:COLORS.navy2, font:{weight:'700',size:9.5},
+            formatter:(v,ctx)=>hoyLabel[ctx.dataIndex]
+          }},
+        {label:'Riesgo', data:riesgoMarker, showLine:false, pointStyle:'triangle', rotation:180, pointRadius:6, pointBackgroundColor:COLORS.red, pointBorderColor:COLORS.red, order:0,
+          datalabels:{
+            display:ctx=>riesgoMarker[ctx.dataIndex]!=null,
+            align:'bottom', anchor:'end', color:COLORS.red, font:{weight:'700',size:9.5},
+            formatter:(v,ctx)=>riesgoLabel[ctx.dataIndex]
+          }},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:30, bottom:14}},
+      interaction:{mode:'index', intersect:false},
+      plugins:{ legend:{display:false}, tooltip:{filter:it=>it.raw!=null} },
+      scales:{
+        x:{grid:{display:false}, ticks:{callback:(v,i)=> i%7===0 ? invLabels[i] : '', font:{size:10}}},
+        y:{grid:{color:'#eef1f6'}, title:{display:true, text:'kTM', font:{size:10.5}}, ticks:{font:{size:10}}}
+      }
     }
-    DATA.stock = stock.data.map(r=>({fecha:r.fecha, inventario:num(r.inventario), despPlaneado:num(r.desp_planeado), poa:num(r.poa)}));
-    DATA.prima = prima.data.map(r=>({
-      fecha:r.Fecha ?? r.fecha,
-      solgas:num(r.solgas), ppi:num(r.ppi), plusPetrol:num(r.plus_petrol), primax:num(r.primax), zetaGas:num(r.zeta_gas),
-      volSolgas:num(r.volumen_solgas), volPlus:num(r.volumen_plus), volPrimax:num(r.volumen_primax), volZeta:num(r.volumen_zeta)
-    }));
-    DATA.margen = margen.data.map(r=>({mes:r.mes, mesMM:num(r.mes_mm), mesUSDTM:num(r.mes_usdtm), ytdMM:num(r.ytd_mm), ytdUSDTM:num(r.ytd_usdtm)}));
-    DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
-    DATA.ppiCfr = ppiCfr.data.map(r=>({periodo:r.periodo, ppi:num(r.ppi), cfr:num(r.cfr), mb:num(r.MB ?? r.mb), fca:num(r.FCA ?? r.fca)}));
-    DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
-    DATA.variacion = variacion.data.map(r=>({periodo:r.periodo, mb:num(r.mb), ppc:num(r.ppc), proyectada:num(r.proyectada), ppcFcaCallao:num(r.ppc_fca_callao)}));
-    DATA.despacho = despacho.data.map(r=>({fecha:r.fecha, despacho:num(r.despacho), despacho2025:num(r.despacho_2025)}));
-    DATA.datosPpal = datosPpal.data.map(r=>({mes:r.mes, tiempoAtencion:num(r.tiempo_atencion), accidentes:num(r.accidentes)}));
+  });
+}
 
-    await loadCapacidadProveedores();
+function fmtDMY(d){ return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'}).replace('.',''); }
 
-    document.getElementById('dataStatus').textContent = 'Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    document.getElementById('emptyState').classList.add('hidden');
-    document.getElementById('dashboardContent').classList.remove('hidden');
-    renderAll();
-  }catch(err){
-    showError('No se pudo conectar con la base de datos: ' + err.message);
+// Cobertura (días) = inventario / desp. planeado de ese día. Quiebre = inventario < desp. planeado.
+function renderSupplyStatus(stockRows){
+  const valEl = document.getElementById('kpiSupplyVal');
+  const noteEl = document.getElementById('kpiSupplyNote');
+  const cardEl = document.getElementById('cardSupplySecurity');
+  const iconEl = document.getElementById('iconSupplySecurity');
+  const covValEl = document.getElementById('kpiCoberturaVal');
+  const covNoteEl = document.getElementById('kpiCoberturaNote');
+
+  const windowRows = stockRows
+    .map(r=>{ const [y,m,d] = String(r.fecha).split('-').map(Number); return {...r, date:new Date(y,m-1,d)}; })
+    .filter(r=> r.date >= today)
+    .sort((a,b)=> a.date - b.date);
+
+  if(!windowRows.length){
+    valEl.textContent = '—'; noteEl.textContent = 'Sin datos de stock_diario para los próximos 30 días';
+    covValEl.textContent = '—'; covNoteEl.textContent = 'Sin datos';
+    return;
+  }
+
+  const coverage = windowRows.map(r=> (r.despPlaneado>0 && r.inventario!=null) ? r.inventario/r.despPlaneado : null);
+  const todayCoverage = coverage[0];
+  covValEl.textContent = todayCoverage==null ? '—' : Math.round(todayCoverage) + ' días';
+
+  let minCov = null, minRow = null;
+  windowRows.forEach((r,i)=>{
+    if(coverage[i]!=null && (minCov===null || coverage[i] < minCov)){ minCov = coverage[i]; minRow = r; }
+  });
+  covNoteEl.textContent = minCov==null ? 'Sin datos suficientes'
+    : `Mín. proyectado: ${Math.round(minCov)} días (${fmtDMY(minRow.date)})`;
+
+  const breachRow = windowRows.find((r,i)=> r.despPlaneado>0 && r.inventario!=null && r.inventario < r.despPlaneado);
+
+  if(breachRow){
+    valEl.textContent = 'EN RIESGO';
+    valEl.style.color = 'var(--red)';
+    cardEl.style.borderTopColor = 'var(--red)';
+    iconEl.style.background = 'var(--red-bg)';
+    iconEl.querySelector('svg').setAttribute('stroke', 'var(--red)');
+    noteEl.textContent = `Quiebre proyectado el ${fmtDMY(breachRow.date)}: inventario por debajo del despacho planeado.`;
+  } else {
+    valEl.textContent = 'CONTROLADO';
+    valEl.style.color = 'var(--green)';
+    cardEl.style.borderTopColor = '';
+    iconEl.style.background = 'var(--green-bg)';
+    iconEl.querySelector('svg').setAttribute('stroke', 'var(--green)');
+    noteEl.textContent = 'No se proyectan quiebres de inventario en los próximos 30 días.';
   }
 }
 
-// Detecta la columna de capacidad de cada tabla (cap_zeta, cap_tdp, cap_plus, o "capacidad" genérico)
-function extractCapRow(r){
-  const capKey = Object.keys(r).find(k=>/^cap/i.test(k));
-  return {
-    fecha: r.fecha,
-    capacidad: num(capKey ? r[capKey] : r.capacidad),
-    inventario: num(r.inventario)
-  };
-}
-
-async function loadCapacidadProveedores(){
-  DATA.capacidad = {solgas:[], zeta:[], tdp:[], plus:[]};
-  try{
-    const [solgas, zeta, tdp, plus] = await Promise.all([
-      sb.from('inv_solgas').select('*').order('fecha'),
-      sb.from('inv_zeta').select('*').order('fecha'),
-      sb.from('inv_tdp').select('*').order('fecha'),
-      sb.from('inv_plus').select('*').order('fecha'),
-    ]);
-    for(const res of [solgas, zeta, tdp, plus]){
-      if(res.error) throw res.error;
-    }
-    DATA.capacidad.solgas = solgas.data.map(extractCapRow);
-    DATA.capacidad.zeta = zeta.data.map(extractCapRow);
-    DATA.capacidad.tdp = tdp.data.map(extractCapRow);
-    DATA.capacidad.plus = plus.data.map(extractCapRow);
-  }catch(err){
-    console.warn('No se pudo cargar capacidad de proveedores:', err.message);
-  }
-}
-
-function showError(msg){
-  const el = document.getElementById('errorBanner');
-  el.textContent = '⚠️ ' + msg;
-  el.classList.remove('hidden');
-}
-
-function librariesReady(){
-  if(typeof Chart === 'undefined'){
-    showError('No se pudo cargar la librería de gráficos (Chart.js). Revisa tu conexión a internet y recarga la página.');
-    return false;
-  }
-  if(typeof supabase === 'undefined'){
-    showError('No se pudo cargar la librería de Supabase. Revisa tu conexión a internet y recarga la página.');
-    return false;
-  }
-  return true;
-}
+/* ---------------- Sourcing comparison (datos reales: tabla prima_mensual) ---------------- */
+const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let sourcingChart = null;
 
 function num(v){
   if(v===null||v===undefined||v==='') return null;
@@ -854,1047 +951,267 @@ function num(v){
   return isNaN(n) ? null : n;
 }
 
-function parseLocalDate(v){
-  if(v instanceof Date) return v;
-  const s = String(v);
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
-  return null;
+function renderSourcingCard(primaRows){
+  const wrap = document.querySelector('#chartSourcing').closest('.chart-wrap');
+  if(!primaRows || !primaRows.length){
+    document.getElementById('srcSolgasVal').innerHTML = '—';
+    document.getElementById('srcBenchVal').innerHTML = '—';
+    document.getElementById('srcVentajaVal').textContent = '—';
+    document.getElementById('srcYtdVal').textContent = '—';
+    wrap.innerHTML = '<div class="placeholder-card" style="padding:20px 10px; font-size:12px;">Sin datos aún en prima_mensual</div>';
+    return;
+  }
+
+  const year = today.getFullYear();
+  const ytdRows = primaRows.filter(r=>{
+    const [y,m] = String(r.fecha).split('-').map(Number);
+    return y===year && (m-1)<=today.getMonth();
+  });
+
+  const wSum = ytdRows.reduce((s,r)=> s + (r.solgas!=null && r.volSolgas!=null ? r.solgas*r.volSolgas : 0), 0);
+  const wVol = ytdRows.reduce((s,r)=> s + (r.solgas!=null && r.volSolgas!=null ? r.volSolgas : 0), 0);
+  const costoSolgas = wVol>0 ? wSum/wVol : null;
+
+  const ppiVals = ytdRows.map(r=>r.ppi).filter(v=>v!=null);
+  const benchmark = ppiVals.length ? ppiVals.reduce((a,b)=>a+b,0)/ppiVals.length : null;
+
+  document.getElementById('srcSolgasVal').innerHTML = costoSolgas==null ? '—' : `US$ ${fmtInt(costoSolgas)} <span style="font-size:11px; font-weight:600; color:var(--text-muted);">/TM</span>`;
+  document.getElementById('srcBenchVal').innerHTML = benchmark==null ? '—' : `US$ ${fmtInt(benchmark)} <span style="font-size:11px; font-weight:600; color:var(--text-muted);">/TM</span>`;
+
+  if(costoSolgas!=null && benchmark!=null){
+    const ventaja = benchmark - costoSolgas;
+    const ytdValue = ventaja * wVol / 1e6;
+    document.getElementById('srcVentajaVal').textContent = `${ventaja>=0?'+':''}US$ ${fmtInt(Math.abs(ventaja))} /TM`;
+    document.getElementById('srcVentajaVal').style.color = ventaja>=0 ? 'var(--green)' : 'var(--red)';
+    document.getElementById('srcYtdVal').textContent = `${ytdValue>=0?'+':''}US$ ${fmt1(Math.abs(ytdValue))} MM`;
+    document.getElementById('srcYtdVal').style.color = ytdValue>=0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    document.getElementById('srcVentajaVal').textContent = '—';
+    document.getElementById('srcYtdVal').textContent = '—';
+  }
+
+  // Serie mensual (año actual) para el mini-gráfico
+  const byMonth = {};
+  primaRows.forEach(r=>{
+    const [y,m] = String(r.fecha).split('-').map(Number);
+    if(y!==year) return;
+    const mi = m-1;
+    byMonth[mi] = byMonth[mi] || {wSum:0, wVol:0, ppiSum:0, ppiN:0};
+    if(r.solgas!=null && r.volSolgas!=null){ byMonth[mi].wSum += r.solgas*r.volSolgas; byMonth[mi].wVol += r.volSolgas; }
+    if(r.ppi!=null){ byMonth[mi].ppiSum += r.ppi; byMonth[mi].ppiN += 1; }
+  });
+  const months = Object.keys(byMonth).map(Number).sort((a,b)=>a-b);
+  const mLabels = months.map(mi=> MESES_CORTO[mi]);
+  const mSolgas = months.map(mi=> byMonth[mi].wVol>0 ? byMonth[mi].wSum/byMonth[mi].wVol : null);
+  const mBench  = months.map(mi=> byMonth[mi].ppiN>0 ? byMonth[mi].ppiSum/byMonth[mi].ppiN : null);
+
+  if(sourcingChart) sourcingChart.destroy();
+  sourcingChart = new Chart(document.getElementById('chartSourcing'), {
+    type:'line',
+    data:{
+      labels:mLabels,
+      datasets:[
+        {label:'Benchmark mercado (PPI)', data:mBench, borderColor:COLORS.gray, backgroundColor:'transparent', borderWidth:1.75, pointRadius:0, tension:.3},
+        {label:'Solgas', data:mSolgas, borderColor:COLORS.blue, backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.3},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'bottom', labels:{boxWidth:10, padding:8, font:{size:10}}}, datalabels:{display:false} },
+      scales:{
+        x:{grid:{display:false}, ticks:{font:{size:9.5}}},
+        y:{grid:{color:'#eef1f6'}, ticks:{font:{size:9.5}}, title:{display:true, text:'US$/TM', font:{size:9.5}}}
+      }
+    }
+  });
 }
 
-function fmtDDMM(v){
-  const s = String(v);
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(m) return m[3] + '/' + m[2];
-  if(v instanceof Date) return String(v.getDate()).padStart(2,'0') + '/' + String(v.getMonth()+1).padStart(2,'0');
-  return s;
-}
-
-function fmtPeriodo(v){
-  if(v instanceof Date){
-    return v.toLocaleDateString('es-PE',{day:'2-digit',month:'short'});
-  }
-  if(typeof v === 'number'){
-    return 'Sem ' + v;
-  }
-  const s = String(v);
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(m){
-    const d = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
-    if(!isNaN(d)) return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'});
-  }
-  if(/^\d{4}-W?\d{1,2}$/i.test(s)) return 'Sem ' + s.split(/-W?/i)[1];
-  return s;
-}
-
-const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
-function fmtMes(v){
-  if(v instanceof Date) return MESES[v.getMonth()] + ' ' + String(v.getFullYear()).slice(2);
-  const s = String(v);
-  const m = s.match(/^(\d{4})-(\d{2})/);
-  if(m){
-    const monthIdx = parseInt(m[2],10) - 1;
-    if(MESES[monthIdx]) return MESES[monthIdx] + ' ' + m[1].slice(2);
-  }
-  return s;
-}
-
-function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
-
-function sparkPath(values, w, h){
-  const vals = values.filter(v=>v!=null);
-  if(vals.length < 2) return '';
+/* ---------------- Sparklines (operational performance) ---------------- */
+function drawSpark(id, values, color){
+  const svg = document.getElementById(id);
+  const vals = values.filter(v=>v!=null && !isNaN(v));
+  if(vals.length < 2){ svg.innerHTML = ''; return; }
+  const w=100, h=26;
   const min = Math.min(...vals), max = Math.max(...vals);
   const range = (max-min) || 1;
-  const step = w / (values.length-1);
-  let d = '', started = false;
-  values.forEach((v,i)=>{
-    if(v==null) return;
-    const x = i*step;
-    const y = h - ((v-min)/range)*h;
-    d += (started ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
-    started = true;
+  const step = w/(vals.length-1);
+  let d = '';
+  vals.forEach((v,i)=>{
+    const x = i*step, y = h - ((v-min)/range)*h;
+    d += (i===0?'M':'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
   });
-  return d.trim();
-}
-function drawSpark(svgId, values, color){
-  const svg = document.getElementById(svgId);
-  if(!svg) return;
-  const w=100, h=30;
-  const d = sparkPath(values, w, h);
-  svg.innerHTML = d ? `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` : '';
+  svg.innerHTML = `<path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
-function renderKPIHeader(){
-  // --- Volumen Despachado (YTD): tabla 'despacho', comparado vs. despacho_2025 ---
-  const desp = DATA.despacho || [];
-  const lastDespDate = desp.length ? parseLocalDate(desp[desp.length-1].fecha) : null;
-  if(lastDespDate){
-    const year = lastDespDate.getFullYear();
-    const ytdRows = desp.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===year; });
-    const totalDesp = ytdRows.reduce((s,r)=> s + (r.despacho||0), 0);
-    const totalDesp2025 = ytdRows.reduce((s,r)=> s + (r.despacho2025||0), 0);
-    document.getElementById('kpiVolDespVal').textContent = fmt0(totalDesp/1000) + ' kTM';
-
-    const elDelta = document.getElementById('kpiVolDespDelta');
-    if(totalDesp2025>0){
-      const pct = ((totalDesp-totalDesp2025)/totalDesp2025)*100;
-      elDelta.textContent = `${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(1)}% vs 2025`;
-      elDelta.className = 'ksi-delta ' + (pct>=0?'pos':'neg');
-    } else {
-      elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
-    }
-  }
-
-  // --- Margen del Importado: YTD USD/TM, con histórico mensual como sparkline ---
-  const margen = DATA.margen || [];
-  if(margen.length){
-    const last = margen[margen.length-1];
-    document.getElementById('kpiMargenVal').textContent = last.ytdUSDTM==null ? '—' : fmt1(last.ytdUSDTM)+' USD/TM';
-    drawSpark('kpiMargenSpark', margen.map(r=>r.mesUSDTM), '#2FAE8B');
-    const prev = margen.length>1 ? margen[margen.length-2] : null;
-    const elDelta = document.getElementById('kpiMargenDelta');
-    if(prev && prev.mesUSDTM!=null && last.mesUSDTM!=null){
-      const diff = last.mesUSDTM - prev.mesUSDTM;
-      elDelta.textContent = `${diff>=0?'▲':'▼'} ${fmt1(Math.abs(diff))} USD/TM vs mes anterior`;
-      elDelta.className = 'ksi-delta ' + (diff>=0?'pos':'neg');
-    } else {
-      elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
-    }
-  }
-
-  // --- Tiempo Medio de Atención de Clientes y Accidentes: tabla 'datos_ppal', último mes ---
-  const ppal = DATA.datosPpal || [];
-  if(ppal.length){
-    const last = ppal[ppal.length-1];
-    const mesLabel = fmtMes(last.mes);
-    document.getElementById('kpiAtencionVal').textContent = last.tiempoAtencion==null ? '—' : fmt1(last.tiempoAtencion);
-    document.getElementById('kpiAtencionNote').textContent = mesLabel;
-    document.getElementById('kpiAccidentesVal').textContent = last.accidentes==null ? '—' : fmt0(last.accidentes);
-    document.getElementById('kpiAccidentesNote').textContent = mesLabel;
-  }
+// Sin fuente de datos real aún: se dejan vacíos en vez de mostrar valores de ejemplo.
+function renderOperationalPlaceholders(){
+  document.getElementById('opNivelVal').textContent = '—';
+  document.getElementById('opFlotaVal').textContent = '—';
+  document.getElementById('opPvenVal').textContent = '—';
 }
+renderOperationalPlaceholders();
 
-function renderAll(){
-  renderKPIHeader();
-  renderStock();
-  renderPrima();
-  renderMix();
-  renderPPICFR();
-  renderEspera();
-  renderCapacidad();
-  renderDetalle();
-}
-
-const CAPACIDAD_PROVEEDORES = [
-  {key:'solgas', label:'Solgas', color:'#E8973B'},
-  {key:'zeta', label:'Zeta Gas', color:'#1B7A43'},
-  {key:'tdp', label:'TDP', color:COLORS.blue},
-  {key:'plus', label:'PlusPetrol', color:COLORS.orange},
-];
-
-function renderCapacidad(){
-  const select = document.getElementById('capacidadFechaSelect');
-  const grid = document.getElementById('capacidadGrid');
-  if(!select || !grid) return;
-
-  const allDates = [...new Set(CAPACIDAD_PROVEEDORES.flatMap(p=>DATA.capacidad[p.key].map(r=>String(r.fecha))))]
-    .sort((a,b)=> a<b ? 1 : -1);
-
-  if(!allDates.length){
-    select.innerHTML = '';
-    grid.innerHTML = '<div class="empty-msg">Sin datos de capacidad todavía</div>';
-    return;
-  }
-  select.innerHTML = allDates.map(f=>`<option value="${f}">${fmtPeriodo(f)}</option>`).join('');
-  select.value = allDates[0];
-  select.onchange = ()=>drawCapacidad(select.value);
-  drawCapacidad(select.value);
-}
-
-function drawCapacidad(fecha){
-  const grid = document.getElementById('capacidadGrid');
-  const rows = CAPACIDAD_PROVEEDORES.map(p=> DATA.capacidad[p.key].find(r=>String(r.fecha)===fecha));
-  const radios = capRadiosFor(rows);
-  grid.innerHTML = CAPACIDAD_PROVEEDORES.map((p,i)=> capacidadIcon(p.label, p.color, rows[i], null, radios[i])).join('');
-}
-
-let capIconUid = 0;
-const CAP_R_MAX = 96;
-
-function capacidadIcon(label, color, row, extraInfo, rOuter){
-  rOuter = rOuter || CAP_R_MAX;
-  const size = 224, svgH = 250, cx = size/2, cy = 132;
-  if(!row || row.capacidad==null || row.inventario==null || row.capacidad<=0){
-    return `
-    <div style="display:flex; flex-direction:column; align-items:center; width:240px;" title="${label}: sin datos">
-      <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
-        <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="#d8dce2" stroke-width="4"/>
-      </svg>
-      <div style="font-size:13px; font-weight:700; color:var(--text-dark); margin-top:8px;">${label}</div>
-      <div style="font-size:10.5px; color:var(--text-muted); margin-top:2px;">Sin datos</div>
-    </div>`;
-  }
-  const pct = row.inventario / row.capacidad;
-  const pctClamped = Math.min(Math.max(pct,0),1);
-  const rInner = rOuter * Math.sqrt(pctClamped) * 0.9;
-  const fillColor = pct > 1 ? COLORS.red : color;
-  const uid = capIconUid++;
-  const title = `${label}: ${fmt1(row.inventario)} / ${fmt1(row.capacidad)} TM · ${(pct*100).toFixed(0)}%${extraInfo ? ' · ' + extraInfo : ''}`;
-  return `
-  <div style="display:flex; flex-direction:column; align-items:center; width:240px; cursor:default;" title="${title}">
-    <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
-      <defs>
-        <pattern id="hatch-${uid}" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-          <rect width="6" height="6" fill="#ffffff"/>
-          <line x1="0" y1="0" x2="0" y2="6" stroke="${fillColor}" stroke-width="3"/>
-        </pattern>
-      </defs>
-      <text x="${cx}" y="${cy-rOuter-10}" text-anchor="middle" font-size="11" font-weight="700" fill="#20272f">Cap ${fmt1(row.capacidad)}</text>
-      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="${color}" stroke-width="4"/>
-      <circle cx="${cx}" cy="${cy}" r="${rInner}" fill="url(#hatch-${uid})" stroke="${fillColor}" stroke-width="1.5"/>
-      <rect x="${cx-32}" y="${cy-18}" width="64" height="34" rx="6" fill="rgba(255,255,255,0.88)"/>
-      <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${color}">${fmt1(row.inventario)}</text>
-      <text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${fillColor}">${(pct*100).toFixed(0)}%</text>
-    </svg>
-    <div style="font-size:13px; font-weight:700; color:var(--text-dark); margin-top:2px;">${label}</div>
-  </div>`;
-}
-
-// Calcula el radio de cada proveedor: área del círculo estrictamente proporcional a su capacidad
-function capRadiosFor(rows){
-  const caps = rows.map(r=> r && r.capacidad>0 ? r.capacidad : null).filter(v=>v!=null);
-  const capMax = caps.length ? Math.max(...caps) : null;
-  return rows.map(r=>{
-    if(!r || !(r.capacidad>0) || !capMax) return CAP_R_MAX;
-    return CAP_R_MAX * Math.sqrt(r.capacidad / capMax);
-  });
-}
-
-function switchTab(tab){
-  document.getElementById('viewResumen').classList.toggle('hidden', tab !== 'resumen');
-  document.getElementById('viewTPG').classList.toggle('hidden', tab !== 'tpg');
-  document.getElementById('viewDetalle').classList.toggle('hidden', tab !== 'detalle');
-  document.getElementById('viewAgregar').classList.toggle('hidden', tab !== 'agregar');
-  document.getElementById('tabBtnResumen').classList.toggle('active', tab === 'resumen');
-  document.getElementById('tabBtnTPG').classList.toggle('active', tab === 'tpg');
-  document.getElementById('tabBtnDetalle').classList.toggle('active', tab === 'detalle');
-  document.getElementById('tabBtnAgregar').classList.toggle('active', tab === 'agregar');
-  if(tab === 'tpg'){
-    if(charts.chartMix) charts.chartMix.resize(); else renderMix();
-    if(charts.chartEspera) charts.chartEspera.resize(); else renderEspera();
-  }
-  if(tab === 'agregar'){
-    initAgregarTab();
-  }
-}
-
-function buildTable(headers, rows){
-  const thead = '<thead><tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
-  const tbody = '<tbody>' + rows.map(r=>'<tr>' + r.map(c=>`<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody>';
-  return `<div class="data-table-wrap"><table class="data-table">${thead}${tbody}</table></div>`;
-}
-
-function dataCard(title, borderColor, tableHtml){
-  return `
-    <div class="card data-card" style="border-top-color:${borderColor};">
-      <h3 style="margin-bottom:12px;">${title}</h3>
-      ${tableHtml}
-    </div>`;
-}
-
-function renderDetalle(){
-  const el = document.getElementById('detalleTables');
-  if(!el) return;
-
-  const stockTable = buildTable(
-    ['Fecha','Inventario (kTM)','Desp. Planeado (kTM)','POA (kTM)'],
-    DATA.stock.map(r=>[fmtPeriodo(r.fecha), fmt1(r.inventario), fmt1(r.despPlaneado), fmt1(r.poa)])
-  );
-
-  const primaTable = buildTable(
-    ['Fecha','PPI','Solgas','Vol. Solgas (kTM)','PlusPetrol','Vol. PlusPetrol (kTM)','Primax','Vol. Primax (kTM)','Zeta Gas','Vol. Zeta Gas (kTM)'],
-    DATA.prima.map(r=>[
-      fmtPeriodo(r.fecha), fmt1(r.ppi),
-      fmt1(r.solgas), fmt1(r.volSolgas!=null?r.volSolgas/1000:null),
-      fmt1(r.plusPetrol), fmt1(r.volPlus!=null?r.volPlus/1000:null),
-      fmt1(r.primax), fmt1(r.volPrimax!=null?r.volPrimax/1000:null),
-      fmt1(r.zetaGas), fmt1(r.volZeta!=null?r.volZeta/1000:null)
-    ])
-  );
-
-  const margenTable = buildTable(
-    ['Mes','Margen Mes (MM USD)','Margen Mes (USD/TM)','Margen YTD (MM USD)','Margen YTD (USD/TM)'],
-    DATA.margen.map(r=>[fmtMes(r.mes), fmt1(r.mesMM), fmt1(r.mesUSDTM), fmt1(r.ytdMM), fmt1(r.ytdUSDTM)])
-  );
-
-  const mixTable = buildTable(
-    ['Semana','Destino','Fuente','Volumen (TM)'],
-    DATA.mix.map(r=>[fmtPeriodo(r.semana), r.destino, r.fuente, fmt1(r.volumen)])
-  );
-
-  const ppiCfrTable = buildTable(
-    ['Periodo','PPI (USD/TM)','CFR (USD/TM)','MB','FCA'],
-    DATA.ppiCfr.map(r=>[fmtPeriodo(r.periodo), fmt1(r.ppi), fmt1(r.cfr), fmt1(r.mb), fmt1(r.fca)])
-  );
-
-  const esperaTable = buildTable(
-    ['Semana','Horas'],
-    DATA.espera.map(r=>[fmtPeriodo(r.semana), fmt1(r.horas)])
-  );
-
-  const variacionTable = buildTable(
-    ['Periodo','Variación MB (USD/TM)','Variación PlusPetrol CFR Callao (USD/TM)','Variación PlusPetrol FCA Callao (USD/TM)'],
-    DATA.variacion.map(r=>[fmtPeriodo(r.periodo), fmt1(r.mb), fmt1(r.ppc), fmt1(r.ppcFcaCallao)])
-  );
-
-  const capacidadTable = (rows) => buildTable(
-    ['Fecha','Capacidad (TM)','Inventario (TM)','% ocupado'],
-    rows.map(r=>[fmtPeriodo(r.fecha), fmt1(r.capacidad), fmt1(r.inventario), r.capacidad>0 ? (r.inventario/r.capacidad*100).toFixed(0)+'%' : '—'])
-  );
-
-  const despachoTable = buildTable(
-    ['Fecha','Despacho (TM)','Despacho 2025 (TM)'],
-    DATA.despacho.map(r=>[fmtPeriodo(r.fecha), fmt1(r.despacho), fmt1(r.despacho2025)])
-  );
-
-  const datosPpalTable = buildTable(
-    ['Mes','Tiempo de Atención','Accidentes'],
-    DATA.datosPpal.map(r=>[fmtMes(r.mes), fmt1(r.tiempoAtencion), fmt0(r.accidentes)])
-  );
-
-  el.innerHTML =
-    dataCard('TERMINAL | Proyección de inventarios + 30 d', COLORS.blue, stockTable) +
-    dataCard('Prima de importación vs mercado y volumen por competidor', COLORS.orange, primaTable) +
-    dataCard('Margen mensual', COLORS.green, margenTable) +
-    dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
-    dataCard('Costos de Referencia del GLP', COLORS.teal, ppiCfrTable) +
-    dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
-    dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable) +
-    dataCard('Despacho (vs. 2025)', '#2E6DB4', despachoTable) +
-    dataCard('Tiempo de Atención y Accidentes', '#7C6FCF', datosPpalTable) +
-    dataCard('Capacidad Solgas', '#E8973B', capacidadTable(DATA.capacidad.solgas)) +
-    dataCard('Capacidad Zeta Gas', COLORS.green, capacidadTable(DATA.capacidad.zeta)) +
-    dataCard('Capacidad TDP', COLORS.blue, capacidadTable(DATA.capacidad.tdp)) +
-    dataCard('Capacidad PlusPetrol', COLORS.orange, capacidadTable(DATA.capacidad.plus));
-}
-
-function renderStock(){
-  const d = DATA.stock;
-
-  const badge = document.getElementById('stockAlertBadge');
-  const alertCount = d.filter(r=>r.inventario!=null && r.despPlaneado!=null && r.inventario < r.despPlaneado).length;
-  badge.innerHTML = alertCount > 0
-    ? `<div class="alert-badge"><span class="dot"></span>${alertCount} alerta${alertCount===1?'':'s'}</div>`
-    : `<div class="alert-badge ok"><span class="dot"></span>Sin alertas</div>`;
-
-  destroyChart('chartStock');
-  const ctx = document.getElementById('chartStock');
-  charts.chartStock = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels: d.map(r=>fmtDDMM(r.fecha)),
-      datasets:[
-        {label:'Inventario', data:d.map(r=>r.inventario), borderColor:COLORS.blue, backgroundColor:COLORS.blue, fill:false, tension:.3, pointRadius:2, borderWidth:1.75},
-        {label:'FC', data:d.map(r=>r.despPlaneado), borderColor:COLORS.orange, backgroundColor:COLORS.orange, fill:false, tension:.3, pointRadius:2, borderWidth:1.75},
-        {label:'POA', data:d.map(r=>r.poa), borderColor:COLORS.green, backgroundColor:COLORS.green, fill:false, tension:.3, pointRadius:0, borderWidth:1.75},
-      ]
-    },
-    options: {
-      ...baseLineOpts('kTM'),
-      layout:{padding:{top:22}},
-      plugins:{
-        legend:{position:'top', align:'center', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, font:{size:10.5}, padding:8}},
-        datalabels:{
-          display:c=>c.dataIndex===0,
-          align:'top', anchor:'end',
-          color:c=>c.dataset.borderColor,
-          font:{weight:'700', size:11},
-          formatter:v=>(v==null||isNaN(v))?'':Math.round(v)
-        }
-      },
-      scales:{
-        ...baseLineOpts('kTM').scales,
-        x:{...baseLineOpts('kTM').scales.x, ticks:{font:{size:9.5}}}
-      }
-    }
-  });
-}
-
-function hexToRgba(hex, alpha){
-  const h = hex.replace('#','');
-  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-const MCK = {
-  solgas:'#E8973B', plusPetrol:COLORS.blueLight, primax:COLORS.orange, zetaGas:'#1B7A43', ppi:COLORS.gray
-};
-
-function renderPrima(){
-  const d = DATA.prima;
-  destroyChart('chartPrima');
-  destroyChart('chartPrimaVol');
-  if(!d.length){ return; }
-
-  const companies = [
-    {key:'solgas', volKey:'volSolgas', label:'Solgas', color:MCK.solgas},
-    {key:'plusPetrol', volKey:'volPlus', label:'PlusPetrol', color:MCK.plusPetrol},
-    {key:'primax', volKey:'volPrimax', label:'Primax', color:MCK.primax},
-    {key:'zetaGas', volKey:'volZeta', label:'Zeta Gas', color:MCK.zetaGas},
-  ];
-  const labels = d.map(r=>fmtPeriodo(r.fecha));
-
-  // --- Mini-KPIs: prima ponderada (último mes completo) y volumen acumulado YTD ---
-  const lastDate = d.length ? parseLocalDate(d[d.length-1].fecha) : null;
-  let targetYear = null, targetMonth = null;
-  if(lastDate){
-    targetMonth = lastDate.getMonth() - 1;
-    targetYear = lastDate.getFullYear();
-    if(targetMonth < 0){ targetMonth = 11; targetYear -= 1; }
-  }
-  const dLastMonth = lastDate
-    ? d.filter(r=>{ const dt=parseLocalDate(r.fecha); return dt && dt.getFullYear()===targetYear && dt.getMonth()===targetMonth; })
-    : [];
-  const primaYtdTitle = document.getElementById('primaYtdTitle');
-  if(lastDate){
-    const monthName = new Date(targetYear, targetMonth, 1).toLocaleDateString('es-PE',{month:'long'});
-    primaYtdTitle.textContent = `Prima ponderada (${monthName.charAt(0).toUpperCase()+monthName.slice(1)})`;
+function renderOperationalReal(datosPpalRows, esperaRows){
+  // Tiempo atención (tabla datos_ppal, columna tiempo_atencion)
+  const atVal = document.getElementById('opAtencionVal');
+  const atNote = document.getElementById('opAtencionNote');
+  const ppalConDato = (datosPpalRows||[]).filter(r=> r.tiempoAtencion!=null);
+  if(ppalConDato.length){
+    const last = ppalConDato[ppalConDato.length-1];
+    atVal.textContent = fmt1(last.tiempoAtencion) + ' h';
+    atNote.textContent = 'Último dato: ' + fmtMesCorto(last.mes);
+    drawSpark('spark2', ppalConDato.map(r=>r.tiempoAtencion), COLORS.blue);
   } else {
-    primaYtdTitle.textContent = 'Prima ponderada';
+    atVal.textContent = '—';
+    atNote.textContent = 'Sin datos aún en datos_ppal';
   }
-  const weightedAvg = (priceKey, volKey) => {
-    let sumWV=0, sumV=0;
-    dLastMonth.forEach(r=>{ const p=r[priceKey], v=r[volKey]; if(p!=null && v!=null){ sumWV += p*v; sumV += v; } });
-    return sumV>0 ? sumWV/sumV : null;
-  };
-  const totalVolKTM = (volKey) => {
-    let sum=0, any=false;
-    d.forEach(r=>{ if(r[volKey]!=null){ sum += r[volKey]; any=true; } });
-    return any ? sum/1000 : null;
-  };
 
-  const primaYtdGrid = document.getElementById('primaYtdGrid');
-  primaYtdGrid.innerHTML = companies.map(c=>{
-    const v = weightedAvg(c.key, c.volKey);
-    return `<div class="mini-kpi" style="background:${c.color};">
-      <div class="mk-label">${c.label}</div>
-      <div class="mk-value">${v===null?'—':fmt0(v)}</div>
-    </div>`;
-  }).join('');
-
-  const volYtdGrid = document.getElementById('volYtdGrid');
-  volYtdGrid.innerHTML = companies.map(c=>{
-    const v = totalVolKTM(c.volKey);
-    return `<div class="mini-kpi" style="background:${c.color};">
-      <div class="mk-label">${c.label}</div>
-      <div class="mk-value">${v===null?'—':fmt0(v)+' kTM'}</div>
-    </div>`;
-  }).join('');
-
-
-  // --- Panel principal: prima por competidor + PPI ---
-  const mainDatasets = [
-    ...companies.map(c=>({
-      label:c.label, data:d.map(r=>r[c.key]), type:'line',
-      borderColor:c.color, backgroundColor:c.color,
-      showLine:false, spanGaps:false,
-      pointRadius:3.5, pointHoverRadius:5, order:1
-    })),
-    {
-      label:'PPI', data:d.map(r=>r.ppi), type:'line',
-      borderColor:MCK.ppi, backgroundColor:MCK.ppi,
-      borderWidth:1.75, pointRadius:0, pointHoverRadius:0,
-      tension:.2, fill:false, order:0
-    }
-  ];
-
-  charts.chartPrima = new Chart(document.getElementById('chartPrima'), {
-    data:{labels, datasets:mainDatasets},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'nearest', intersect:true},
-      layout:{padding:{bottom:0}},
-      plugins:{
-        legend:{
-          position:'bottom',
-          labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:12, font:{size:10.5}}
-        },
-        tooltip:{callbacks:{label:c=> c.raw==null ? undefined : ` ${c.dataset.label}: ${fmt1(c.raw)} USD/TM`}},
-        datalabels:{display:false}
-      },
-      scales:{
-        x:{grid:{display:false}, ticks:{display:false}},
-        y:{position:'left', grid:{display:false, drawBorder:false}, title:{display:true,text:'USD/TM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
-      }
-    }
-  });
-
-  // --- Franja inferior: volumen por competidor, eje x compartido ---
-  const volDatasets = companies.map(c=>({
-    label:c.label, data:d.map(r=> r[c.volKey]!=null ? r[c.volKey]/1000 : null),
-    backgroundColor:c.color, borderWidth:0, borderRadius:0,
-    categoryPercentage:1.0, barPercentage:1.0
-  }));
-
-  charts.chartPrimaVol = new Chart(document.getElementById('chartPrimaVol'), {
-    type:'bar',
-    data:{labels, datasets:volDatasets},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:c=> c.raw==null ? undefined : ` ${c.dataset.label}: ${fmt1(c.raw)} kTM`}},
-        datalabels:{display:false}
-      },
-      scales:{
-        x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9}}},
-        y:{position:'left', display:true, grid:{display:false, drawBorder:false}, title:{display:true,text:'kTM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
-      }
-    }
-  });
-}
-
-function renderMix(){
-  const d = DATA.mix;
-  const select = document.getElementById('mixWeekSelect');
-  destroyChart('chartMix');
-  if(!d.length){ select.innerHTML=''; return; }
-  const weeks = [...new Set(d.map(r=>r.semana))];
-  select.innerHTML = weeks.map(w=>`<option value="${w}">${fmtPeriodo(w)}</option>`).join('');
-  select.value = weeks[weeks.length-1];
-  select.onchange = ()=>drawMix(select.value);
-  drawMix(select.value);
-}
-
-const DESTINO_ORDEN = ['Piura','Trujillo','Chiclayo','Huancayo','Arequipa','Cusco','Pucallpa','Huaraz','Ayacucho','Juanjui'];
-
-function drawMix(week){
-  destroyChart('chartMix');
-  const rows = DATA.mix.filter(r=>String(r.semana)===String(week));
-  const destinos = [...new Set(rows.map(r=>r.destino))].sort((a,b)=>{
-    const ia = DESTINO_ORDEN.indexOf(a), ib = DESTINO_ORDEN.indexOf(b);
-    if(ia===-1 && ib===-1) return a.localeCompare(b);
-    if(ia===-1) return 1;
-    if(ib===-1) return -1;
-    return ia - ib;
-  });
-  const fuentes = [...new Set(rows.map(r=>r.fuente))];
-  const palette = [COLORS.blue, COLORS.orange, COLORS.teal, COLORS.purple, COLORS.green, COLORS.red, COLORS.gray];
-  const totals = {};
-  destinos.forEach(dest=>{
-    totals[dest] = rows.filter(r=>r.destino===dest).reduce((s,r)=>s+(r.volumen||0),0);
-  });
-  const datasets = fuentes.map((f,i)=>({
-    label:f,
-    data: destinos.map(dest=>{
-      const row = rows.find(r=>r.destino===dest && r.fuente===f);
-      const vol = row ? row.volumen : 0;
-      const total = totals[dest];
-      return total ? (vol/total*100) : 0;
-    }),
-    backgroundColor: palette[i % palette.length],
-    borderRadius:0
-  }));
-  const ctx = document.getElementById('chartMix');
-  charts.chartMix = new Chart(ctx, {
-    type:'bar',
-    data:{labels:destinos, datasets},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}},
-        datalabels:{
-          display:c=>c.dataset.data[c.dataIndex] >= 6,
-          color:'#fff', font:{weight:'700', size:10},
-          formatter:v=>v.toFixed(0) + '%'
-        }
-      },
-      scales:{
-        x:{stacked:true, grid:{display:false}},
-        y:{stacked:true, grid:{display:false}, title:{display:true,text:'%'}, max:100}
-      }
-    }
-  });
-}
-
-function renderPPICFR(){
-  const d = DATA.ppiCfr;
-  const mbValues = d.map(r=>r.mb);
-  const ppiValues = d.map(r=>r.ppi);
-  const cfrValues = d.map(r=>r.cfr);
-  const fcaValues = d.map(r=>r.fca);
-  const cfrTeoricoValues = fcaValues.map(v=> v!=null ? v-40 : null);
-
-  const radBadge = document.getElementById('radBadge');
-  let radLast = null;
-  for(let i=d.length-1;i>=0;i--){
-    if(fcaValues[i]!=null && cfrValues[i]!=null){ radLast = fcaValues[i]-cfrValues[i]; break; }
-  }
-  radBadge.textContent = radLast===null ? '' : `RAD: ${fmt0(radLast)} USD/TM`;
-
-  const wedBadge = document.getElementById('wedVarBadge');
-  const vd = DATA.variacion;
-  const today = new Date(); today.setHours(0,0,0,0);
-  let target = null, isProjected = false;
-  for(const r of vd){
-    const dt = parseLocalDate(r.periodo);
-    if(dt && dt.getDay()===3 && dt >= today && (r.ppc!=null || r.proyectada!=null)){
-      if(!target || dt < parseLocalDate(target.periodo)) target = r;
-    }
-  }
-  if(target){
-    isProjected = target.ppc==null && target.proyectada!=null;
+  // Espera Pluspetrol (tabla espera_pluspetrol, columna horas)
+  const esVal = document.getElementById('opEsperaVal');
+  const esNote = document.getElementById('opEsperaNote');
+  const esperaConDato = (esperaRows||[]).filter(r=> r.horas!=null);
+  if(esperaConDato.length){
+    const last = esperaConDato[esperaConDato.length-1];
+    esVal.textContent = fmt1(last.horas) + ' h';
+    esVal.style.color = last.horas > 4 ? 'var(--orange)' : '';
+    esNote.textContent = 'Última semana registrada';
+    drawSpark('spark3', esperaConDato.map(r=>r.horas), COLORS.orange);
   } else {
-    for(let i=vd.length-1;i>=0;i--){
-      const dt = parseLocalDate(vd[i].periodo);
-      if(dt && dt.getDay()===3 && vd[i].ppc!=null){ target = vd[i]; break; }
-    }
-  }
-  if(!target){
-    wedBadge.innerHTML = '';
-  } else {
-    const val = isProjected ? target.proyectada : target.ppc;
-    const sign = val >= 0 ? '+' : '';
-    const cls = val >= 0 ? 'pos' : 'neg';
-    const triangle = val >= 0 ? '▲' : '▼';
-    const label = `${fmtDDMM(target.periodo)}`;
-    wedBadge.innerHTML = `<div class="wed-badge ${cls}"><span class="wed-label">${triangle} ${label}</span> ${sign}${fmt1(val)}</div>`;
-  }
-
-  const wrap = document.getElementById('ppiCfrChips');
-  const rMbPpi = pearson(mbValues, ppiValues);
-  const rMbCfr = pearson(mbValues, cfrValues);
-  const rPpiCfr = pearson(ppiValues, cfrValues);
-  const rFcaMb = pearson(fcaValues, mbValues);
-  const fmtR = v => v===null ? '—' : v.toFixed(2);
-  wrap.textContent = `Correlación · PPI-MB: ${fmtR(rMbPpi)} | CFR-MB: ${fmtR(rMbCfr)} | FCA-MB: ${fmtR(rFcaMb)} | PPI-CFR: ${fmtR(rPpiCfr)}`;
-
-  destroyChart('chartPPICFR');
-  const ctx = document.getElementById('chartPPICFR');
-  charts.chartPPICFR = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels:d.map(r=>fmtPeriodo(r.periodo)),
-      datasets:[
-        {label:'PPI', data:ppiValues, borderColor:COLORS.blue, backgroundColor:COLORS.blue, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
-        {label:'CFR', data:cfrValues, borderColor:COLORS.teal, backgroundColor:COLORS.teal, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
-        {label:'MB', data:mbValues, borderColor:COLORS.purple, backgroundColor:COLORS.purple, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
-        {label:'FCA', data:fcaValues, borderColor:COLORS.orange, backgroundColor:COLORS.orange, tension:.3, pointRadius:2, borderWidth:1.75, fill:false},
-        {label:'CFR Teórico', data:cfrTeoricoValues, borderColor:COLORS.gray, backgroundColor:COLORS.gray, tension:.3, pointRadius:2, borderWidth:1.75, borderDash:[5,4], fill:false},
-      ]
-    },
-    options:{
-      ...baseLineOpts('USD/TM'),
-      layout:{padding:{top:20}},
-      plugins:{
-        ...baseLineOpts().plugins,
-        tooltip:{
-          itemSort:(a,b)=> (b.raw ?? -Infinity) - (a.raw ?? -Infinity)
-        },
-        datalabels:{
-          display:c=>{
-            const v=c.dataset.data[c.dataIndex];
-            return v!=null && !isNaN(v) && c.dataIndex===c.dataset.data.length-1;
-          },
-          align:'top', anchor:'end',
-          color:c=>c.dataset.borderColor,
-          font:{weight:'700', size:11},
-          formatter:v=>Math.round(v)
-        }
-      },
-      scales:{
-        x:{grid:{display:false}, border:{display:false}},
-        y:{grid:{display:false}, border:{display:false}, title:{display:true,text:'USD/TM'}, ticks:{precision:0}}
-      }
-    }
-  });
-}
-
-function renderEspera(){
-  const d = DATA.espera;
-  destroyChart('chartEspera');
-  const ctx = document.getElementById('chartEspera');
-  charts.chartEspera = new Chart(ctx, {
-    type:'bar',
-    data:{labels:d.map(r=>fmtPeriodo(r.semana)), datasets:[{label:'Horas de espera', data:d.map(r=>r.horas), backgroundColor:COLORS.orange, borderRadius:0}]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} h`}}},
-      scales:{x:{grid:{display:false}}, y:{grid:{display:false}, title:{display:true,text:'Horas'}}}
-    }
-  });
-}
-
-function stddev(arr){
-  const valid = arr.filter(v=>v!=null && !isNaN(v));
-  if(valid.length < 2) return null;
-  const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
-  const variance = valid.reduce((a,b)=>a+Math.pow(b-mean,2),0) / (valid.length-1);
-  return Math.sqrt(variance);
-}
-
-function pearson(xs, ys){
-  const pairs = xs.map((x,i)=>[x, ys[i]]).filter(([x,y])=>x!=null && y!=null && !isNaN(x) && !isNaN(y));
-  if(pairs.length < 2) return null;
-  const n = pairs.length;
-  const mx = pairs.reduce((s,p)=>s+p[0],0) / n;
-  const my = pairs.reduce((s,p)=>s+p[1],0) / n;
-  let num=0, dx=0, dy=0;
-  for(const [x,y] of pairs){
-    const ex = x-mx, ey = y-my;
-    num += ex*ey; dx += ex*ex; dy += ey*ey;
-  }
-  const denom = Math.sqrt(dx*dy);
-  return denom===0 ? null : num/denom;
-}
-
-function variacionChartConfig(d){
-  return {
-    type:'bar',
-    data:{
-      labels:d.map(r=>fmtPeriodo(r.periodo)),
-      datasets:[
-        {label:'Estimación', data:d.map(r=>r.mb), backgroundColor:COLORS.blueLight, borderRadius:0},
-        {label:'Variación CFR Callao', data:d.map(r=>r.ppc), backgroundColor:COLORS.orange, borderRadius:0},
-        {label:'Variación FCA Callao', data:d.map(r=>r.ppcFcaCallao), backgroundColor:COLORS.purple, borderRadius:0},
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      layout:{padding:{top:20, bottom:8}},
-      plugins:{
-        legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}},
-        datalabels:{
-          display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
-          anchor:c=>c.dataset.data[c.dataIndex]>=0 ? 'end' : 'start',
-          align:c=>c.dataset.data[c.dataIndex]>=0 ? 'top' : 'bottom',
-          color:'#1b2733', font:{weight:'700', size:10},
-          formatter:v=>fmt1(v)
-        }
-      },
-      scales:{
-        x:{grid:{display:false}},
-        y:{
-          grid:{display:false},
-          grace:'12%'
-        }
-      }
-    }
-  };
-}
-
-function openCapacidadModal(){
-  const select = document.getElementById('capacidadFechaSelect');
-  const currentFecha = select.value;
-  const allDates = [...new Set(CAPACIDAD_PROVEEDORES.flatMap(p=>DATA.capacidad[p.key].map(r=>String(r.fecha))))]
-    .sort((a,b)=> a<b ? 1 : -1);
-  const idx = allDates.indexOf(currentFecha);
-  const prevFecha = (idx>=0 && idx+1<allDates.length) ? allDates[idx+1] : null;
-
-  const sub = document.getElementById('capacidadModalSub');
-  const body = document.getElementById('capacidadModalBody');
-
-  if(!prevFecha){
-    sub.textContent = 'No hay una semana anterior registrada';
-    body.innerHTML = '';
-    document.getElementById('capacidadModalOverlay').classList.add('open');
-    return;
-  }
-
-  sub.textContent = `Semana del ${fmtPeriodo(prevFecha)} (vs. semana seleccionada: ${fmtPeriodo(currentFecha)})`;
-
-  const prevRows = CAPACIDAD_PROVEEDORES.map(p=> DATA.capacidad[p.key].find(r=>String(r.fecha)===prevFecha));
-  const radios = capRadiosFor(prevRows);
-  const circlesHtml = `<div style="display:flex; gap:28px; flex-wrap:wrap; justify-content:center; padding:14px 0 10px;">${
-    CAPACIDAD_PROVEEDORES.map((p,i)=>{
-      const prevRow = prevRows[i];
-      const currRow = DATA.capacidad[p.key].find(r=>String(r.fecha)===currentFecha);
-      const delta = (prevRow && currRow && prevRow.inventario!=null && currRow.inventario!=null)
-        ? currRow.inventario - prevRow.inventario : null;
-      const extra = delta!=null ? `variación vs. ${fmtPeriodo(currentFecha)}: ${(delta>=0?'+':'')+fmt1(delta)} TM` : null;
-      return capacidadIcon(p.label, p.color, prevRow, extra, radios[i]);
-    }).join('')
-  }</div>`;
-
-  body.innerHTML = circlesHtml;
-  document.getElementById('capacidadModalOverlay').classList.add('open');
-}
-
-function closeCapacidadModal(){
-  document.getElementById('capacidadModalOverlay').classList.remove('open');
-}
-
-function openPrimaYtdModal(){
-  document.getElementById('primaYtdModalOverlay').classList.add('open');
-}
-
-function closePrimaYtdModal(){
-  document.getElementById('primaYtdModalOverlay').classList.remove('open');
-}
-
-function openVariacionModal(){
-  document.getElementById('variacionModalOverlay').classList.add('open');
-  destroyChart('chartVariacionModal');
-  const ctx = document.getElementById('chartVariacionModal');
-  charts.chartVariacionModal = new Chart(ctx, variacionChartConfig(DATA.variacion));
-}
-
-function closeVariacionModal(){
-  document.getElementById('variacionModalOverlay').classList.remove('open');
-  destroyChart('chartVariacionModal');
-}
-
-function baseLineOpts(yTitle){
-  return {
-    responsive:true, maintainAspectRatio:false,
-    interaction:{mode:'index', intersect:false},
-    plugins:{legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}}},
-    scales:{
-      x:{grid:{display:false}},
-      y:{grid:{display:false}, title: yTitle?{display:true,text:yTitle}:{display:false}}
-    }
-  };
-}
-
-function fmt1(v){
-  if(v===null||v===undefined||isNaN(v)) return '—';
-  return Number(v).toLocaleString('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1});
-}
-function fmt0(v){
-  if(v===null||v===undefined||isNaN(v)) return '—';
-  return Number(v).toLocaleString('es-PE',{minimumFractionDigits:0,maximumFractionDigits:0});
-}
-
-// ================= Agregar / editar datos =================
-const AGREGAR_TABLES = [
-  {key:'stock_diario', label:'Stock diario (Terminal)', pk:'fecha', columns:[
-    {field:'fecha', label:'Fecha', type:'date'},
-    {field:'desp_planeado', label:'Desp. Planeado', type:'number'},
-    {field:'poa', label:'POA', type:'number'},
-    {field:'inventario', label:'Inventario', type:'number'},
-  ]},
-  {key:'prima_mensual', label:'Prima mensual (Prima + Volumen)', pk:'Fecha', columns:[
-    {field:'Fecha', label:'Fecha', type:'date'},
-    {field:'ppi', label:'PPI', type:'number'},
-    {field:'solgas', label:'Solgas', type:'number'},
-    {field:'volumen_solgas', label:'Vol. Solgas', type:'number'},
-    {field:'plus_petrol', label:'PlusPetrol', type:'number'},
-    {field:'volumen_plus', label:'Vol. PlusPetrol', type:'number'},
-    {field:'primax', label:'Primax', type:'number'},
-    {field:'volumen_primax', label:'Vol. Primax', type:'number'},
-    {field:'zeta_gas', label:'Zeta Gas', type:'number'},
-    {field:'volumen_zeta', label:'Vol. Zeta Gas', type:'number'},
-  ]},
-  {key:'margen_mensual', label:'Margen mensual', pk:'mes', columns:[
-    {field:'mes', label:'Mes', type:'date'},
-    {field:'mes_mm', label:'Margen Mes (MM USD)', type:'number'},
-    {field:'mes_usdtm', label:'Margen Mes (USD/TM)', type:'number'},
-    {field:'ytd_mm', label:'Margen YTD (MM USD)', type:'number'},
-    {field:'ytd_usdtm', label:'Margen YTD (USD/TM)', type:'number'},
-  ]},
-  {key:'mix_abastecimiento', label:'Mix de abastecimiento semanal', pk:null, columns:[
-    {field:'semana', label:'Semana', type:'date'},
-    {field:'destino', label:'Destino', type:'text'},
-    {field:'fuente', label:'Fuente', type:'text'},
-    {field:'volumen', label:'Volumen', type:'number'},
-  ]},
-  {key:'ppi_cfr', label:'Costos de Referencia (PPI/CFR/MB/FCA)', pk:'periodo', columns:[
-    {field:'periodo', label:'Periodo', type:'date'},
-    {field:'ppi', label:'PPI', type:'number'},
-    {field:'cfr', label:'CFR', type:'number'},
-    {field:'mb', label:'MB', type:'number'},
-    {field:'fca', label:'FCA', type:'number'},
-  ]},
-  {key:'espera_pluspetrol', label:'Tiempo de espera PlusPetrol', pk:'semana', columns:[
-    {field:'semana', label:'Semana', type:'date'},
-    {field:'horas', label:'Horas', type:'number'},
-  ]},
-  {key:'variacion_precio', label:'Variación de precio PlusPetrol vs MB', pk:'periodo', columns:[
-    {field:'periodo', label:'Periodo', type:'date'},
-    {field:'mb', label:'Variación MB', type:'number'},
-    {field:'ppc', label:'Variación CFR Callao', type:'number'},
-    {field:'proyectada', label:'Proyectada', type:'number'},
-    {field:'ppc_fca_callao', label:'Variación FCA Callao', type:'number'},
-  ]},
-  {key:'despacho', label:'Despacho (vs 2025)', pk:'fecha', columns:[
-    {field:'fecha', label:'Fecha', type:'date'},
-    {field:'despacho', label:'Despacho', type:'number'},
-    {field:'despacho_2025', label:'Despacho 2025', type:'number'},
-  ]},
-  {key:'datos_ppal', label:'Tiempo de atención y Accidentes', pk:'mes', columns:[
-    {field:'mes', label:'Mes', type:'date'},
-    {field:'tiempo_atencion', label:'Tiempo de Atención', type:'number'},
-    {field:'accidentes', label:'Accidentes', type:'number'},
-  ]},
-  {key:'inv_solgas', label:'Capacidad Solgas', pk:'fecha', columns:null},
-  {key:'inv_zeta', label:'Capacidad Zeta Gas', pk:'fecha', columns:null},
-  {key:'inv_tdp', label:'Capacidad TDP', pk:'fecha', columns:null},
-  {key:'inv_plus', label:'Capacidad PlusPetrol', pk:'fecha', columns:null},
-];
-
-let AGREGAR_STATE = {table:null, config:null, columns:[], rows:[]};
-
-function initAgregarTab(){
-  const select = document.getElementById('agregarTableSelect');
-  if(!select.dataset.initialized){
-    select.innerHTML = AGREGAR_TABLES.map(t=>`<option value="${t.key}">${t.label}</option>`).join('');
-    select.onchange = ()=> loadAgregarTable(select.value);
-    select.dataset.initialized = '1';
-    loadAgregarTable(select.value);
+    esVal.textContent = '—';
+    esNote.textContent = 'Sin datos aún en espera_pluspetrol';
   }
 }
 
-function agregarInputType(type){ return type==='number' ? 'number' : (type==='date' ? 'date' : 'text'); }
+function fmtMesCorto(v){
+  const s = String(v);
+  const m = s.match(/^(\d{4})-(\d{2})/);
+  if(m) return MESES_CORTO[parseInt(m[2],10)-1] + ' ' + m[1].slice(2);
+  return s;
+}
 
-async function loadAgregarTable(tableKey){
+/* ---------------- Conexión a Supabase: timestamp real, marcadores e impacto económico ---------------- */
+const SUPABASE_URL = 'https://cbhikyyryeaciqxpflee.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_pYUMLyW60H16zNUORrWi_A_SNmjFrKi';
+const sb = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const CATEGORIAS_MARGEN = ['Mayorista','Terminal','Importación','Abastecimiento'];
+
+async function loadControlTowerData(){
+  document.getElementById('headerSubtitle').textContent =
+    `Semana ${getISOWeek(today)} · Actualizado ${new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+
   if(!sb) return;
-  const config = AGREGAR_TABLES.find(t=>t.key===tableKey);
-  const status = document.getElementById('agregarStatus');
-  const gridWrap = document.getElementById('agregarGridWrap');
-  const gridSub = document.getElementById('agregarGridSub');
-  status.textContent = 'Cargando…';
-  gridWrap.innerHTML = '';
+
   try{
-    const orderCol = config.pk || 'id';
-    const {data, error} = await sb.from(config.key).select('*').order(orderCol, {ascending:false}).limit(300);
-    if(error) throw error;
-    let columns = config.columns;
-    if(!columns){
-      const sample = data[0] || {};
-      columns = Object.keys(sample).filter(k=>k!=='id').map(k=>({
-        field:k, label:k,
-        type: typeof sample[k]==='number' ? 'number' : (/^\d{4}-\d{2}-\d{2}/.test(String(sample[k]??'')) ? 'date' : 'text')
-      }));
+    const [stock, imp, compras, margenes, prima, datosPpal, espera] = await Promise.all([
+      sb.from('stock_diario').select('*').order('fecha'),
+      sb.from('importaciones_proyectadas').select('*'),
+      sb.from('compras_pluspetrol_maritimo').select('*'),
+      sb.from('margen_mensual_categoria').select('*'),
+      sb.from('prima_mensual').select('*'),
+      sb.from('datos_ppal').select('*').order('mes'),
+      sb.from('espera_pluspetrol').select('*').order('semana'),
+    ]);
+
+    const datosPpalRows = (!datosPpal.error && datosPpal.data) ? datosPpal.data.map(r=>({
+      mes:r.mes, tiempoAtencion: num(r.tiempo_atencion), accidentes: num(r.accidentes)
+    })) : [];
+    const esperaRows = (!espera.error && espera.data) ? espera.data.map(r=>({
+      semana:r.semana, horas: num(r.horas)
+    })) : [];
+    renderOperationalReal(datosPpalRows, esperaRows);
+
+    const kpiSegVal = document.getElementById('kpiSeguridadVal');
+    const kpiSegNote = document.getElementById('kpiSeguridadNote');
+    if(datosPpalRows.length){
+      const year = today.getFullYear();
+      const ytdPpal = datosPpalRows.filter(r=>{
+        const [y,m] = String(r.mes).split('-').map(Number);
+        return y===year && (m-1)<=today.getMonth();
+      });
+      const totalAccidentes = ytdPpal.reduce((s,r)=> s + (r.accidentes||0), 0);
+      kpiSegVal.textContent = fmtInt(totalAccidentes);
+      kpiSegVal.style.color = totalAccidentes>0 ? 'var(--red)' : 'var(--green)';
+      kpiSegNote.textContent = 'Incidentes YTD';
+    } else {
+      kpiSegVal.textContent = '—';
+      kpiSegNote.textContent = 'Sin datos aún en datos_ppal';
     }
-    AGREGAR_STATE = {table:config.key, config, columns, rows:data};
-    gridSub.textContent = `${data.length} registro(s) · tabla "${config.key}"`;
-    renderAgregarGrid();
-    renderAgregarNewRowForm();
-    status.textContent = '';
+
+    const stockRows = (!stock.error && stock.data) ? stock.data.map(r=>({
+      fecha:r.fecha,
+      inventario: r.inventario==null ? null : Number(r.inventario),
+      despPlaneado: r.desp_planeado==null ? null : Number(r.desp_planeado),
+      poa: r.poa==null ? null : Number(r.poa),
+    })) : [];
+    renderInventarioChart(stockRows);
+    renderSupplyStatus(stockRows);
+
+    const primaRows = (!prima.error && prima.data) ? prima.data.map(r=>({
+      fecha: r.Fecha ?? r.fecha,
+      solgas: num(r.solgas), ppi: num(r.ppi), plusPetrol: num(r.plus_petrol), primax: num(r.primax), zetaGas: num(r.zeta_gas),
+      volSolgas: num(r.volumen_solgas), volPlus: num(r.volumen_plus), volPrimax: num(r.volumen_primax), volZeta: num(r.volumen_zeta),
+    })) : [];
+    renderSourcingCard(primaRows);
+
+    if(invChart){
+      if(!imp.error && imp.data){
+        imp.data.forEach(row=>{
+          const idx = invDates.findIndex(d=> isoDate(d)===String(row.fecha));
+          if(idx>=0){
+            importMarker[idx] = invValueByIndex[idx] ?? 0;
+            importLabelVal[idx] = row.volumen_ktm;
+          }
+        });
+      }
+      if(!compras.error && compras.data){
+        compras.data.forEach(row=>{
+          const idx = invDates.findIndex(d=> isoDate(d)===String(row.fecha));
+          if(idx>=0){
+            compraMarker[idx] = invValueByIndex[idx] ?? 0;
+            compraLabelVal[idx] = row.volumen_ktm;
+          }
+        });
+      }
+      invChart.update();
+    }
+
+    const kpiVal = document.getElementById('kpiImpactoVal');
+    const kpiNote = document.getElementById('kpiImpactoNote');
+    if(!margenes.error && margenes.data && margenes.data.length){
+      const year = today.getFullYear();
+      const ytdRows = margenes.data.filter(r=>{
+        const [my, mm] = String(r.mes).split('-').map(Number);
+        return my===year && mm-1<=today.getMonth();
+      });
+      const total = ytdRows.reduce((s,r)=> s + (Number(r.margen_mm)||0), 0);
+      const byCat = {};
+      const normCat = c => c==='Importacion' ? 'Importación' : c;
+      ytdRows.forEach(r=>{ const c=normCat(r.categoria); byCat[c] = (byCat[c]||0) + (Number(r.margen_mm)||0); });
+      const sign = total>=0 ? '+' : '-';
+      kpiVal.textContent = `${sign}US$ ${fmtInt(Math.abs(total))} MM`;
+      kpiVal.style.color = total>=0 ? 'var(--green)' : 'var(--red)';
+      const parts = CATEGORIAS_MARGEN
+        .filter(c=> byCat[c]!=null)
+        .map(c=> `${c}: ${byCat[c]>=0?'+':''}${fmtInt(byCat[c])}`);
+      kpiNote.textContent = 'Valor capturado vs. benchmark de mercado';
+      document.getElementById('cardImpacto').title = parts.length
+        ? parts.join(' · ') + ' MM USD (YTD)'
+        : 'Sin desglose por categoría aún';
+    } else {
+      kpiVal.textContent = '—';
+      kpiNote.textContent = 'Sin datos aún en margen_mensual_categoria';
+      document.getElementById('cardImpacto').title = '';
+    }
   }catch(err){
-    status.textContent = 'Error al cargar: ' + err.message;
-    gridWrap.innerHTML = '';
+    console.warn('Control tower: error al cargar datos de Supabase:', err.message);
+    document.getElementById('kpiImpactoVal').textContent = '—';
+    document.getElementById('kpiImpactoNote').textContent = 'Error al cargar margen: ' + err.message;
   }
 }
 
-function renderAgregarGrid(){
-  const {columns, rows, config} = AGREGAR_STATE;
-  const wrap = document.getElementById('agregarGridWrap');
-  if(!rows.length){
-    wrap.innerHTML = '<div style="padding:14px; color:#9aa5b1; font-size:13px;">Sin registros aún. Agrega el primero desde el formulario de arriba.</div>';
-    return;
-  }
-  const canEditRow = (row)=> (config.pk && row[config.pk]!=null) || row.id!=null;
-  const theadHtml = '<thead><tr>' + columns.map(c=>`<th>${c.label}</th>`).join('') + '<th>Acciones</th></tr></thead>';
-  const rowsHtml = rows.map((row, idx)=>{
-    const cellsHtml = columns.map(c=>{
-      const val = row[c.field];
-      const inputType = agregarInputType(c.type);
-      const safeVal = val==null ? '' : String(val);
-      return `<td><input type="${inputType}" ${c.type==='number'?'step="any"':''} value="${safeVal.replace(/"/g,'&quot;')}" data-field="${c.field}" style="width:100%; min-width:90px; border:1px solid #e2e5ea; border-radius:6px; padding:4px 6px; font-size:12px;"/></td>`;
-    }).join('');
-    const editable = canEditRow(row);
-    const actionsHtml = editable
-      ? `<button onclick="saveAgregarRow(${idx})" style="background:var(--blue); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer;">Guardar</button>
-         <button onclick="deleteAgregarRow(${idx})" style="background:var(--red); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer; margin-left:4px;">Eliminar</button>`
-      : `<span style="font-size:10.5px; color:#9aa5b1;" title="No se detectó un identificador único en esta tabla">Solo lectura</span>`;
-    return `<tr data-row-idx="${idx}">${cellsHtml}<td style="white-space:nowrap;">${actionsHtml}</td></tr>`;
-  }).join('');
-  wrap.innerHTML = `<div class="data-table-wrap"><table class="data-table">${theadHtml}<tbody>${rowsHtml}</tbody></table></div>`;
-}
-
-function renderAgregarNewRowForm(){
-  const {columns} = AGREGAR_STATE;
-  const form = document.getElementById('agregarNewRowForm');
-  form.innerHTML = columns.map(c=>{
-    const inputType = agregarInputType(c.type);
-    return `<div style="display:flex; flex-direction:column; gap:4px;">
-      <label style="font-size:10.5px; font-weight:700; color:#6b7280; text-transform:uppercase;">${c.label}</label>
-      <input type="${inputType}" ${c.type==='number'?'step="any"':''} data-new-field="${c.field}" style="border:1px solid #d8dce2; border-radius:6px; padding:6px 8px; font-size:13px; min-width:120px;"/>
-    </div>`;
-  }).join('') + `<button onclick="addAgregarRow()" style="background:var(--green); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">+ Agregar</button>`;
-}
-
-function readAgregarValue(inputEl, type){
-  const raw = inputEl.value;
-  if(raw === '') return null;
-  if(type === 'number'){ const n = Number(raw); return isNaN(n) ? null : n; }
-  return raw;
-}
-
-async function saveAgregarRow(idx){
-  const {table, columns, rows, config} = AGREGAR_STATE;
-  const row = rows[idx];
-  const trEl = document.querySelector(`tr[data-row-idx="${idx}"]`);
-  const changes = {};
-  columns.forEach(c=>{
-    const input = trEl.querySelector(`input[data-field="${c.field}"]`);
-    changes[c.field] = readAgregarValue(input, c.type);
-  });
-  const pkField = (config.pk && row[config.pk]!=null) ? config.pk : 'id';
-  const pkValue = row[pkField];
-  const status = document.getElementById('agregarStatus');
-  status.textContent = 'Guardando…';
-  try{
-    const {error} = await sb.from(table).update(changes).eq(pkField, pkValue);
-    if(error) throw error;
-    status.textContent = 'Guardado ✓';
-    await loadAllFromSupabase();
-    renderAll();
-    loadAgregarTable(table);
-  }catch(err){
-    status.textContent = 'Error al guardar: ' + err.message;
-  }
-}
-
-async function deleteAgregarRow(idx){
-  const {table, rows, config} = AGREGAR_STATE;
-  const row = rows[idx];
-  if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
-  const pkField = (config.pk && row[config.pk]!=null) ? config.pk : 'id';
-  const pkValue = row[pkField];
-  const status = document.getElementById('agregarStatus');
-  status.textContent = 'Eliminando…';
-  try{
-    const {error} = await sb.from(table).delete().eq(pkField, pkValue);
-    if(error) throw error;
-    status.textContent = 'Eliminado ✓';
-    await loadAllFromSupabase();
-    renderAll();
-    loadAgregarTable(table);
-  }catch(err){
-    status.textContent = 'Error al eliminar: ' + err.message;
-  }
-}
-
-async function addAgregarRow(){
-  const {table, columns} = AGREGAR_STATE;
-  const form = document.getElementById('agregarNewRowForm');
-  const newRow = {};
-  let hasAny = false;
-  columns.forEach(c=>{
-    const input = form.querySelector(`input[data-new-field="${c.field}"]`);
-    const val = readAgregarValue(input, c.type);
-    if(val !== null) hasAny = true;
-    newRow[c.field] = val;
-  });
-  if(!hasAny){ alert('Completa al menos un campo antes de agregar.'); return; }
-  const status = document.getElementById('agregarStatus');
-  status.textContent = 'Agregando…';
-  try{
-    const {error} = await sb.from(table).insert(newRow);
-    if(error) throw error;
-    status.textContent = 'Agregado ✓';
-    await loadAllFromSupabase();
-    renderAll();
-    loadAgregarTable(table);
-  }catch(err){
-    status.textContent = 'Error al agregar: ' + err.message;
-  }
-}
+window.addEventListener('load', loadControlTowerData);
 </script>
+
 </body>
 </html>
