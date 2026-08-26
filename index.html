@@ -280,8 +280,10 @@
   .modal-box .chart-wrap{height:320px;}
   .modal-close{
     border:none; background:transparent; color:var(--text-muted);
-    font-size:22px; line-height:1; cursor:pointer; padding:0 4px;
+    font-size:22px; line-height:1; cursor:pointer; padding:0 4px; flex-shrink:0;
   }
+  .modal-box .card-head{flex-wrap:nowrap; align-items:flex-start;}
+  .modal-box .card-head > div:first-child{min-width:0;}
   .modal-close:hover{color:var(--ink);}
 
   /* ---------- Tablas ---------- */
@@ -313,6 +315,35 @@
   .hidden{display:none !important;}
   input[type="text"], input[type="number"], input[type="date"]{font-family:inherit;}
   button{font-family:inherit;}
+  .cap-item{display:flex; flex-direction:column; align-items:center; width:240px; cursor:default;}
+  .cap-svg{width:100%; height:auto; max-width:224px;}
+
+  /* ---------- Celular ---------- */
+  @media(max-width:700px){
+    .tabbar{
+      flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      padding-bottom:4px; margin-bottom:16px;
+    }
+    .tabbar::-webkit-scrollbar{display:none;}
+    .tab-btn{white-space:nowrap; flex:0 0 auto;}
+    .card{padding:14px 13px 12px;}
+    .card .chart-wrap{height:255px;}
+    .card-head{gap:6px;}
+    .kpi-strip{gap:10px; margin-bottom:14px;}
+    .kpi-strip-item{padding:13px 14px; min-height:0;}
+    .ksi-icon{width:34px; height:34px;}
+    .ksi-spark{width:56px; height:20px; right:10px; bottom:9px;}
+    .section-title{margin:20px 0 10px;}
+    .cap-item{width:47%; min-width:130px;}
+    #capacidadGrid{gap:12px !important;}
+    .modal-overlay{padding:10px;}
+    .modal-box{max-height:92vh; height:auto; padding:15px 13px 16px;}
+    .modal-box h3{font-size:11.5px;}
+    .modal-box .chart-wrap{height:280px;}
+    .data-table-wrap{max-height:62vh;}
+    table.data-table th{padding:8px 9px;}
+    table.data-table td{padding:7px 9px; font-size:12px;}
+  }
   ::-webkit-scrollbar{width:9px; height:9px;}
   ::-webkit-scrollbar-thumb{background:#CBD5E4; border-radius:6px;}
   ::-webkit-scrollbar-track{background:transparent;}
@@ -972,7 +1003,19 @@ function renderKPIHeader(){
   }
 }
 
+let anchoEraCelular = null;
+let resizeTimer = null;
+window.addEventListener('resize', ()=>{
+  const ahora = esCelular();
+  if(anchoEraCelular === null){ anchoEraCelular = ahora; return; }
+  if(ahora === anchoEraCelular) return;
+  anchoEraCelular = ahora;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{ if(DATA.stock) renderAll(); }, 250);
+});
+
 function renderAll(){
+  anchoEraCelular = esCelular();
   renderKPIHeader();
   renderStock();
   renderPrima();
@@ -1024,8 +1067,8 @@ function capacidadIcon(label, color, row, extraInfo, rOuter){
   const size = 224, svgH = 250, cx = size/2, cy = 132;
   if(!row || row.capacidad==null || row.inventario==null || row.capacidad<=0){
     return `
-    <div style="display:flex; flex-direction:column; align-items:center; width:240px;" title="${label}: sin datos">
-      <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
+    <div class="cap-item" title="${label}: sin datos">
+      <svg class="cap-svg" viewBox="0 0 ${size} ${svgH}" preserveAspectRatio="xMidYMid meet">
         <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="none" stroke="#d8dce2" stroke-width="4"/>
       </svg>
       <div style="font-size:13px; font-weight:700; color:var(--text-dark); margin-top:8px;">${label}</div>
@@ -1039,8 +1082,8 @@ function capacidadIcon(label, color, row, extraInfo, rOuter){
   const uid = capIconUid++;
   const title = `${label}: ${fmt1(row.inventario)} / ${fmt1(row.capacidad)} TM · ${(pct*100).toFixed(0)}%${extraInfo ? ' · ' + extraInfo : ''}`;
   return `
-  <div style="display:flex; flex-direction:column; align-items:center; width:240px; cursor:default;" title="${title}">
-    <svg width="${size}" height="${svgH}" viewBox="0 0 ${size} ${svgH}">
+  <div class="cap-item" title="${title}">
+    <svg class="cap-svg" viewBox="0 0 ${size} ${svgH}" preserveAspectRatio="xMidYMid meet">
       <defs>
         <pattern id="hatch-${uid}" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
           <rect width="6" height="6" fill="#ffffff"/>
@@ -1264,7 +1307,7 @@ function renderStock(){
       },
       scales:{
         ...baseLineOpts('kTM').scales,
-        x:{...baseLineOpts('kTM').scales.x, ticks:{font:{size:9.5}}}
+        x:{...baseLineOpts('kTM').scales.x, ticks:ticksX({font:{size: esCelular() ? 9 : 9.5}})}
       }
     }
   });
@@ -1397,7 +1440,7 @@ function renderPrima(){
         datalabels:{display:false}
       },
       scales:{
-        x:{grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, font:{size:9}}},
+        x:{grid:{display:false}, ticks:ticksX({maxRotation:0, font:{size:9}})},
         y:{position:'left', display:true, grid:{display:false, drawBorder:false}, title:{display:true,text:'kTM', font:{size:10.5}}, afterFit:s=>{s.width=52;}}
       }
     }
@@ -1461,7 +1504,7 @@ function drawMix(week){
         }
       },
       scales:{
-        x:{stacked:true, grid:{display:false}},
+        x:{stacked:true, grid:{display:false}, ticks:ticksX()},
         y:{stacked:true, grid:{display:false}, title:{display:true,text:'%'}, max:100}
       }
     }
@@ -1554,7 +1597,7 @@ function renderPPICFR(){
         }
       },
       scales:{
-        x:{grid:{display:false}, border:{display:false}},
+        x:{grid:{display:false}, border:{display:false}, ticks:ticksX()},
         y:{grid:{display:false}, border:{display:false}, title:{display:true,text:'USD/TM'}, ticks:{precision:0}}
       }
     }
@@ -1571,7 +1614,7 @@ function renderEspera(){
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} h`}}},
-      scales:{x:{grid:{display:false}}, y:{grid:{display:false}, title:{display:true,text:'Horas'}}}
+      scales:{x:{grid:{display:false}, ticks:ticksX()}, y:{grid:{display:false}, title:{display:true,text:'Horas'}}}
     }
   });
 }
@@ -1624,7 +1667,7 @@ function variacionChartConfig(d){
         }
       },
       scales:{
-        x:{grid:{display:false}},
+        x:{grid:{display:false}, ticks:ticksX()},
         y:{
           grid:{display:false},
           grace:'12%'
@@ -1740,14 +1783,26 @@ function closeVariacionModal(){
   destroyChart('chartVariacionModal');
 }
 
+function esCelular(){ return window.innerWidth <= 700; }
+
+// Ticks del eje X: en celular se muestran pocas etiquetas y sin rotar
+function ticksX(extra){
+  return Object.assign({
+    autoSkip:true,
+    maxRotation: esCelular() ? 0 : 50,
+    maxTicksLimit: esCelular() ? 6 : 24,
+    font:{size: esCelular() ? 9.5 : 11}
+  }, extra || {});
+}
+
 function baseLineOpts(yTitle){
   return {
     responsive:true, maintainAspectRatio:false,
     interaction:{mode:'index', intersect:false},
-    plugins:{legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10}}},
+    plugins:{legend:{position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10, font:{size: esCelular() ? 10 : 11}}}},
     scales:{
-      x:{grid:{display:false}},
-      y:{grid:{display:false}, title: yTitle?{display:true,text:yTitle}:{display:false}}
+      x:{grid:{display:false}, ticks:ticksX()},
+      y:{grid:{display:false}, ticks:{font:{size: esCelular() ? 9.5 : 11}}, title: yTitle?{display:true,text:yTitle}:{display:false}}
     }
   };
 }
