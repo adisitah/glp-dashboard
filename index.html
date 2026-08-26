@@ -7,113 +7,145 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --blue-dark:#4B3F91;
-    --blue:#2E6DB4;
-    --blue-mid:#3B7FC4;
-    --blue-light:#3FA0D8;
-    --teal:#2FAE8B;
-    --orange:#E15B77;
-    --purple:#7C6FCF;
-    --green:#3EC17A;
-    --red:#D9455C;
-    --gray:#9aa5b1;
-    --bg:#f3f4f6;
+    --navy-950:#0A1730;
+    --navy-900:#0F2143;
+    --navy-800:#16305C;
+    --ink:#0F2547;
+    --blue-dark:#123163;
+    --blue:#2563C7;
+    --blue-mid:#3277D6;
+    --blue-light:#5BA3E0;
+    --teal:#12A47F;
+    --orange:#E0455A;
+    --amber:#E0A33C;
+    --purple:#6E5FD0;
+    --green:#16A34A;
+    --red:#DC4A5C;
+    --gray:#94A0B4;
+    --bg:#EFF3F9;
     --card-bg:#ffffff;
-    --text-dark:#20272f;
-    --text-muted:#6b7280;
-    --border:#e4e6ea;
-    --font-serif:Georgia,'Iowan Old Style','Times New Roman',serif;
-    --font-sans:'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    --text-dark:#0F2547;
+    --text-body:#46536B;
+    --text-muted:#8A94A6;
+    --border:#E3E9F2;
+    --shadow:0 1px 2px rgba(15,37,71,.05), 0 10px 26px -20px rgba(15,37,71,.35);
+    --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    --font-serif:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     font-family:var(--font-sans);
     background:var(--bg);
-    color:var(--text-dark);
+    color:var(--text-body);
+    -webkit-font-smoothing:antialiased;
   }
+  .num-figure{font-variant-numeric:tabular-nums;}
+
+  /* ---------- Estructura ---------- */
+  .shell{display:flex; min-height:100vh;}
+  .content{flex:1; min-width:0;}
+
+  .sidebar{
+    width:218px; flex:0 0 218px;
+    background:var(--navy-950);
+    position:sticky; top:0; height:100vh;
+    display:flex; flex-direction:column;
+    padding:18px 12px 14px;
+  }
+  .brand{display:flex; align-items:center; gap:9px; padding:4px 10px 20px;}
+  .brand-name{color:#fff; font-size:14.5px; font-weight:800; letter-spacing:.16em;}
+  .nav{display:flex; flex-direction:column; gap:2px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    width:100%; background:none; border:none;
+    color:#A6B6D1; font-family:inherit; font-size:12.5px; font-weight:600;
+    padding:10px 12px; border-radius:0; cursor:pointer; text-align:left;
+    transition:background .15s, color .15s;
+  }
+  .nav-item svg{flex-shrink:0; opacity:.9;}
+  .nav-item:hover{background:rgba(255,255,255,.07); color:#fff;}
+  .nav-item.active{background:var(--blue); color:#fff;}
+  .nav-item.active svg{opacity:1;}
+  .nav-bottom{
+    margin-top:auto;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.10);
+  }
+  .nav-group-label{
+    font-size:9.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+    color:#65769A; padding:2px 12px 7px;
+  }
+  .sidebar-foot{
+    padding:14px 12px 2px; margin-top:14px;
+    border-top:1px solid rgba(255,255,255,.10);
+    font-size:10.5px; color:#7A8AA8; line-height:1.6; letter-spacing:.02em;
+  }
+
   header.topbar{
-    background:linear-gradient(135deg,var(--purple) 0%,var(--blue) 100%);
-    color:#fff;
-    padding:20px 20px 16px;
-    text-align:center;
-    position:relative;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    padding:16px 26px;
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:14px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:60;
   }
   header.topbar h1{
     margin:0;
-    font-family:var(--font-serif);
-    font-size:21px;
-    font-weight:600;
-    letter-spacing:0.2px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
+    font-size:18px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink);
+    display:flex; align-items:center; gap:9px;
   }
-  header.topbar p{
-    margin:4px 0 0;
-    font-size:12.5px;
-    color:#aebccb;
-  }
-  .meta-row{
-    position:absolute;
-    top:12px;
-    right:14px;
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-    gap:10px;
-    align-items:center;
-  }
+  .topbar-sub{font-size:11.5px; color:var(--text-muted); margin-top:5px; letter-spacing:.02em;}
+  .meta-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .pill{
-    background:rgba(255,255,255,0.15);
-    border:1px solid rgba(255,255,255,0.3);
-    border-radius:20px;
-    padding:3px 9px;
-    font-size:10px;
-    color:#fff;
+    background:#F4F7FC; border:1px solid var(--border); border-radius:0;
+    padding:6px 13px; font-size:11.5px; font-weight:600; color:var(--blue-dark);
+    display:inline-flex; align-items:center; gap:7px;
   }
-  .btn{
-    border:none;
-    border-radius:10px;
-    padding:9px 16px;
-    font-size:13px;
-    font-weight:600;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-  }
-  .btn-primary{
-    background:#fff;
-    color:var(--blue-dark);
-  }
-  .btn-primary:hover{background:#eaf1fb;}
+  .pill::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--green);}
+
   main{
-    max-width:1180px;
+    max-width:1340px;
     margin:0 auto;
-    padding:20px 16px 60px;
+    padding:22px 26px 60px;
   }
+
+  /* ---------- Navegación móvil ---------- */
+  .tabbar{display:none; gap:6px; margin:0 0 20px; flex-wrap:wrap;}
+  .tab-btn{
+    background:#fff; border:1px solid var(--border); border-radius:0;
+    padding:8px 15px; font-family:inherit; font-size:12.5px; font-weight:700;
+    color:var(--text-muted); cursor:pointer;
+  }
+  .tab-btn.active{background:var(--navy-900); border-color:var(--navy-900); color:#fff;}
+  @media(max-width:1000px){
+    .sidebar{display:none;}
+    .tabbar{display:flex;}
+    header.topbar{padding:14px 16px; position:static;}
+    main{padding:18px 16px 50px;}
+  }
+  @media(max-width:600px){
+    header.topbar h1{font-size:15px; letter-spacing:.03em;}
+    .ksi-value{font-size:21px;}
+  }
+
+  /* ---------- Rejillas ---------- */
   .section-title{
-    font-size:15px;
-    font-weight:700;
-    color:var(--blue-dark);
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    margin:28px 0 12px;
-    display:flex;
-    align-items:center;
-    gap:8px;
+    font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink);
+    margin:26px 0 12px;
+    display:flex; align-items:center; gap:9px;
   }
-  .section-title:first-of-type{margin-top:8px;}
-  .grid{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:16px;
-  }
-  .grid.stats{margin-top:28px; margin-bottom:28px;}
+  .section-title::before{content:''; width:3px; height:13px; border-radius:2px; background:var(--blue);}
+  .section-title:first-of-type{margin-top:2px;}
+  .grid{display:grid; grid-template-columns:1fr; gap:16px;}
+  .grid.stats{margin-top:24px; margin-bottom:24px;}
   @media(min-width:760px){
     .grid{grid-template-columns:repeat(2,1fr);}
     .grid.stats{grid-template-columns:repeat(2,1fr);}
@@ -121,347 +153,226 @@
   @media(min-width:1080px){
     .grid.wide{grid-template-columns:repeat(2,1fr);}
   }
+
+  /* ---------- Tarjetas ---------- */
   .card{
     background:var(--card-bg);
-    border-radius:0;
-    padding:18px 18px 14px;
-    box-shadow:0 1px 2px rgba(16,24,40,0.05);
     border:1px solid var(--border);
-    border-top:3px solid var(--blue-light);
+    border-top:2px solid var(--blue-light);
+    border-radius:0;
+    padding:17px 18px 14px;
+    box-shadow:var(--shadow);
     opacity:0;
-    animation:fadein .4s ease forwards;
+    animation:fadein .35s ease forwards;
   }
   @keyframes fadein{to{opacity:1;}}
   .card h3{
-    margin:0 0 2px;
-    font-family:var(--font-serif);
-    font-size:16px;
-    font-weight:400;
-    color:var(--text-dark);
+    margin:0 0 3px;
+    font-size:12.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink);
   }
-  .card .sub{
-    font-size:12px;
-    color:var(--text-muted);
-    margin-bottom:12px;
+  .card h3 svg{height:16px; width:auto;}
+  .modal-box h3{
+    margin:0 0 3px; font-size:12.5px; font-weight:800; letter-spacing:.07em;
+    text-transform:uppercase; color:var(--ink);
   }
-  .card .chart-wrap{position:relative;height:230px;}
+  .modal-box .sub{font-size:11.5px; color:var(--text-muted); margin-bottom:12px;}
+  .card .sub{font-size:11.5px; color:var(--text-muted); margin-bottom:12px; letter-spacing:.01em;}
+  .card .chart-wrap{position:relative; height:230px;}
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;}
+  .card select{
+    font-size:12px; font-family:inherit;
+    border:1px solid var(--border); border-radius:0;
+    padding:6px 10px; color:var(--ink); background:#F7F9FD; font-weight:600;
+  }
   .detail-btn{
-    border:1px solid var(--border);
-    background:#fff;
-    color:var(--text-muted);
-    width:26px;
-    height:26px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    flex-shrink:0;
-    transition:background .15s,color .15s,border-color .15s;
+    border:1px solid var(--border); background:#F7F9FD; color:var(--text-muted);
+    width:28px; height:28px; border-radius:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    transition:background .15s, color .15s, border-color .15s;
   }
-  .detail-btn:hover{
-    background:var(--teal);
-    border-color:var(--teal);
-    color:#fff;
+  .detail-btn:hover{background:var(--navy-900); border-color:var(--navy-900); color:#fff;}
+
+  /* ---------- Franja de KPIs ---------- */
+  .kpi-strip{display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:18px;}
+  @media (max-width: 980px){ .kpi-strip{grid-template-columns:repeat(2, 1fr);} }
+  @media (max-width: 560px){ .kpi-strip{grid-template-columns:1fr;} }
+  .kpi-strip-item{
+    background:#fff; border:1px solid var(--border); border-radius:0;
+    padding:15px 16px; box-shadow:var(--shadow);
+    position:relative; overflow:hidden; min-height:94px;
+    display:flex; align-items:flex-start; gap:12px;
   }
+  .kpi-strip-item.is-empty{opacity:.62;}
+  .ksi-icon{
+    width:38px; height:38px; border-radius:50%;
+    background:var(--navy-900); color:#fff;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .ksi-body{min-width:0;}
+  .ksi-label{font-size:10px; font-weight:800; letter-spacing:.09em; color:var(--text-muted); text-transform:uppercase; padding-right:30px;}
+  .ksi-value{
+    font-size:23px; font-weight:800; color:var(--c, var(--ink));
+    letter-spacing:-.015em; margin-top:4px; font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .ksi-delta{font-size:10.5px; font-weight:700; margin-top:3px;}
+  .ksi-delta.pos{color:var(--green);} .ksi-delta.neg{color:var(--red);} .ksi-delta.neutral{color:var(--gray);}
+  .ksi-spark{position:absolute; right:12px; bottom:11px; width:66px; height:24px; opacity:.9;}
+  .ksi-note{font-size:10px; color:var(--gray); margin-top:4px;}
+  .ksi-btn{
+    position:absolute; top:11px; right:11px;
+    background:#F7F9FD; border:1px solid var(--border); color:var(--text-muted);
+    width:26px; height:26px; border-radius:0; padding:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .ksi-btn:hover{background:var(--navy-900); border-color:var(--navy-900); color:#fff;}
+
+  /* ---------- Insignias ---------- */
+  .alert-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:#FDEDEF; color:#B22B3E; border:1px solid #F6CCD3;
+    border-radius:0; padding:4px 11px; font-size:11px; font-weight:700; white-space:nowrap;
+  }
+  .alert-badge .dot{width:7px; height:7px; border-radius:50%; background:var(--red);}
+  .alert-badge.ok{background:#E9F7EF; color:#11713F; border-color:#C5E8D4;}
+  .alert-badge.ok .dot{background:var(--green);}
+  .wed-badge{
+    display:inline-flex; align-items:center; gap:5px;
+    border-radius:0; padding:4px 11px; font-size:11.5px; font-weight:700;
+    color:#fff; white-space:nowrap;
+  }
+  .wed-badge .wed-label{font-weight:500; opacity:.85; font-size:10.5px;}
+  .wed-badge.pos{background:var(--green);}
+  .wed-badge.neg{background:var(--red);}
+  .corr-badge{font-size:11px; color:var(--gray); white-space:nowrap;}
+  .footer-row{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:6px;}
+  .legend-note{font-size:10.5px; color:var(--gray); margin-top:6px;}
+
+  /* ---------- Mini KPIs ---------- */
+  .mini-kpi-title{
+    font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--text-muted); margin-bottom:7px;
+  }
+  .mini-kpi-grid{display:grid; grid-template-columns:1fr; gap:8px;}
+  .prima-kpi-top, .prima-kpi-bottom{display:flex; flex-direction:column; justify-content:flex-start;}
+  .prima-kpi-bottom{margin-top:14px;}
+  .mini-kpi{
+    border-radius:0; padding:8px 11px; color:#fff; min-height:44px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .mini-kpi .mk-label{font-size:9.5px; font-weight:600; letter-spacing:.05em; opacity:.92; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .mini-kpi .mk-value{font-size:16px; font-weight:800; margin-top:2px; font-variant-numeric:tabular-nums;}
+  .mini-kpi .mk-sub{font-size:9.5px; opacity:.85; margin-top:1px;}
+
+  /* ---------- Modales ---------- */
   .modal-overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(16,24,40,0.55);
-    z-index:1000;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
+    display:none; position:fixed; inset:0;
+    background:rgba(10,23,48,.55); backdrop-filter:blur(2px);
+    z-index:1000; align-items:center; justify-content:center; padding:20px;
   }
-  .modal-overlay.open{ display:flex; }
+  .modal-overlay.open{display:flex;}
   .modal-box{
-    background:var(--card-bg);
-    border-radius:0;
-    border-top:3px solid var(--blue-light);
-    width:100%;
-    max-width:880px;
-    max-height:90vh;
-    overflow:auto;
-    padding:18px 18px 14px;
-    box-shadow:0 10px 30px rgba(16,24,40,0.25);
+    background:var(--card-bg); border-radius:0; border-top:2px solid var(--blue-light);
+    width:100%; max-width:880px; max-height:90vh; overflow:auto;
+    padding:18px 20px 16px; box-shadow:0 24px 60px rgba(10,23,48,.35);
   }
   .modal-box .chart-wrap{height:320px;}
   .modal-close{
-    border:none;
-    background:transparent;
-    color:var(--text-muted);
-    font-size:20px;
-    line-height:1;
-    cursor:pointer;
-    padding:2px 6px;
+    border:none; background:transparent; color:var(--text-muted);
+    font-size:22px; line-height:1; cursor:pointer; padding:0 4px;
   }
-  .modal-close:hover{ color:var(--text-dark); }
-  .card select{
-    font-size:12px;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:4px 8px;
-    color:var(--text-dark);
-    background:#f8fafc;
-  }
-  .card-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-  .stat-card{
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    min-height:auto;
-    padding:16px 18px 14px;
-    border-top-width:3px;
-  }
-  .stat-card .kpi-label{
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:.03em;
-    text-transform:uppercase;
-    color:var(--text-dark);
-  }
-  .stat-card .big{
-    font-family:var(--font-serif);
-    font-size:28px;
-    font-weight:700;
-    margin:6px 0 2px;
-  }
-  .stat-card .sub-text{
-    font-size:11px;
-    color:var(--text-muted);
-    margin-bottom:12px;
-  }
-  .stat-card .progress-track{
-    height:4px;
-    border-radius:3px;
-    background:#eef1f6;
-    overflow:hidden;
-  }
-  .stat-card .progress-fill{
-    height:100%;
-    border-radius:3px;
-    width:100%;
-    transition:background-color .3s;
-  }
-  .stat-card .label{
-    font-size:12px;
-    color:var(--text-muted);
-  }
-  .chips{
-    display:flex;
-    gap:10px;
-    margin-bottom:10px;
-    flex-wrap:wrap;
-  }
-  .chip{
-    background:#f5f8fd;
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:6px 10px;
-    font-size:12px;
-    color:var(--text-muted);
-  }
-  .chip b{color:var(--text-dark);font-size:13px;}
-  .empty-msg{
-    text-align:center;
-    color:var(--text-muted);
-    padding:60px 20px;
-    font-size:14px;
-  }
-  footer{
-    text-align:center;
-    color:#94a3b8;
-    font-size:12px;
-    padding:20px;
-  }
-  .hidden{display:none !important;}
-  .legend-note{font-size:11px;color:#94a3b8;margin-top:6px;}
-  .mini-kpi-title{
-    font-size:10.5px;
-    font-weight:700;
-    letter-spacing:0.3px;
-    text-transform:uppercase;
-    color:var(--text-muted);
-    margin-bottom:6px;
-  }
-  .mini-kpi-grid{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:8px;
-  }
-  .prima-kpi-top, .prima-kpi-bottom{ display:flex; flex-direction:column; justify-content:flex-start; }
-  .prima-kpi-bottom{ margin-top:14px; }
-  .mini-kpi{
-    border-radius:0;
-    padding:6px 10px;
-    color:#fff;
-    min-height:40px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-  }
-  .mini-kpi .mk-label{
-    font-size:9.5px;
-    opacity:0.92;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .mini-kpi .mk-value{
-    font-family:var(--font-sans);
-    font-size:15px;
-    font-weight:700;
-    margin-top:2px;
-  }
-  .alert-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    background:rgba(192,57,43,0.1);
-    border:1px solid rgba(192,57,43,0.35);
-    color:var(--red);
-    border-radius:20px;
-    padding:5px 11px;
-    font-size:12px;
-    font-weight:700;
-    white-space:nowrap;
-  }
-  .alert-badge .dot{
-    width:6px;height:6px;border-radius:50%;
-    background:var(--red);
-    flex-shrink:0;
-  }
-  .alert-badge.ok{
-    background:rgba(31,146,84,0.1);
-    border-color:rgba(31,146,84,0.35);
-    color:var(--green);
-  }
-  .alert-badge.ok .dot{background:var(--green);}
-  .wed-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    border-radius:6px;
-    padding:4px 9px;
-    font-size:12px;
-    font-weight:700;
-    color:#fff;
-    white-space:nowrap;
-  }
-  .wed-badge .wed-label{font-weight:400; opacity:0.85; font-size:10.5px;}
-  .wed-badge.pos{background:var(--green);}
-  .wed-badge.neg{background:var(--red);}
-  .corr-badge{
-    font-size:11px;
-    color:#94a3b8;
-    white-space:nowrap;
-  }
-  .footer-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-top:6px;
-  }
-  .tabbar{
-    display:flex;
-    gap:4px;
-    border-bottom:1px solid var(--border);
-    margin:8px 0 24px;
-  }
-  .tab-btn{
-    background:none;
-    border:none;
-    padding:10px 18px;
-    font-size:13px;
-    font-weight:700;
-    color:var(--text-muted);
-    cursor:pointer;
-    border-bottom:3px solid transparent;
-    margin-bottom:-1px;
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-  }
-  .tab-btn:hover{color:var(--blue-mid);}
-  .tab-btn.active{color:var(--blue-dark); border-bottom-color:var(--blue);}
-  .data-table-wrap{
-    overflow:auto;
-    max-height:340px;
-    border:1px solid var(--border);
-    border-radius:10px;
-  }
+  .modal-close:hover{color:var(--ink);}
+
+  /* ---------- Tablas ---------- */
+  .data-table-wrap{overflow:auto; max-height:340px; border:1px solid var(--border); border-radius:0;}
   table.data-table{width:100%; border-collapse:collapse; font-size:12.5px;}
   table.data-table th{
-    position:sticky; top:0;
-    background:#f5f8fd;
-    text-align:left;
-    padding:8px 10px;
-    font-weight:700;
-    color:var(--blue-dark);
-    border-bottom:1px solid var(--border);
-    white-space:nowrap;
+    position:sticky; top:0; background:#F5F8FD; text-align:left;
+    padding:9px 11px; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--blue-dark); border-bottom:1px solid var(--border); white-space:nowrap;
   }
   table.data-table td{
-    padding:7px 10px;
-    border-bottom:1px solid #f1f4f8;
-    color:var(--text-dark);
-    white-space:nowrap;
+    padding:8px 11px; border-bottom:1px solid #F0F3F8; color:var(--ink);
+    white-space:nowrap; font-variant-numeric:tabular-nums;
   }
-  table.data-table tbody tr:nth-child(even){background:#fafbfd;}
-  table.data-table tbody tr:hover{background:#eef4fc;}
+  table.data-table tbody tr:hover{background:#F5F9FF;}
+  table.data-table tr.total-row td{font-weight:800; background:#F5F8FD; color:var(--blue-dark);}
+  table.data-table tr.total-row td.neg{color:var(--red);}
+  table.data-table td.neg{color:var(--red);}
+  table.data-table td.num, table.data-table th.num{text-align:right;}
+  .cat-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle;}
   .data-card{margin-bottom:16px;}
-.kpi-strip{
-  display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:16px;
-}
-@media (max-width: 900px){ .kpi-strip{ grid-template-columns:repeat(2, 1fr); } }
-.kpi-strip-item{
-  background:#fff; border-radius:12px; padding:14px 16px; border-top:3px solid var(--c, #ccc);
-  box-shadow:0 1px 3px rgba(20,25,35,0.06); position:relative; overflow:hidden; min-height:88px;
-}
-.kpi-strip-item.is-empty{ opacity:0.62; }
-.ksi-label{font-size:11px; font-weight:700; letter-spacing:.02em; color:#6b7280; text-transform:uppercase;}
-.ksi-value{font-size:21px; font-weight:800; color:#1b2733; margin-top:4px;}
-.ksi-delta{font-size:11px; font-weight:700; margin-top:2px;}
-.ksi-delta.pos{color:#3EC17A;} .ksi-delta.neg{color:#D9455C;} .ksi-delta.neutral{color:#9aa5b1;}
-.ksi-spark{position:absolute; right:10px; bottom:10px; width:76px; height:28px; opacity:0.85;}
-.ksi-note{font-size:10.5px; color:#9aa5b1; margin-top:4px;}
+
+  /* ---------- Varios ---------- */
+  .chips{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .chip{background:#F5F8FD; border:1px solid var(--border); border-radius:0; padding:6px 10px; font-size:12px; color:var(--text-muted);}
+  .chip b{color:var(--ink); font-size:13px;}
+  .empty-msg{text-align:center; color:var(--text-muted); padding:70px 20px; font-size:13.5px;}
+  footer{text-align:center; color:var(--gray); font-size:12px; padding:20px;}
+  .hidden{display:none !important;}
+  input[type="text"], input[type="number"], input[type="date"]{font-family:inherit;}
+  button{font-family:inherit;}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:#CBD5E4; border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
 </style>
 </head>
 <body>
 
-<header class="topbar">
-  <h1>
-    <svg width="34" height="30" viewBox="0 0 100 46" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-      <g fill="rgba(255,255,255,0.18)" stroke="#fff" stroke-width="2.5">
-        <circle cx="18" cy="20" r="13"/>
-        <line x1="12" y1="31" x2="8" y2="40" stroke-width="1.6"/>
-        <line x1="24" y1="31" x2="28" y2="40" stroke-width="1.6"/>
-        <circle cx="50" cy="15" r="15.5"/>
-        <line x1="42" y1="28" x2="37" y2="40" stroke-width="1.6"/>
-        <line x1="58" y1="28" x2="63" y2="40" stroke-width="1.6"/>
-        <circle cx="82" cy="20" r="13"/>
-        <line x1="76" y1="31" x2="72" y2="40" stroke-width="1.6"/>
-        <line x1="88" y1="31" x2="92" y2="40" stroke-width="1.6"/>
-      </g>
+<div class="shell">
+
+<aside class="sidebar">
+  <div class="brand">
+    <svg width="22" height="24" viewBox="0 0 24 28" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 1C12 1 4 8.6 4 16.2 4 21.1 7.6 25 12 25s8-3.9 8-8.8C20 10.5 15.5 7 12 1z" fill="#2563C7"/>
+      <path d="M12 9.5c0 0-3.6 3.6-3.6 7.2 0 2.3 1.6 4.1 3.6 4.1s3.6-1.8 3.6-4.1c0-2.4-2-4.2-3.6-7.2z" fill="#fff"/>
     </svg>
-    Abastecimiento | Resumen semanal
-  </h1>
+    <span class="brand-name">SOLGAS</span>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-item active" data-tab="resumen" onclick="switchTab('resumen')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Resumen ejecutivo
+    </button>
+    <button class="nav-item" data-tab="tpg" onclick="switchTab('tpg')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="13" height="10" rx="2"/><path d="M14 9h4l3 4v3h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>
+      Abastecimiento &amp; TPG
+    </button>
+  </nav>
+
+  <nav class="nav nav-bottom">
+    <div class="nav-group-label">Datos</div>
+    <button class="nav-item" data-tab="detalle" onclick="switchTab('detalle')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+      Detalle de datos
+    </button>
+    <button class="nav-item" data-tab="agregar" onclick="switchTab('agregar')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+      Agregar datos
+    </button>
+  </nav>
+
+  <div class="sidebar-foot">
+    Fuente: Supabase<br>
+    <span id="sidebarUpdated">—</span>
+  </div>
+</aside>
+
+<div class="content">
+
+<header class="topbar">
+  <div>
+    <h1>Abastecimiento <span style="color:var(--gray);font-weight:500;">|</span> Resumen semanal</h1>
+  </div>
   <div class="meta-row" id="metaRow">
     <span class="pill" id="dataStatus">Cargando datos…</span>
   </div>
 </header>
 
 <main>
-  <div id="errorBanner" class="hidden" style="background:#fdecea;border:1px solid #f5c2c0;color:#a3372c;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px;"></div>
+  <div id="errorBanner" class="hidden" style="background:#fdecea;border:1px solid #f5c2c0;color:#a3372c;border-radius:0;padding:12px 14px;margin-top:12px;font-size:13px;"></div>
 
   <div id="emptyState" class="empty-msg">
     Cargando datos desde Supabase…
@@ -470,34 +381,60 @@
   <div id="dashboardContent" class="hidden">
 
     <div class="tabbar">
-      <button class="tab-btn active" id="tabBtnResumen" onclick="switchTab('resumen')">Dashboard</button>
-      <button class="tab-btn" id="tabBtnTPG" onclick="switchTab('tpg')">TPG</button>
-      <button class="tab-btn" id="tabBtnDetalle" onclick="switchTab('detalle')">Detalle de datos</button>
-      <button class="tab-btn" id="tabBtnAgregar" onclick="switchTab('agregar')">Agregar datos</button>
+      <button class="tab-btn active" id="tabBtnResumen" data-tab="resumen" onclick="switchTab('resumen')">Dashboard</button>
+      <button class="tab-btn" id="tabBtnTPG" data-tab="tpg" onclick="switchTab('tpg')">TPG</button>
+      <button class="tab-btn" id="tabBtnDetalle" data-tab="detalle" onclick="switchTab('detalle')">Detalle de datos</button>
+      <button class="tab-btn" id="tabBtnAgregar" data-tab="agregar" onclick="switchTab('agregar')">Agregar datos</button>
     </div>
 
     <div id="viewResumen">
     <div class="kpi-strip" id="kpiStrip">
-      <div class="kpi-strip-item" style="--c:#2E6DB4;">
-        <div class="ksi-label">Volumen Despachado (YTD)</div>
-        <div class="ksi-value" id="kpiVolDespVal">—</div>
-        <div class="ksi-delta neutral" id="kpiVolDespDelta"></div>
+      <div class="kpi-strip-item" style="--c:var(--blue);">
+        <div class="ksi-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="13" height="10" rx="2"/><path d="M14 9h4l3 4v3h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>
+        </div>
+        <div class="ksi-body">
+          <div class="ksi-label">Volumen Despachado (YTD)</div>
+          <div class="ksi-value" id="kpiVolDespVal">—</div>
+          <div class="ksi-delta neutral" id="kpiVolDespDelta"></div>
+        </div>
       </div>
-      <div class="kpi-strip-item" style="--c:#2FAE8B;">
-        <div class="ksi-label">Margen del Importado</div>
-        <div class="ksi-value" id="kpiMargenVal">—</div>
-        <div class="ksi-delta neutral" id="kpiMargenDelta"></div>
+
+      <div class="kpi-strip-item" style="--c:var(--teal);">
+        <div class="ksi-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 6.5H9.8a3.3 3.3 0 0 0 0 6.6h4.4a3.3 3.3 0 0 1 0 6.6H6.5"/></svg>
+        </div>
+        <div class="ksi-body">
+          <div class="ksi-label" id="kpiMargenLabel">Margen del Importado</div>
+          <div class="ksi-value" id="kpiMargenVal">—</div>
+          <div class="ksi-delta neutral" id="kpiMargenDelta"></div>
+        </div>
         <svg class="ksi-spark" id="kpiMargenSpark" viewBox="0 0 100 30" preserveAspectRatio="none"></svg>
+        <button class="ksi-btn hidden" id="kpiMargenBtn" title="Ver detalle por mes y categoría" onclick="openMargenCatModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+        </button>
       </div>
-      <div class="kpi-strip-item" id="kpiAtencionCard" style="--c:#7C6FCF;">
-        <div class="ksi-label">Tiempo Medio de Atención de Clientes</div>
-        <div class="ksi-value" id="kpiAtencionVal">—</div>
-        <div class="ksi-note" id="kpiAtencionNote">Aún sin fuente de datos conectada</div>
+
+      <div class="kpi-strip-item" id="kpiAtencionCard" style="--c:var(--purple);">
+        <div class="ksi-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6.5V12l3.5 2.2"/></svg>
+        </div>
+        <div class="ksi-body">
+          <div class="ksi-label">Tiempo Medio de Atención</div>
+          <div class="ksi-value" id="kpiAtencionVal">—</div>
+          <div class="ksi-note" id="kpiAtencionNote">Aún sin fuente de datos conectada</div>
+        </div>
       </div>
-      <div class="kpi-strip-item" id="kpiAccidentesCard" style="--c:#D9455C;">
-        <div class="ksi-label">Accidentes</div>
-        <div class="ksi-value" id="kpiAccidentesVal">—</div>
-        <div class="ksi-note" id="kpiAccidentesNote">Aún sin fuente de datos conectada</div>
+
+      <div class="kpi-strip-item" id="kpiAccidentesCard" style="--c:var(--green);">
+        <div class="ksi-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 5.6v6c0 4.6 3.1 8.4 7.5 9.9 4.4-1.5 7.5-5.3 7.5-9.9v-6z"/><path d="M9 12.2l2.1 2.1 4-4.2"/></svg>
+        </div>
+        <div class="ksi-body">
+          <div class="ksi-label">Accidentes</div>
+          <div class="ksi-value" id="kpiAccidentesVal">—</div>
+          <div class="ksi-note" id="kpiAccidentesNote">Aún sin fuente de datos conectada</div>
+        </div>
       </div>
     </div>
     <div class="grid wide">
@@ -520,6 +457,7 @@
               </svg>
               TERMINAL | Proyección de inventarios + 30 d
             </h3>
+            <div class="sub" id="stockSub">—</div>
           </div>
           <div id="stockAlertBadge"></div>
         </div>
@@ -662,7 +600,7 @@
             <div class="sub">Elige la tabla de Supabase que quieres revisar, editar o completar</div>
           </div>
         </div>
-        <select id="agregarTableSelect" style="margin-top:6px; padding:8px 12px; border-radius:8px; border:1px solid #d8dce2; font-size:13px; min-width:280px;"></select>
+        <select id="agregarTableSelect" style="margin-top:6px; padding:8px 12px; border-radius:0; border:1px solid var(--border); font-size:13px; min-width:280px;"></select>
         <span id="agregarStatus" style="margin-left:12px; font-size:12.5px; color:#6b7280;"></span>
       </div>
 
@@ -690,6 +628,9 @@
   </div>
 </main>
 
+</div><!-- /.content -->
+</div><!-- /.shell -->
+
 <div class="modal-overlay" id="variacionModalOverlay" onclick="if(event.target===this) closeVariacionModal()">
   <div class="modal-box">
     <div class="card-head">
@@ -700,6 +641,19 @@
       <button class="modal-close" title="Cerrar" onclick="closeVariacionModal()">&times;</button>
     </div>
     <div class="chart-wrap"><canvas id="chartVariacionModal"></canvas></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="margenCatModalOverlay" onclick="if(event.target===this) closeMargenCatModal()">
+  <div class="modal-box">
+    <div class="card-head">
+      <div>
+        <h3>Margen por categoría · Detalle por mes</h3>
+        <div class="sub" id="margenCatModalSub">—</div>
+      </div>
+      <button class="modal-close" title="Cerrar" onclick="closeMargenCatModal()">&times;</button>
+    </div>
+    <div id="margenCatModalBody"></div>
   </div>
 </div>
 
@@ -719,14 +673,15 @@
 
 <script>
 const COLORS = {
-  blue:'#2E6DB4', blueLight:'#3FA0D8', blueMid:'#3B7FC4',
-  teal:'#2FAE8B', orange:'#E15B77', purple:'#7C6FCF',
-  green:'#3EC17A', red:'#D9455C', gray:'#9aa5b1'
+  blue:'#2563C7', blueLight:'#5BA3E0', blueMid:'#3277D6',
+  teal:'#12A47F', orange:'#E0455A', purple:'#6E5FD0',
+  green:'#16A34A', red:'#DC4A5C', gray:'#94A0B4',
+  navy:'#0F2143', amber:'#E0A33C'
 };
 
-Chart.defaults.font.family = "'Aptos Display','Aptos',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
+Chart.defaults.font.family = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif";
 Chart.defaults.font.size = 11;
-Chart.defaults.color = '#6b7280';
+Chart.defaults.color = '#8A94A6';
 
 if(typeof ChartDataLabels !== 'undefined'){
   Chart.register(ChartDataLabels);
@@ -789,8 +744,12 @@ async function loadAllFromSupabase(){
     DATA.datosPpal = datosPpal.data.map(r=>({mes:r.mes, tiempoAtencion:num(r.tiempo_atencion), accidentes:num(r.accidentes)}));
 
     await loadCapacidadProveedores();
+    await loadMargenCategoria();
 
-    document.getElementById('dataStatus').textContent = 'Actualizado: ' + new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const sello = new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('dataStatus').textContent = 'Actualizado ' + sello;
+    const foot = document.getElementById('sidebarUpdated');
+    if(foot) foot.textContent = 'Actualizado ' + sello;
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('dashboardContent').classList.remove('hidden');
     renderAll();
@@ -827,6 +786,17 @@ async function loadCapacidadProveedores(){
     DATA.capacidad.plus = plus.data.map(extractCapRow);
   }catch(err){
     console.warn('No se pudo cargar capacidad de proveedores:', err.message);
+  }
+}
+
+async function loadMargenCategoria(){
+  DATA.margenCat = [];
+  try{
+    const {data, error} = await sb.from('margen_mensual_categoria').select('*').order('mes');
+    if(error) throw error;
+    DATA.margenCat = data.map(r=>({mes:r.mes, categoria:r.categoria, margenMM:num(r.margen_mm)}));
+  }catch(err){
+    console.warn('No se pudo cargar margen_mensual_categoria:', err.message);
   }
 }
 
@@ -947,20 +917,46 @@ function renderKPIHeader(){
     }
   }
 
-  // --- Margen del Importado: YTD USD/TM, con histórico mensual como sparkline ---
-  const margen = DATA.margen || [];
-  if(margen.length){
-    const last = margen[margen.length-1];
-    document.getElementById('kpiMargenVal').textContent = last.ytdUSDTM==null ? '—' : fmt1(last.ytdUSDTM)+' USD/TM';
-    drawSpark('kpiMargenSpark', margen.map(r=>r.mesUSDTM), '#2FAE8B');
-    const prev = margen.length>1 ? margen[margen.length-2] : null;
+  // --- Margen: acumulado del año por categoría (tabla margen_mensual_categoria) ---
+  const mcat = DATA.margenCat || [];
+  const btn = document.getElementById('kpiMargenBtn');
+  if(mcat.length){
+    const years = [...new Set(mcat.map(r=>mesKeyOf(r.mes).slice(0,4)))].sort();
+    const yr = years[years.length-1];
+    MARGEN_CAT_STATE.year = yr;
+    const yRows = mcat.filter(r=>mesKeyOf(r.mes).slice(0,4) === yr);
+    const meses = [...new Set(yRows.map(r=>mesKeyOf(r.mes)))].sort();
+    const totalPorMes = meses.map(m=> yRows.filter(r=>mesKeyOf(r.mes)===m).reduce((s,r)=>s+(r.margenMM||0),0));
+    const totalYtd = totalPorMes.reduce((s,v)=>s+v, 0);
+
+    document.getElementById('kpiMargenLabel').textContent = `Margen Acumulado ${yr}`;
+    document.getElementById('kpiMargenVal').textContent = fmt0(totalYtd) + ' ' + MARGEN_CAT_UNIT;
+    drawSpark('kpiMargenSpark', totalPorMes, COLORS.teal);
+
     const elDelta = document.getElementById('kpiMargenDelta');
-    if(prev && prev.mesUSDTM!=null && last.mesUSDTM!=null){
-      const diff = last.mesUSDTM - prev.mesUSDTM;
-      elDelta.textContent = `${diff>=0?'▲':'▼'} ${fmt1(Math.abs(diff))} USD/TM vs mes anterior`;
-      elDelta.className = 'ksi-delta ' + (diff>=0?'pos':'neg');
-    } else {
-      elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
+    if(meses.length){
+      const ultimo = totalPorMes[totalPorMes.length-1];
+      elDelta.textContent = `${ultimo>=0?'▲':'▼'} ${fmt0(Math.abs(ultimo))} en ${fmtMes(meses[meses.length-1]+'-01')}`;
+      elDelta.className = 'ksi-delta ' + (ultimo>=0?'pos':'neg');
+    }
+    btn.classList.remove('hidden');
+  } else {
+    // Sin la tabla por categoría: se mantiene el margen del importado (USD/TM)
+    btn.classList.add('hidden');
+    const margen = DATA.margen || [];
+    if(margen.length){
+      const last = margen[margen.length-1];
+      document.getElementById('kpiMargenVal').textContent = last.ytdUSDTM==null ? '—' : fmt1(last.ytdUSDTM)+' USD/TM';
+      drawSpark('kpiMargenSpark', margen.map(r=>r.mesUSDTM), COLORS.teal);
+      const prev = margen.length>1 ? margen[margen.length-2] : null;
+      const elDelta = document.getElementById('kpiMargenDelta');
+      if(prev && prev.mesUSDTM!=null && last.mesUSDTM!=null){
+        const diff = last.mesUSDTM - prev.mesUSDTM;
+        elDelta.textContent = `${diff>=0?'▲':'▼'} ${fmt1(Math.abs(diff))} USD/TM vs mes anterior`;
+        elDelta.className = 'ksi-delta ' + (diff>=0?'pos':'neg');
+      } else {
+        elDelta.textContent = ''; elDelta.className = 'ksi-delta neutral';
+      }
     }
   }
 
@@ -988,8 +984,8 @@ function renderAll(){
 }
 
 const CAPACIDAD_PROVEEDORES = [
-  {key:'solgas', label:'Solgas', color:'#E8973B'},
-  {key:'zeta', label:'Zeta Gas', color:'#1B7A43'},
+  {key:'solgas', label:'Solgas', color:COLORS.amber},
+  {key:'zeta', label:'Zeta Gas', color:'#11713F'},
   {key:'tdp', label:'TDP', color:COLORS.blue},
   {key:'plus', label:'PlusPetrol', color:COLORS.orange},
 ];
@@ -1077,10 +1073,9 @@ function switchTab(tab){
   document.getElementById('viewTPG').classList.toggle('hidden', tab !== 'tpg');
   document.getElementById('viewDetalle').classList.toggle('hidden', tab !== 'detalle');
   document.getElementById('viewAgregar').classList.toggle('hidden', tab !== 'agregar');
-  document.getElementById('tabBtnResumen').classList.toggle('active', tab === 'resumen');
-  document.getElementById('tabBtnTPG').classList.toggle('active', tab === 'tpg');
-  document.getElementById('tabBtnDetalle').classList.toggle('active', tab === 'detalle');
-  document.getElementById('tabBtnAgregar').classList.toggle('active', tab === 'agregar');
+  document.querySelectorAll('[data-tab]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
   if(tab === 'tpg'){
     if(charts.chartMix) charts.chartMix.resize(); else renderMix();
     if(charts.chartEspera) charts.chartEspera.resize(); else renderEspera();
@@ -1090,6 +1085,32 @@ function switchTab(tab){
   }
 }
 
+// ================= Margen por categoría =================
+// Unidad de la columna margen_mm. Si el dato está en miles de USD,
+// cambia este texto por 'kUSD' y toda la tarjeta se actualiza.
+const MARGEN_CAT_UNIT = 'MM USD';
+
+const MARGEN_CAT_COLORS = {
+  'Abastecimiento': COLORS.blue,
+  'Importación': COLORS.orange,
+  'Importacion': COLORS.orange,
+  'Mayorista': COLORS.purple,
+  'Terminal': COLORS.teal,
+};
+const MARGEN_CAT_FALLBACK = [COLORS.blueLight, COLORS.amber, COLORS.green, COLORS.red, COLORS.purple, COLORS.gray];
+function margenCatColor(cat, idx){ return MARGEN_CAT_COLORS[cat] || MARGEN_CAT_FALLBACK[idx % MARGEN_CAT_FALLBACK.length]; }
+
+let MARGEN_CAT_STATE = {tab:'ytd', year:null, mes:null};
+
+function mesKeyOf(v){
+  const s = String(v);
+  const m = s.match(/^(\d{4})-(\d{2})/);
+  return m ? m[1]+'-'+m[2] : s;
+}
+function mesShort(key){
+  const m = String(key).match(/^(\d{4})-(\d{2})/);
+  return m ? MESES[parseInt(m[2],10)-1].slice(0,3) : String(key);
+}
 function buildTable(headers, rows){
   const thead = '<thead><tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
   const tbody = '<tbody>' + rows.map(r=>'<tr>' + r.map(c=>`<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody>';
@@ -1127,6 +1148,11 @@ function renderDetalle(){
   const margenTable = buildTable(
     ['Mes','Margen Mes (MM USD)','Margen Mes (USD/TM)','Margen YTD (MM USD)','Margen YTD (USD/TM)'],
     DATA.margen.map(r=>[fmtMes(r.mes), fmt1(r.mesMM), fmt1(r.mesUSDTM), fmt1(r.ytdMM), fmt1(r.ytdUSDTM)])
+  );
+
+  const margenCatTable = buildTable(
+    ['Mes','Categoría',`Margen (${MARGEN_CAT_UNIT})`],
+    (DATA.margenCat||[]).map(r=>[fmtMes(r.mes), r.categoria, fmt0(r.margenMM)])
   );
 
   const mixTable = buildTable(
@@ -1168,20 +1194,42 @@ function renderDetalle(){
     dataCard('TERMINAL | Proyección de inventarios + 30 d', COLORS.blue, stockTable) +
     dataCard('Prima de importación vs mercado y volumen por competidor', COLORS.orange, primaTable) +
     dataCard('Margen mensual', COLORS.green, margenTable) +
+    ((DATA.margenCat||[]).length ? dataCard('Margen mensual por categoría', COLORS.green, margenCatTable) : '') +
     dataCard('Mix de abastecimiento semanal', COLORS.purple, mixTable) +
     dataCard('Costos de Referencia del GLP', COLORS.teal, ppiCfrTable) +
     dataCard('Tiempo de espera PlusPetrol', COLORS.orange, esperaTable) +
     dataCard('Variación de precio: PlusPetrol vs MB', COLORS.blueLight, variacionTable) +
     dataCard('Despacho (vs. 2025)', '#2E6DB4', despachoTable) +
     dataCard('Tiempo de Atención y Accidentes', '#7C6FCF', datosPpalTable) +
-    dataCard('Capacidad Solgas', '#E8973B', capacidadTable(DATA.capacidad.solgas)) +
+    dataCard('Capacidad Solgas', COLORS.amber, capacidadTable(DATA.capacidad.solgas)) +
     dataCard('Capacidad Zeta Gas', COLORS.green, capacidadTable(DATA.capacidad.zeta)) +
     dataCard('Capacidad TDP', COLORS.blue, capacidadTable(DATA.capacidad.tdp)) +
     dataCard('Capacidad PlusPetrol', COLORS.orange, capacidadTable(DATA.capacidad.plus));
 }
 
+// Lunes de la semana en curso (el último lunes en o antes de la fecha dada)
+function ultimoLunes(fecha){
+  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  const diff = (d.getDay() + 6) % 7; // 0 = lunes
+  d.setDate(d.getDate() - diff);
+  return d;
+}
+
 function renderStock(){
-  const d = DATA.stock;
+  const todo = DATA.stock || [];
+
+  // El gráfico arranca en el lunes de esta semana y muestra la proyección hacia adelante.
+  const ancla = ultimoLunes(new Date());
+  let d = todo.filter(r=>{ const dt = parseLocalDate(r.fecha); return dt && dt >= ancla; });
+  let desdeLunes = d.length >= 2;
+  if(!desdeLunes) d = todo; // si la data no cubre esta semana, se muestra completa
+
+  const sub = document.getElementById('stockSub');
+  if(sub){
+    sub.textContent = desdeLunes
+      ? `Desde el lunes ${fmtDDMM(ancla)} · ${d.length} día${d.length===1?'':'s'}`
+      : 'Serie completa cargada';
+  }
 
   const badge = document.getElementById('stockAlertBadge');
   const alertCount = d.filter(r=>r.inventario!=null && r.despPlaneado!=null && r.inventario < r.despPlaneado).length;
@@ -1229,7 +1277,7 @@ function hexToRgba(hex, alpha){
 }
 
 const MCK = {
-  solgas:'#E8973B', plusPetrol:COLORS.blueLight, primax:COLORS.orange, zetaGas:'#1B7A43', ppi:COLORS.gray
+  solgas:COLORS.amber, plusPetrol:COLORS.blueLight, primax:COLORS.orange, zetaGas:'#11713F', ppi:COLORS.gray
 };
 
 function renderPrima(){
@@ -1571,7 +1619,7 @@ function variacionChartConfig(d){
           display:c=>{const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v);},
           anchor:c=>c.dataset.data[c.dataIndex]>=0 ? 'end' : 'start',
           align:c=>c.dataset.data[c.dataIndex]>=0 ? 'top' : 'bottom',
-          color:'#1b2733', font:{weight:'700', size:10},
+          color:'#0F2547', font:{weight:'700', size:10},
           formatter:v=>fmt1(v)
         }
       },
@@ -1625,6 +1673,51 @@ function openCapacidadModal(){
 
 function closeCapacidadModal(){
   document.getElementById('capacidadModalOverlay').classList.remove('open');
+}
+
+function openMargenCatModal(){
+  const rows = DATA.margenCat || [];
+  const body = document.getElementById('margenCatModalBody');
+  const sub = document.getElementById('margenCatModalSub');
+  const overlay = document.getElementById('margenCatModalOverlay');
+  if(!rows.length){
+    sub.textContent = 'Sin datos';
+    body.innerHTML = '';
+    overlay.classList.add('open');
+    return;
+  }
+  const yr = MARGEN_CAT_STATE.year || [...new Set(rows.map(r=>mesKeyOf(r.mes).slice(0,4)))].sort().pop();
+  const yRows = rows.filter(r=>mesKeyOf(r.mes).slice(0,4) === yr);
+  const cats = [...new Set(yRows.map(r=>r.categoria))];
+  const meses = [...new Set(yRows.map(r=>mesKeyOf(r.mes)))].sort();
+  const valueOf = (mes, cat)=>{
+    const f = yRows.find(r=>mesKeyOf(r.mes)===mes && r.categoria===cat);
+    return f ? f.margenMM : null;
+  };
+  const cell = (v)=> `<td class="num${v!=null && v<0 ? ' neg':''}">${v==null?'—':fmt0(v)}</td>`;
+
+  const totalYtd = yRows.reduce((s,r)=>s+(r.margenMM||0), 0);
+  sub.textContent = `${yr} · valores en ${MARGEN_CAT_UNIT} · acumulado ${fmt0(totalYtd)}`;
+
+  const thead = '<thead><tr><th>Mes</th>' +
+    cats.map((c,i)=>`<th class="num"><span class="cat-dot" style="background:${margenCatColor(c,i)};"></span>${c}</th>`).join('') +
+    '<th class="num">Total mes</th></tr></thead>';
+
+  const bodyRows = meses.map(m=>{
+    const total = cats.reduce((s,c)=>s+(valueOf(m,c)||0), 0);
+    return `<tr><td>${fmtMes(m+'-01')}</td>` + cats.map(c=>cell(valueOf(m,c))).join('') + cell(total) + '</tr>';
+  }).join('');
+
+  const acumRow = `<tr class="total-row"><td>Acumulado ${yr}</td>` +
+    cats.map(c=>cell(yRows.filter(r=>r.categoria===c).reduce((s,r)=>s+(r.margenMM||0),0))).join('') +
+    cell(totalYtd) + '</tr>';
+
+  body.innerHTML = `<div class="data-table-wrap" style="max-height:420px;"><table class="data-table">${thead}<tbody>${bodyRows}${acumRow}</tbody></table></div>`;
+  overlay.classList.add('open');
+}
+
+function closeMargenCatModal(){
+  document.getElementById('margenCatModalOverlay').classList.remove('open');
 }
 
 function openPrimaYtdModal(){
@@ -1695,6 +1788,11 @@ const AGREGAR_TABLES = [
     {field:'ytd_mm', label:'Margen YTD (MM USD)', type:'number'},
     {field:'ytd_usdtm', label:'Margen YTD (USD/TM)', type:'number'},
   ]},
+  {key:'margen_mensual_categoria', label:'Margen mensual por categoría', pk:null, pkFields:['mes','categoria'], columns:[
+    {field:'mes', label:'Mes', type:'date'},
+    {field:'categoria', label:'Categoría', type:'text'},
+    {field:'margen_mm', label:`Margen (${MARGEN_CAT_UNIT})`, type:'number'},
+  ]},
   {key:'mix_abastecimiento', label:'Mix de abastecimiento semanal', pk:null, columns:[
     {field:'semana', label:'Semana', type:'date'},
     {field:'destino', label:'Destino', type:'text'},
@@ -1749,16 +1847,58 @@ function initAgregarTab(){
 
 function agregarInputType(type){ return type==='number' ? 'number' : (type==='date' ? 'date' : 'text'); }
 
+// Un <input type="date"> solo acepta AAAA-MM-DD. Las columnas timestamp/timestamptz
+// llegan como "2026-08-24T00:00:00+00:00", así que se recorta a la fecha.
+function toDateInput(v){
+  if(v===null || v===undefined || v==='') return '';
+  const s = String(v);
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if(m) return m[1];
+  const dt = new Date(s);
+  if(!isNaN(dt)) {
+    return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+  }
+  return '';
+}
+
+// Mensajes de Supabase traducidos a algo accionable
+function mensajeSupabase(err){
+  const msg = (err && err.message) ? err.message : String(err);
+  if(/row-level security|violates row-level/i.test(msg)){
+    return 'Supabase rechazó la escritura: la tabla tiene RLS activo y no hay una política que permita insertar/editar con la clave pública. Corre el script politicas_supabase.sql en el SQL Editor.';
+  }
+  if(/duplicate key|already exists/i.test(msg)){
+    return 'Ya existe un registro con esa clave (misma fecha/periodo). Edítalo en la tabla de abajo en vez de agregarlo de nuevo.';
+  }
+  if(/null value in column/i.test(msg)){
+    const col = (msg.match(/column "([^"]+)"/)||[])[1];
+    return `Falta completar el campo obligatorio${col?' "'+col+'"':''}.`;
+  }
+  if(/invalid input syntax/i.test(msg)){
+    return 'Alguno de los valores no tiene el formato que espera la columna (revisa fechas y números).';
+  }
+  if(/Failed to fetch|NetworkError/i.test(msg)){
+    return 'No hubo conexión con Supabase. Revisa tu internet y vuelve a intentar.';
+  }
+  return msg;
+}
+
+function setAgregarStatus(texto, tipo){
+  const status = document.getElementById('agregarStatus');
+  status.textContent = texto;
+  status.style.color = tipo==='error' ? 'var(--red)' : (tipo==='ok' ? 'var(--green)' : 'var(--text-muted)');
+  status.style.fontWeight = tipo ? '700' : '600';
+}
+
 async function loadAgregarTable(tableKey){
   if(!sb) return;
   const config = AGREGAR_TABLES.find(t=>t.key===tableKey);
-  const status = document.getElementById('agregarStatus');
   const gridWrap = document.getElementById('agregarGridWrap');
   const gridSub = document.getElementById('agregarGridSub');
-  status.textContent = 'Cargando…';
+  setAgregarStatus('Cargando…');
   gridWrap.innerHTML = '';
   try{
-    const orderCol = config.pk || 'id';
+    const orderCol = config.pk || (config.pkFields ? config.pkFields[0] : 'id');
     const {data, error} = await sb.from(config.key).select('*').order(orderCol, {ascending:false}).limit(300);
     if(error) throw error;
     let columns = config.columns;
@@ -1773,9 +1913,9 @@ async function loadAgregarTable(tableKey){
     gridSub.textContent = `${data.length} registro(s) · tabla "${config.key}"`;
     renderAgregarGrid();
     renderAgregarNewRowForm();
-    status.textContent = '';
+    setAgregarStatus('');
   }catch(err){
-    status.textContent = 'Error al cargar: ' + err.message;
+    setAgregarStatus('Error al cargar: ' + mensajeSupabase(err), 'error');
     gridWrap.innerHTML = '';
   }
 }
@@ -1784,22 +1924,24 @@ function renderAgregarGrid(){
   const {columns, rows, config} = AGREGAR_STATE;
   const wrap = document.getElementById('agregarGridWrap');
   if(!rows.length){
-    wrap.innerHTML = '<div style="padding:14px; color:#9aa5b1; font-size:13px;">Sin registros aún. Agrega el primero desde el formulario de arriba.</div>';
+    wrap.innerHTML = '<div style="padding:16px; color:var(--text-muted); font-size:13px;">Sin registros aún. Agrega el primero desde el formulario de arriba.</div>';
     return;
   }
-  const canEditRow = (row)=> (config.pk && row[config.pk]!=null) || row.id!=null;
+  const canEditRow = (row)=> (config.pk && row[config.pk]!=null)
+    || row.id!=null
+    || (config.pkFields && config.pkFields.every(f=>row[f]!=null));
   const theadHtml = '<thead><tr>' + columns.map(c=>`<th>${c.label}</th>`).join('') + '<th>Acciones</th></tr></thead>';
   const rowsHtml = rows.map((row, idx)=>{
     const cellsHtml = columns.map(c=>{
       const val = row[c.field];
       const inputType = agregarInputType(c.type);
-      const safeVal = val==null ? '' : String(val);
-      return `<td><input type="${inputType}" ${c.type==='number'?'step="any"':''} value="${safeVal.replace(/"/g,'&quot;')}" data-field="${c.field}" style="width:100%; min-width:90px; border:1px solid #e2e5ea; border-radius:6px; padding:4px 6px; font-size:12px;"/></td>`;
+      const safeVal = c.type==='date' ? toDateInput(val) : (val==null ? '' : String(val));
+      return `<td><input type="${inputType}" ${c.type==='number'?'step="any"':''} value="${safeVal.replace(/"/g,'&quot;')}" data-field="${c.field}" style="width:100%; min-width:90px; border:1px solid var(--border); border-radius:0; padding:5px 8px; font-size:12px; color:var(--ink); background:#fff;"/></td>`;
     }).join('');
     const editable = canEditRow(row);
     const actionsHtml = editable
-      ? `<button onclick="saveAgregarRow(${idx})" style="background:var(--blue); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer;">Guardar</button>
-         <button onclick="deleteAgregarRow(${idx})" style="background:var(--red); color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer; margin-left:4px;">Eliminar</button>`
+      ? `<button onclick="saveAgregarRow(${idx})" style="background:var(--blue); color:#fff; border:none; border-radius:0; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer;">Guardar</button>
+         <button onclick="deleteAgregarRow(${idx})" style="background:var(--red); color:#fff; border:none; border-radius:0; padding:5px 10px; font-size:11.5px; font-weight:700; cursor:pointer; margin-left:4px;">Eliminar</button>`
       : `<span style="font-size:10.5px; color:#9aa5b1;" title="No se detectó un identificador único en esta tabla">Solo lectura</span>`;
     return `<tr data-row-idx="${idx}">${cellsHtml}<td style="white-space:nowrap;">${actionsHtml}</td></tr>`;
   }).join('');
@@ -1813,9 +1955,9 @@ function renderAgregarNewRowForm(){
     const inputType = agregarInputType(c.type);
     return `<div style="display:flex; flex-direction:column; gap:4px;">
       <label style="font-size:10.5px; font-weight:700; color:#6b7280; text-transform:uppercase;">${c.label}</label>
-      <input type="${inputType}" ${c.type==='number'?'step="any"':''} data-new-field="${c.field}" style="border:1px solid #d8dce2; border-radius:6px; padding:6px 8px; font-size:13px; min-width:120px;"/>
+      <input type="${inputType}" ${c.type==='number'?'step="any"':''} data-new-field="${c.field}" style="border:1px solid var(--border); border-radius:0; padding:7px 10px; font-size:13px; color:var(--ink); min-width:130px;"/>
     </div>`;
-  }).join('') + `<button onclick="addAgregarRow()" style="background:var(--green); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">+ Agregar</button>`;
+  }).join('') + `<button onclick="addAgregarRow()" style="background:var(--green); color:#fff; border:none; border-radius:0; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">+ Agregar</button>`;
 }
 
 function readAgregarValue(inputEl, type){
@@ -1823,6 +1965,17 @@ function readAgregarValue(inputEl, type){
   if(raw === '') return null;
   if(type === 'number'){ const n = Number(raw); return isNaN(n) ? null : n; }
   return raw;
+}
+
+// Identifica una fila: por su pk simple, por 'id', o por una clave compuesta (pkFields)
+function applyRowFilter(query, config, row){
+  if(config.pk && row[config.pk]!=null) return query.eq(config.pk, row[config.pk]);
+  if(row.id!=null) return query.eq('id', row.id);
+  if(config.pkFields && config.pkFields.every(f=>row[f]!=null)){
+    config.pkFields.forEach(f=>{ query = query.eq(f, row[f]); });
+    return query;
+  }
+  return query.eq('id', row.id);
 }
 
 async function saveAgregarRow(idx){
@@ -1834,19 +1987,16 @@ async function saveAgregarRow(idx){
     const input = trEl.querySelector(`input[data-field="${c.field}"]`);
     changes[c.field] = readAgregarValue(input, c.type);
   });
-  const pkField = (config.pk && row[config.pk]!=null) ? config.pk : 'id';
-  const pkValue = row[pkField];
-  const status = document.getElementById('agregarStatus');
-  status.textContent = 'Guardando…';
+  setAgregarStatus('Guardando…');
   try{
-    const {error} = await sb.from(table).update(changes).eq(pkField, pkValue);
+    const {error} = await applyRowFilter(sb.from(table).update(changes), config, row);
     if(error) throw error;
-    status.textContent = 'Guardado ✓';
+    setAgregarStatus('Guardado ✓', 'ok');
     await loadAllFromSupabase();
     renderAll();
     loadAgregarTable(table);
   }catch(err){
-    status.textContent = 'Error al guardar: ' + err.message;
+    setAgregarStatus('No se pudo guardar. ' + mensajeSupabase(err), 'error');
   }
 }
 
@@ -1854,19 +2004,16 @@ async function deleteAgregarRow(idx){
   const {table, rows, config} = AGREGAR_STATE;
   const row = rows[idx];
   if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
-  const pkField = (config.pk && row[config.pk]!=null) ? config.pk : 'id';
-  const pkValue = row[pkField];
-  const status = document.getElementById('agregarStatus');
-  status.textContent = 'Eliminando…';
+  setAgregarStatus('Eliminando…');
   try{
-    const {error} = await sb.from(table).delete().eq(pkField, pkValue);
+    const {error} = await applyRowFilter(sb.from(table).delete(), config, row);
     if(error) throw error;
-    status.textContent = 'Eliminado ✓';
+    setAgregarStatus('Eliminado ✓', 'ok');
     await loadAllFromSupabase();
     renderAll();
     loadAgregarTable(table);
   }catch(err){
-    status.textContent = 'Error al eliminar: ' + err.message;
+    setAgregarStatus('No se pudo eliminar. ' + mensajeSupabase(err), 'error');
   }
 }
 
@@ -1881,18 +2028,28 @@ async function addAgregarRow(){
     if(val !== null) hasAny = true;
     newRow[c.field] = val;
   });
-  if(!hasAny){ alert('Completa al menos un campo antes de agregar.'); return; }
-  const status = document.getElementById('agregarStatus');
-  status.textContent = 'Agregando…';
+  if(!hasAny){ setAgregarStatus('Completa al menos un campo antes de agregar.', 'error'); return; }
+
+  const {config} = AGREGAR_STATE;
+  const claves = config.pk ? [config.pk] : (config.pkFields || []);
+  const faltante = claves.find(f=>newRow[f]===null || newRow[f]===undefined);
+  if(faltante){
+    const etiqueta = (columns.find(c=>c.field===faltante)||{}).label || faltante;
+    setAgregarStatus('Completa "' + etiqueta + '": es la clave del registro.', 'error');
+    return;
+  }
+
+  setAgregarStatus('Agregando…');
   try{
     const {error} = await sb.from(table).insert(newRow);
     if(error) throw error;
-    status.textContent = 'Agregado ✓';
+    setAgregarStatus('Agregado ✓', 'ok');
+    form.querySelectorAll('input').forEach(i=>{ i.value=''; });
     await loadAllFromSupabase();
     renderAll();
     loadAgregarTable(table);
   }catch(err){
-    status.textContent = 'Error al agregar: ' + err.message;
+    setAgregarStatus('No se pudo agregar. ' + mensajeSupabase(err), 'error');
   }
 }
 </script>
