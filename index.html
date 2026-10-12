@@ -655,6 +655,39 @@
     </div>
 
     <div id="viewTPGNuevo" class="hidden">
+      <div class="section-title">1. Flota</div>
+      <div id="flotaMsg" class="card hidden" style="border-top-color:var(--amber); margin-bottom:16px;"></div>
+      <div id="flotaContent" class="hidden" style="margin-bottom:8px;">
+        <div class="kpi-strip" style="grid-template-columns:repeat(2, minmax(0,1fr)); max-width:640px;">
+          <div class="kpi-strip-item" style="--c:var(--teal);">
+            <div class="ksi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 5.6v6c0 4.6 3.1 8.4 7.5 9.9 4.4-1.5 7.5-5.3 7.5-9.9v-6z"/><path d="M9 12.2l2.1 2.1 4-4.2"/></svg></div>
+            <div class="ksi-body">
+              <div class="ksi-label">% Disponibilidad</div>
+              <div class="ksi-value" id="flotaDispo">—</div>
+              <div class="ksi-note" id="flotaDispoNota">Operativas ÷ flota total</div>
+            </div>
+          </div>
+          <div class="kpi-strip-item" style="--c:var(--blue);">
+            <div class="ksi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="13" height="10" rx="2"/><path d="M14 9h4l3 4v3h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg></div>
+            <div class="ksi-body">
+              <div class="ksi-label">Flota total</div>
+              <div class="ksi-value" id="flotaTotal">—</div>
+              <div class="ksi-note">cisternas registradas</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="card" style="border-top-color:var(--blue);">
+            <div class="card-head"><div><h3>1.1 Status de flota operativa/inoperativa</h3><div class="sub">Cisternas por status</div></div></div>
+            <div class="chart-wrap"><canvas id="chartFlotaStatus"></canvas></div>
+          </div>
+          <div class="card" style="border-top-color:var(--teal);">
+            <div class="card-head"><div><h3>1.2 Status de recertificaciones</h3><div class="sub">Avance por placa en recertificación</div></div></div>
+            <div class="chart-wrap"><canvas id="chartFlotaRecert"></canvas></div>
+          </div>
+        </div>
+      </div>
+
       <div class="section-title">2. Productividad y eficiencia</div>
       <div id="tpgMsg" class="card hidden" style="border-top-color:var(--amber);"></div>
       <div id="tpgContent" class="hidden">
@@ -671,7 +704,7 @@
             <div class="chart-wrap"><canvas id="chartTpgFlete"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--teal);">
-            <div class="card-head"><div><h3>2.3 Promedio de carga</h3><div class="sub">TM por viaje, por destino</div></div></div>
+            <div class="card-head"><div><h3>2.3 Promedio de carga</h3><div class="sub">TM por viaje, por destino · cisterna bonificada vs no bonificada</div></div></div>
             <div class="chart-wrap"><canvas id="chartTpgCarga"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--orange);">
@@ -864,6 +897,7 @@ async function loadAllFromSupabase(){
     await loadMargenCategoria();
     await loadTpg();
     await loadTpgPoa();
+    await loadTpgFlota();
 
     const sello = new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('dataStatus').textContent = 'Actualizado ' + sello;
@@ -1113,6 +1147,7 @@ function renderAll(){
   renderCapacidad();
   renderDetalle();
   renderTpg();
+  renderTpgFlota();
   renderPoa();
 }
 
@@ -1217,6 +1252,7 @@ function switchTab(tab){
   }
   if(tab === 'tpgnuevo'){
     renderTpg(); // los gráficos se dibujan con el panel visible para que tomen su tamaño
+    renderTpgFlota();
   }
   if(tab === 'poa'){
     renderPoa();
@@ -1977,6 +2013,73 @@ function tpgRazonPorDestino(rows, numeradorFn){
   return {labels, vals};
 }
 
+// ================= TPG · 1. Flota (tabla tpg_flota) =================
+let TPG_FLOTA = {rows:[], error:null};
+
+async function loadTpgFlota(){
+  TPG_FLOTA = {rows:[], error:null};
+  try{
+    const pagina = 1000;
+    for(let desde = 0; ; desde += pagina){
+      const {data, error} = await sb.from('tpg_flota').select('*').order('id').range(desde, desde + pagina - 1);
+      if(error) throw error;
+      TPG_FLOTA.rows.push(...data);
+      if(data.length < pagina) break;
+    }
+  }catch(err){
+    TPG_FLOTA.error = (err && err.message) ? err.message : String(err);
+    console.warn('No se pudo cargar tpg_flota:', TPG_FLOTA.error);
+  }
+}
+
+// Clave sin tildes ni mayúsculas, para que "En trámite" y "En tramite" cuenten igual
+function flotaClave(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toLowerCase(); }
+const FLOTA_ORDEN = ['operativa sin conductor','en tramite','en recertificacion','operativa en circuito','en mantto correctivo/preventivo'];
+const FLOTA_ETIQUETA = {'en tramite':'En trámite', 'en recertificacion':'En recertificación'};
+
+function renderTpgFlota(){
+  const msg = document.getElementById('flotaMsg'), cont = document.getElementById('flotaContent');
+  if(!msg || !cont) return;
+  if(TPG_FLOTA.error || !TPG_FLOTA.rows.length){
+    cont.classList.add('hidden'); msg.classList.remove('hidden');
+    msg.innerHTML = TPG_FLOTA.error
+      ? `<h3>No se pudo leer la tabla tpg_flota</h3><div class="sub">${TPG_FLOTA.error}<br>Si aún no existe: corre <b>tpg-flota.sql</b> en el SQL Editor de Supabase y luego importa <b>tpg_flota_carga.csv</b>.</div>`
+      : `<h3>Sin flota cargada</h3><div class="sub">La tabla tpg_flota está vacía. Impórtale <b>tpg_flota_carga.csv</b> desde el Table Editor de Supabase.</div>`;
+    return;
+  }
+  msg.classList.add('hidden'); cont.classList.remove('hidden');
+
+  const filas = TPG_FLOTA.rows;
+  const cuenta = {}, nombre = {};
+  filas.forEach(r=>{
+    const k = flotaClave(r.status_flota) || '(sin status)';
+    cuenta[k] = (cuenta[k]||0) + 1;
+    nombre[k] = nombre[k] || FLOTA_ETIQUETA[k] || String(r.status_flota||'').trim() || '(sin status)';
+  });
+  const claves = [...FLOTA_ORDEN.filter(k=> cuenta[k]), ...Object.keys(cuenta).filter(k=> !FLOTA_ORDEN.includes(k)).sort((a,b)=> cuenta[b]-cuenta[a])];
+
+  // % Disponibilidad = operativas (en circuito + sin conductor) ÷ flota total
+  const operativas = claves.filter(k=> k.startsWith('operativa')).reduce((s,k)=> s + cuenta[k], 0);
+  document.getElementById('flotaTotal').textContent = fmt0(filas.length);
+  document.getElementById('flotaDispo').textContent = fmt1(operativas / filas.length * 100) + '%';
+  document.getElementById('flotaDispoNota').textContent = `${fmt0(operativas)} operativas ÷ ${fmt0(filas.length)} de flota total`;
+
+  tpgBarras('chartFlotaStatus', claves.map(k=> nombre[k]), claves.map(k=> cuenta[k]),
+    {horizontal:true, color:COLORS.blue, fmt:v=>fmt0(v), unidad:' cisternas'});
+
+  // 1.2 Avance de recertificación de las placas en recertificación (de mayor a menor avance)
+  const rec = filas
+    .filter(r=> flotaClave(r.status_flota).startsWith('en recertificacion') && num(r.avance_recertificacion) != null)
+    .map(r=>({placa:String(r.placa||'').trim(), pct:num(r.avance_recertificacion)*100}))
+    .sort((a,b)=> b.pct - a.pct);
+  if(rec.length){
+    tpgBarras('chartFlotaRecert', rec.map(x=>x.placa), rec.map(x=>x.pct),
+      {horizontal:true, color:COLORS.teal, max:100, fmt:v=> Math.round(v) + '%', tickFmt:v=> v + '%'});
+  } else {
+    destroyChart('chartFlotaRecert');
+  }
+}
+
 // Mes de POA elegido (compartido entre la pestaña TPG y "POA vs Cierre"). null = aún no elegido.
 let POA_MES_SEL = null;
 function poaMesDefecto(meses){
@@ -2016,30 +2119,36 @@ function tpgPoaUnitario(mes, origenSel){
 function tpgBarras(canvasId, labels, vals, opts){
   opts = opts || {};
   destroyChart(canvasId);
+  const h = !!opts.horizontal;
   const colores = labels.map(l=> l==='Nacional' ? COLORS.navy : (opts.color || COLORS.blue));
-  // Con comparación, las dos barras de cada destino van pegadas (barPercentage 1) y el espacio queda entre destinos.
+  // Con dos series, las barras de cada grupo van pegadas (barPercentage 1) y el espacio queda entre grupos.
   const bp = opts.comparar ? 1 : .5, cp = opts.comparar ? .8 : .9;
-  const datasets = [{label:opts.etiqueta||'', data:vals, backgroundColor:colores, borderRadius:0, barPercentage:bp, categoryPercentage:cp}];
+  const datasets = [{label:opts.etiqueta||'', data:vals, backgroundColor:colores, borderRadius:0, barPercentage:bp, categoryPercentage:cp, ns:opts.ns}];
   if(opts.comparar){
-    datasets.push({label:opts.comparar.label, data:opts.comparar.vals, borderRadius:0, barPercentage:bp, categoryPercentage:cp,
-      backgroundColor: labels.map(l=> l==='Nacional' ? '#B8791A' : COLORS.amber), datalabels:{color:'#8A5A12'}});
+    const c2 = opts.comparar;
+    datasets.push({label:c2.label, data:c2.vals, borderRadius:0, barPercentage:bp, categoryPercentage:cp, ns:c2.ns,
+      backgroundColor: labels.map(l=> l==='Nacional' ? (c2.colorNac || '#B8791A') : (c2.color || COLORS.amber)),
+      datalabels:{color: c2.labelColor || '#8A5A12'}});
   }
   charts[canvasId] = new Chart(document.getElementById(canvasId), {
     type:'bar',
     data:{labels, datasets},
     options:{
+      indexAxis: h ? 'y' : 'x',
       responsive:true, maintainAspectRatio:false,
-      layout:{padding:{top:22}},
+      layout:{padding: h ? {top:4, right:46} : {top:22}},
       plugins:{
         legend:{display:!!opts.comparar, position:'top', labels:{usePointStyle:true, pointStyle:'rect', boxWidth:9, boxHeight:9, font:{size:10.5}}},
-        tooltip:{callbacks:{label:c=> ` ${c.dataset.label ? c.dataset.label + ': ' : ''}${opts.fmt ? opts.fmt(c.raw) : fmt1(c.raw)}${opts.unidad||''}`}},
+        tooltip:{callbacks:{label:c=> ` ${c.dataset.label ? c.dataset.label + ': ' : ''}${opts.fmt ? opts.fmt(c.raw) : fmt1(c.raw)}${opts.unidad||''}${c.dataset.ns ? ' · ' + fmt0(c.dataset.ns[c.dataIndex]) + ' viajes' : ''}`}},
         datalabels:{
           display:c=>{ const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v); },
-          anchor:'end', align:'top', color:'#0F2547', font:{weight:'700', size: opts.comparar ? 9.5 : 10.5},
+          anchor:'end', align: h ? 'right' : 'top', color:'#0F2547', font:{weight:'700', size: opts.comparar ? 9.5 : 10.5},
           formatter:v=> opts.fmt ? opts.fmt(v) : fmt0(v)
         }
       },
-      scales:{ x:{grid:{display:false}, ticks:ticksX()}, y:{grid:{display:false}, beginAtZero:true, title:{display:!!opts.eje, text:opts.eje||''}} }
+      scales: h
+        ? { x:{grid:{display:false}, beginAtZero:true, max:opts.max, ticks:{callback:v=> opts.tickFmt ? opts.tickFmt(v) : v}}, y:{grid:{display:false}, ticks:{font:{size:11}}} }
+        : { x:{grid:{display:false}, ticks:ticksX()}, y:{display:!opts.sinEjeY, grid:{display:false}, beginAtZero:true, title:{display:!!opts.eje, text:opts.eje||''}} }
     }
   });
 }
@@ -2080,7 +2189,7 @@ function renderTpg(){
     valF = lblF.map(l=>{ const i = flete.labels.indexOf(l); return i >= 0 ? flete.vals[i] : null; });
     poaVals = lblF.map(l=> poaUni[l] != null ? poaUni[l] : null);
   }
-  tpgBarras('chartTpgFlete', lblF, valF, {eje:'por TM', fmt:v=>fmt0(v), etiqueta:'Cierre',
+  tpgBarras('chartTpgFlete', lblF, valF, {sinEjeY:true, fmt:v=>fmt0(v), etiqueta:'Cierre',
     comparar: hayPoa ? {label:'POA ' + (poaMes || '(todos los meses)'), vals:poaVals} : null});
   document.getElementById('tpgFleteSub').textContent = hayPoa
     ? `Liquidación de flete por TM, por destino · cierre vs POA ${poaMes || '(todos los meses)'}`
@@ -2090,11 +2199,22 @@ function renderTpg(){
   tpgBarras('chartTpgSobre', sobre.labels, sobre.vals, {color:COLORS.orange, eje:'por TM', fmt:v=> v>=10 ? fmt0(v) : fmt1(v)});
 
   // Promedio de TM por viaje y destino
-  const g = {}; let sT = 0, nT = 0;
-  rows.forEach(r=>{ const tm = tpgTm(r); if(tm==null) return; const k = tpgDestino(r) || TPG_SIN; g[k] = g[k]||{s:0,n:0}; g[k].s += tm; g[k].n++; sT += tm; nT++; });
-  const cLabels = Object.keys(g).sort(), cVals = cLabels.map(k=> g[k].s/g[k].n);
-  if(nT){ cLabels.push('Nacional'); cVals.push(sT/nT); }
-  tpgBarras('chartTpgCarga', cLabels, cVals, {color:COLORS.teal, eje:'TM', fmt:v=>fmt1(v)});
+  // separado por tipo de cisterna: bonificada (columna bonificacion con dato) vs no bonificada
+  const g = {}; const tB = {s:0,n:0}, tN = {s:0,n:0};
+  rows.forEach(r=>{
+    const tm = tpgTm(r); if(tm==null) return;
+    const k = tpgDestino(r) || TPG_SIN, bon = String(r.bonificacion||'').trim() !== '';
+    const e = g[k] = g[k] || {b:{s:0,n:0}, nb:{s:0,n:0}};
+    const t = bon ? e.b : e.nb, T = bon ? tB : tN;
+    t.s += tm; t.n++; T.s += tm; T.n++;
+  });
+  const prom = o=> o.n > 0 ? o.s/o.n : null;
+  const cLabels = Object.keys(g).sort();
+  const vB = cLabels.map(k=> prom(g[k].b)), vN = cLabels.map(k=> prom(g[k].nb));
+  const nB = cLabels.map(k=> g[k].b.n), nN = cLabels.map(k=> g[k].nb.n);
+  if(tB.n + tN.n){ cLabels.push('Nacional'); vB.push(prom(tB)); vN.push(prom(tN)); nB.push(tB.n); nN.push(tN.n); }
+  tpgBarras('chartTpgCarga', cLabels, vB, {color:COLORS.teal, eje:'TM', fmt:v=>fmt1(v), etiqueta:'Cisterna bonificada', ns:nB,
+    comparar:{label:'No bonificada', vals:vN, ns:nN, color:COLORS.gray, colorNac:'#5A6B8C', labelColor:'#5A6B8C'}});
 
   // Histograma de % de ocupación de cisternas
   const bins = [[0,.85,'<85%'],[.85,.875,'85–87.5%'],[.875,.9,'87.5–90%'],[.9,.925,'90–92.5%'],[.925,.95,'92.5–95%'],[.95,.975,'95–97.5%'],[.975,.9999,'97.5–<100%'],[.9999,Infinity,'100%']];
