@@ -306,6 +306,30 @@
   .cat-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle;}
   .data-card{margin-bottom:16px;}
 
+  /* ---------- POA vs Cierre ---------- */
+  table.poa-table{width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums;}
+  table.poa-table th{
+    padding:8px 9px; text-align:center; font-size:10.5px; font-weight:800; letter-spacing:.03em;
+    color:#fff; border:1px solid rgba(255,255,255,.35); position:sticky; top:0; z-index:1;
+  }
+  table.poa-table th.h-base{background:#6B7A99;}
+  table.poa-table th.h-poa{background:#E58A3A;}
+  table.poa-table th.h-cierre{background:#15266B;}
+  table.poa-table th.h-mix{background:#B88A3E;}
+  table.poa-table th.h-var{background:#6B7A99;}
+  table.poa-table td{padding:5px 9px; border-bottom:1px solid #E9EDF5; text-align:right; white-space:nowrap;}
+  table.poa-table td.c-poa{background:#FFF4E0;}
+  table.poa-table td.c-cie{background:#E8F0FB;}
+  table.poa-table td.c-mix{background:#EEF1F8;}
+  table.poa-table td.l{text-align:left;}
+  table.poa-table tr.r-planta td{font-weight:800; color:var(--ink); border-top:2px solid #C9D3E6;}
+  table.poa-table tr.r-planta td.nom{color:var(--teal);}
+  table.poa-table tr.r-origen td{color:var(--text-body);}
+  table.poa-table tr.r-origen td.nom{padding-left:18px;}
+  table.poa-table tr.r-total td{font-weight:800; background:#DDE5F3; color:var(--blue-dark); border-top:2px solid var(--blue-dark);}
+  table.poa-table .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle;}
+  table.poa-table .neg{color:var(--red);}
+
   /* ---------- Varios ---------- */
   .chips{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
   .chip{background:#F5F8FD; border:1px solid var(--border); border-radius:0; padding:6px 10px; font-size:12px; color:var(--text-muted);}
@@ -375,6 +399,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16"/><path d="M4 12h16"/></svg>
       TPG
     </button>
+    <button class="nav-item" data-tab="poa" onclick="switchTab('poa')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="20"/><rect x="5" y="11" width="3.5" height="9"/><rect x="10.25" y="6" width="3.5" height="14"/><rect x="15.5" y="13" width="3.5" height="7"/></svg>
+      POA vs Cierre
+    </button>
   </nav>
 
   <nav class="nav nav-bottom">
@@ -419,6 +447,7 @@
       <button class="tab-btn active" id="tabBtnResumen" data-tab="resumen" onclick="switchTab('resumen')">Dashboard</button>
       <button class="tab-btn" id="tabBtnTPG" data-tab="tpg" onclick="switchTab('tpg')">Abastecimiento &amp; TPG</button>
       <button class="tab-btn" id="tabBtnTPGNuevo" data-tab="tpgnuevo" onclick="switchTab('tpgnuevo')">TPG</button>
+      <button class="tab-btn" id="tabBtnPOA" data-tab="poa" onclick="switchTab('poa')">POA vs Cierre</button>
       <button class="tab-btn" id="tabBtnDetalle" data-tab="detalle" onclick="switchTab('detalle')">Detalle de datos</button>
       <button class="tab-btn" id="tabBtnAgregar" data-tab="agregar" onclick="switchTab('agregar')">Agregar datos</button>
     </div>
@@ -654,6 +683,21 @@
       </div>
     </div>
 
+    <div id="viewPOA" class="hidden">
+      <div class="section-title">POA vs Cierre · Flete TPG</div>
+      <div id="poaMsg" class="card hidden" style="border-top-color:var(--amber);"></div>
+      <div id="poaContent" class="hidden">
+        <div class="chips" style="align-items:center; gap:10px; margin-bottom:14px;">
+          <label class="chip" id="poaMesWrap">Mes <select id="poaMesSelect"></select></label>
+          <span class="chip" id="poaResumen">—</span>
+        </div>
+        <div class="card" style="padding:0; border-top-color:var(--amber);">
+          <div class="data-table-wrap" style="max-height:none; border:none;" id="poaTabla"></div>
+        </div>
+        <div class="legend-note" id="poaNota"></div>
+      </div>
+    </div>
+
     <div id="viewDetalle" class="hidden">
       <div class="section-title">Detalle de datos</div>
       <div id="detalleTables"></div>
@@ -814,6 +858,7 @@ async function loadAllFromSupabase(){
     await loadCapacidadProveedores();
     await loadMargenCategoria();
     await loadTpg();
+    await loadTpgPoa();
 
     const sello = new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('dataStatus').textContent = 'Actualizado ' + sello;
@@ -1063,6 +1108,7 @@ function renderAll(){
   renderCapacidad();
   renderDetalle();
   renderTpg();
+  renderPoa();
 }
 
 const CAPACIDAD_PROVEEDORES = [
@@ -1154,6 +1200,7 @@ function switchTab(tab){
   document.getElementById('viewResumen').classList.toggle('hidden', tab !== 'resumen');
   document.getElementById('viewTPG').classList.toggle('hidden', tab !== 'tpg');
   document.getElementById('viewTPGNuevo').classList.toggle('hidden', tab !== 'tpgnuevo');
+  document.getElementById('viewPOA').classList.toggle('hidden', tab !== 'poa');
   document.getElementById('viewDetalle').classList.toggle('hidden', tab !== 'detalle');
   document.getElementById('viewAgregar').classList.toggle('hidden', tab !== 'agregar');
   document.querySelectorAll('[data-tab]').forEach(el=>{
@@ -1165,6 +1212,9 @@ function switchTab(tab){
   }
   if(tab === 'tpgnuevo'){
     renderTpg(); // los gráficos se dibujan con el panel visible para que tomen su tamaño
+  }
+  if(tab === 'poa'){
+    renderPoa();
   }
   if(tab === 'agregar'){
     initAgregarTab();
@@ -1990,6 +2040,158 @@ function renderTpg(){
   document.getElementById('tpgNota').textContent =
     `Unitario flete = liquidación de flete ÷ TM; sobreestadía = pago de stand by ÷ TM. Ocupación con datos en ${fmt0(conPct)} de ${fmt0(rows.length)} viajes.` +
     (meses.length ? '' : ' Sin filtro de mes: la hoja no trae fechas (llena fecha_viaje en tpg_gabast).');
+}
+
+// ================= POA vs Cierre (tablas tpg_poa y tpg_gabast) =================
+let TPG_POA = {rows:[], error:null};
+
+async function loadTpgPoa(){
+  TPG_POA = {rows:[], error:null};
+  try{
+    const pagina = 1000;
+    for(let desde = 0; ; desde += pagina){
+      const {data, error} = await sb.from('tpg_poa').select('*').order('id').range(desde, desde + pagina - 1);
+      if(error) throw error;
+      TPG_POA.rows.push(...data);
+      if(data.length < pagina) break;
+    }
+  }catch(err){
+    TPG_POA.error = (err && err.message) ? err.message : String(err);
+    console.warn('No se pudo cargar tpg_poa:', TPG_POA.error);
+  }
+}
+
+// En tpg_gabast el origen PPAL es Ventanilla; el resto se muestra con la primera letra en mayúscula.
+function poaOrigenNombre(s){
+  const u = String(s||'').trim();
+  if(!u) return TPG_SIN;
+  if(u.toUpperCase()==='PPAL') return 'Ventanilla';
+  return u.charAt(0).toUpperCase() + u.slice(1).toLowerCase();
+}
+
+// Cálculo puro (sin DOM). poaRows = filas de tpg_poa; viajes = filas de tpg_gabast.
+// Cierre = liquidación de flete y TM por planta (destino -> planta según tpg_poa) y origen.
+// Variaciones (validadas contra el reporte de Excel):
+//   VAR = Cierre - POA            VAR% = tarifa cierre / tarifa POA - 1
+//   Ef. Tarifa = (T1 - T0) x V1   (por origen; T0 = monto/volumen POA, o la tarifa informada si el volumen POA es 0)
+//   Ef. Volumen = (V1 - V0) x T0 promedio de la planta
+//   Ef. Mix = VAR - Ef. Tarifa - Ef. Volumen
+function poaCalcular(poaRows, viajes, mes){
+  const poa = {}, cie = {}, origenNombre = {}, plantaOrigenes = {}, destPlanta = {}, plantas = [];
+  const addPO = (p, nombre)=>{
+    const ok = nombre.toLowerCase(); origenNombre[ok] = origenNombre[ok] || nombre;
+    plantaOrigenes[p] = plantaOrigenes[p] || [];
+    if(!plantaOrigenes[p].includes(ok)) plantaOrigenes[p].push(ok);
+    return ok;
+  };
+  poaRows.forEach(r=>{
+    const p = String(r.planta||'').trim(); if(!p) return;
+    if(!plantas.includes(p)) plantas.push(p);
+    if(r.destino) destPlanta[String(r.destino).trim().toUpperCase()] = p;
+    const ok = addPO(p, poaOrigenNombre(r.origen));
+    if(mes && r.periodo && String(r.periodo).slice(0,7) !== mes) return;
+    const e = poa[p+'|'+ok] = poa[p+'|'+ok] || {m:0, v:0, t:null};
+    e.m += num(r.monto_soles)||0; e.v += num(r.volumen_tm)||0;
+    const t = num(r.tarifa_soles_tm); if(t!=null) e.t = t;
+  });
+  viajes.forEach(r=>{
+    if(mes && String(r.fecha_viaje||'').slice(0,7) !== mes) return;
+    const tm = tpgTm(r), m = num(r.liquidacion_flete); if(tm==null || m==null) return;
+    const p = destPlanta[tpgDestino(r)] || '(sin planta)';
+    if(!plantas.includes(p)) plantas.push(p);
+    const ok = addPO(p, poaOrigenNombre(r.planta_origen));
+    const e = cie[p+'|'+ok] = cie[p+'|'+ok] || {m:0, v:0};
+    e.m += m; e.v += tm;
+  });
+
+  const sum = (a, f)=> a.reduce((s,x)=> s + f(x), 0);
+  const filas = [];
+  plantas.forEach(p=>{
+    const items = (plantaOrigenes[p]||[]).map(ok=>{
+      const a = poa[p+'|'+ok] || {m:0, v:0, t:null}, c = cie[p+'|'+ok] || {m:0, v:0};
+      const t0 = a.v>0 ? a.m/a.v : a.t;
+      return {nombre:origenNombre[ok], m0:a.m, v0:a.v, t0, m1:c.m, v1:c.v, t1: c.v>0 ? c.m/c.v : null};
+    });
+    const M0 = sum(items,x=>x.m0), V0 = sum(items,x=>x.v0), M1 = sum(items,x=>x.m1), V1 = sum(items,x=>x.v1);
+    const T0 = V0>0 ? M0/V0 : null, T1 = V1>0 ? M1/V1 : null;
+    items.forEach(x=>{
+      x.mix0 = V0>0 ? x.v0/V0 : 0; x.mix1 = V1>0 ? x.v1/V1 : 0;
+      x.varS = x.m1 - x.m0;
+      x.efT = (x.t0!=null && x.t1!=null) ? (x.t1 - x.t0)*x.v1 : 0;
+      x.efV = (T0!=null && x.t0!=null) ? (V1 - V0)*x.mix0*x.t0 : 0;
+      x.efM = x.varS - x.efT - x.efV;
+    });
+    const varS = M1 - M0, efT = sum(items,x=>x.efT), efV = T0!=null ? (V1 - V0)*T0 : 0;
+    filas.push({tipo:'planta', nombre:p, m0:M0, v0:V0, t0:T0, m1:M1, v1:V1, t1:T1, mix0:null, mix1:null,
+      varS, varPct:(T0!=null && T1!=null) ? T1/T0 - 1 : null, efM: varS - efT - efV, efT, efV});
+    items.forEach(x=> filas.push(Object.assign({tipo:'origen', varPct:null}, x)));
+  });
+  const pl = filas.filter(f=>f.tipo==='planta');
+  const M0 = sum(pl,f=>f.m0), V0 = sum(pl,f=>f.v0), M1 = sum(pl,f=>f.m1), V1 = sum(pl,f=>f.v1);
+  const T0 = V0>0 ? M0/V0 : null, T1 = V1>0 ? M1/V1 : null;
+  filas.push({tipo:'total', nombre:'Total general', m0:M0, v0:V0, t0:T0, m1:M1, v1:V1, t1:T1, mix0:1, mix1:1,
+    varS:M1-M0, varPct:(T0!=null && T1!=null) ? T1/T0 - 1 : null,
+    efM:sum(pl,f=>f.efM), efT:sum(pl,f=>f.efT), efV:sum(pl,f=>f.efV)});
+  return filas;
+}
+
+function renderPoa(){
+  const msg = document.getElementById('poaMsg'), cont = document.getElementById('poaContent');
+  if(!msg || !cont) return;
+  const hayPoa = TPG_POA.rows.length > 0;
+  if(TPG_POA.error || !hayPoa){
+    cont.classList.add('hidden'); msg.classList.remove('hidden');
+    msg.innerHTML = TPG_POA.error
+      ? `<h3>No se pudo leer la tabla tpg_poa</h3><div class="sub">${TPG_POA.error}<br>Si aún no existe: corre <b>tpg-poa.sql</b> en el SQL Editor de Supabase y luego importa tu POA con las columnas de <b>tpg_poa_plantilla.csv</b>.</div>`
+      : `<h3>Sin POA cargado</h3><div class="sub">La tabla tpg_poa está vacía. Impórtale tu POA (una fila por planta y origen) con las columnas de <b>tpg_poa_plantilla.csv</b>.</div>`;
+    return;
+  }
+  msg.classList.add('hidden'); cont.classList.remove('hidden');
+
+  const meses = [...new Set([
+    ...TPG_POA.rows.map(r=>String(r.periodo||'').slice(0,7)),
+    ...TPG.rows.map(r=>String(r.fecha_viaje||'').slice(0,7))
+  ].filter(Boolean))].sort();
+  document.getElementById('poaMesWrap').classList.toggle('hidden', !meses.length);
+  tpgLlenarSelect('poaMesSelect', meses, 'Todos');
+  document.getElementById('poaMesSelect').onchange = renderPoa;
+
+  const filas = poaCalcular(TPG_POA.rows, TPG.rows, document.getElementById('poaMesSelect').value);
+  const n0 = v=> (v==null || Math.abs(v)<0.5) ? '–' : fmt0(v);
+  const n1 = v=> (v==null || Math.abs(v)<0.005) ? '–' : fmt1(v);
+  const pc = v=> (v==null) ? '' : fmt0(v*100) + '%';
+  const color = v=> (v==null || Math.abs(v)<1e-9) ? '#94A0B4' : (v>0 ? COLORS.red : COLORS.green);
+  const signo = v=> (v!=null && v<0) ? ' neg' : '';
+
+  const cab = '<thead>'
+    + '<tr><th class="h-base" rowspan="2">ORIGEN | PLANTA</th><th class="h-poa" colspan="3">POA</th><th class="h-cierre" colspan="3">CIERRE</th>'
+    + '<th class="h-mix" colspan="2">Mix Abastecimiento</th><th class="h-var" rowspan="2">VAR (S/)</th><th class="h-var" rowspan="2">VAR%</th>'
+    + '<th class="h-var" rowspan="2">Ef. Mix (S/)</th><th class="h-var" rowspan="2">Ef. Tarifa (S/)</th><th class="h-var" rowspan="2">Ef. Volumen (S/)</th></tr>'
+    + '<tr><th class="h-poa">Monto (S/)</th><th class="h-poa">Volumen (TM)</th><th class="h-poa">Tarifa (S/TM)</th>'
+    + '<th class="h-cierre">Monto (S/)</th><th class="h-cierre">Volumen (TM)</th><th class="h-cierre">Tarifa (S/TM)</th>'
+    + '<th class="h-mix">POA</th><th class="h-mix">REAL</th></tr></thead>';
+
+  const cuerpo = '<tbody>' + filas.map(f=>{
+    const cls = f.tipo==='planta' ? 'r-planta' : (f.tipo==='total' ? 'r-total' : 'r-origen');
+    const esOrigen = f.tipo==='origen';
+    const dot = (!esOrigen) ? `<span class="dot" style="background:${color(f.varS)}"></span>` : '';
+    const dotPct = (f.varPct!=null) ? `<span class="dot" style="background:${color(f.varPct)}"></span>` : '';
+    return `<tr class="${cls}">`
+      + `<td class="l nom">${f.nombre}</td>`
+      + `<td class="c-poa">${n0(f.m0)}</td><td class="c-poa">${n0(f.v0)}</td><td class="c-poa">${n0(f.t0)}</td>`
+      + `<td class="c-cie">${n1(f.m1)}</td><td class="c-cie">${n1(f.v1)}</td><td class="c-cie">${n0(f.t1)}</td>`
+      + `<td class="c-mix">${esOrigen||f.tipo==='total' ? pc(f.mix0) : ''}</td><td class="c-mix">${esOrigen||f.tipo==='total' ? pc(f.mix1) : ''}</td>`
+      + `<td class="${signo(f.varS).trim()}">${dot}${n0(f.varS)}</td><td class="${signo(f.varPct).trim()}">${f.tipo==='origen' ? '' : dotPct + (f.varPct==null ? '' : pc(f.varPct))}</td>`
+      + `<td class="${signo(f.efM).trim()}">${n0(f.efM)}</td><td class="${signo(f.efT).trim()}">${n0(f.efT)}</td><td class="${signo(f.efV).trim()}">${n0(f.efV)}</td></tr>`;
+  }).join('') + '</tbody>';
+
+  document.getElementById('poaTabla').innerHTML = `<table class="poa-table">${cab}${cuerpo}</table>`;
+  const tot = filas[filas.length-1];
+  document.getElementById('poaResumen').textContent = `Cierre ${fmt0(tot.m1)} vs POA ${fmt0(tot.m0)} S/ · VAR ${fmt0(tot.varS)} S/`;
+  document.getElementById('poaNota').textContent =
+    'Cierre desde tpg_gabast (liquidación de flete y TM). VAR = cierre − POA; VAR% = variación de tarifa. Ef. Tarifa = (tarifa cierre − tarifa POA) × volumen cierre; Ef. Volumen = (volumen cierre − volumen POA) × tarifa POA de la planta; Ef. Mix = VAR − Ef. Tarifa − Ef. Volumen. '
+    + 'Punto rojo = por encima del POA, verde = por debajo.'
+    + (TPG.rows.length ? '' : ' (Aún no hay viajes en tpg_gabast: el cierre aparece en cero.)');
 }
 
 // ================= Agregar / editar datos =================
