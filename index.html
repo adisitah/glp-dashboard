@@ -790,6 +790,22 @@
         <div id="regEstado" style="margin-bottom:10px; font-size:12.5px; color:var(--text-muted);"></div>
         <div id="regTabla" style="overflow-x:auto;"></div>
       </div>
+
+      <div class="card hidden" id="regRecCard" style="border-top-color:var(--teal); margin-bottom:16px;">
+        <div class="card-head"><div><h3>Recertificaciones en curso (gráfico 1.2)</h3><div class="sub">Edita el avance (%) de cada placa o cámbiale el status (por ejemplo a Operativa cuando termine). Se guarda en Supabase (tpg_flota) y actualiza los gráficos 1.1 y 1.2.</div></div></div>
+        <div id="regRecTabla" style="overflow-x:auto; margin-top:6px;"></div>
+        <button type="button" id="regRecGuardar" onclick="guardarRecert()" style="background:var(--green); color:#fff; border:none; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px; margin-top:12px;">Guardar cambios</button>
+        <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+          <div style="font-size:11px; font-weight:800; color:var(--ink); text-transform:uppercase; margin-bottom:8px;">Agregar placa a recertificación</div>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="regRecPlaca" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Placa</label><input type="text" id="regRecPlaca" list="regRecPlacas" autocomplete="off" placeholder="ABC-123" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:120px; color:var(--ink); text-transform:uppercase;"><datalist id="regRecPlacas"></datalist></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="regRecPct" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Avance %</label><input type="number" id="regRecPct" min="0" max="100" step="1" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:90px; color:var(--ink);"></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="regRecOp" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Operador (solo placa nueva)</label><select id="regRecOp" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; color:var(--ink);"></select></div>
+            <button type="button" id="regRecAgregar" onclick="regRecAgregar()" style="background:var(--blue); color:#fff; border:none; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">Agregar</button>
+          </div>
+        </div>
+        <div id="regRecEstado" style="margin-top:10px; font-size:12.5px; color:var(--text-muted);"></div>
+      </div>
     </div>
 
     <div id="viewAgregar" class="hidden">
@@ -1317,6 +1333,7 @@ function switchTab(tab){
   }
   if(tab === 'registro'){
     renderRegistroFlota();
+    renderRegRecert();
   }
   if(tab === 'agregar'){
     initAgregarTab();
@@ -2491,6 +2508,112 @@ async function guardarFlotaDisp(){
   }finally{
     btn.disabled = false;
   }
+}
+
+// ================= Registro · recertificaciones: edita el gráfico 1.2 (tabla tpg_flota) =================
+let REG_REC = [];   // placas listadas en el editor (estado original, para detectar cambios)
+
+// Status exacto (como está escrito en la tabla) de las placas en recertificación
+function regStatusRecert(){
+  const f = TPG_FLOTA.rows.find(r=> flotaClave(r.status_flota).startsWith('en recertificacion'));
+  return f ? String(f.status_flota).trim() : 'En recertificacion';
+}
+
+function regStatusOpciones(){
+  const vistos = {}, lista = [];
+  TPG_FLOTA.rows.forEach(r=>{ const s = String(r.status_flota||'').trim(), k = flotaClave(s); if(s && !vistos[k]){ vistos[k] = 1; lista.push(s); } });
+  const ord = s=>{ const i = FLOTA_ORDEN.indexOf(flotaClave(s)); return i < 0 ? 99 : i; };
+  return lista.sort((a,b)=> ord(a) - ord(b));
+}
+
+function regRecEstado(texto, tipo){
+  const e = document.getElementById('regRecEstado'); if(!e) return;
+  e.textContent = texto;
+  e.style.color = tipo==='error' ? 'var(--red)' : (tipo==='ok' ? 'var(--green)' : 'var(--text-muted)');
+  e.style.fontWeight = tipo ? '700' : '600';
+}
+
+function renderRegRecert(){
+  const card = document.getElementById('regRecCard'); if(!card) return;
+  if(TPG_FLOTA.error || !TPG_FLOTA.rows.length){ card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  const key = flotaClave(regStatusRecert()), opciones = regStatusOpciones();
+  REG_REC = TPG_FLOTA.rows.filter(r=> flotaClave(r.status_flota) === key)
+    .map(r=>{ const a = num(r.avance_recertificacion); return {placa:String(r.placa||'').trim(), operador:String(r.operador||'').trim(), status:String(r.status_flota||'').trim(), pct:(a == null ? null : Math.round(a*10000)/100)}; })
+    .sort((a,b)=> (b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct));
+
+  const inp = 'border:1px solid var(--border); padding:6px 8px; font-size:13px; color:var(--ink);';
+  const th = 'padding:6px 8px; font-size:10.5px; color:var(--text-muted); text-transform:uppercase; text-align:left;';
+  const td = 'padding:5px 8px; font-size:13px; border-top:1px solid var(--border);';
+  const filas = REG_REC.map((x, i)=>
+    `<tr><td style="${td} font-weight:700;">${x.placa}</td><td style="${td} color:var(--text-muted);">${x.operador || '—'}</td>` +
+    `<td style="${td}"><input type="number" min="0" max="100" step="1" id="regRecP_${i}" value="${x.pct == null ? '' : x.pct}" style="${inp} width:80px; text-align:right;"> %</td>` +
+    `<td style="${td}"><select id="regRecS_${i}" style="${inp}">${opciones.map(o=>`<option value="${o}"${flotaClave(o) === flotaClave(x.status) ? ' selected' : ''}>${FLOTA_ETIQUETA[flotaClave(o)] || o}</option>`).join('')}</select></td></tr>`
+  ).join('');
+  document.getElementById('regRecTabla').innerHTML = REG_REC.length
+    ? `<table style="width:100%; max-width:640px; border-collapse:collapse;"><thead><tr><th style="${th}">Placa</th><th style="${th}">Operador</th><th style="${th}">Avance</th><th style="${th}">Status</th></tr></thead><tbody>${filas}</tbody></table>`
+    : `<div class="sub">Ninguna placa está en recertificación. Agrega una abajo.</div>`;
+  document.getElementById('regRecGuardar').classList.toggle('hidden', !REG_REC.length);
+
+  document.getElementById('regRecPlacas').innerHTML = TPG_FLOTA.rows.map(r=> `<option value="${String(r.placa||'').trim()}">`).join('');
+  const ops = regOperadores();
+  document.getElementById('regRecOp').innerHTML = '<option value="">(según la flota)</option>' + ops.map(o=> `<option value="${o}">${o}</option>`).join('');
+}
+
+function regRecMensajeError(err){
+  const m = (err && err.message) ? err.message : String(err);
+  if(/row-level security|violates row-level/i.test(m)) return 'Supabase no permite escribir en tpg_flota. Corre tpg-flota-permisos.sql en el SQL Editor y vuelve a intentar.';
+  if(/check constraint/i.test(m)) return 'El avance debe estar entre 0 y 100.';
+  return mensajeSupabase(err);
+}
+
+async function regRecUpsert(filas, textoOk){
+  const btnG = document.getElementById('regRecGuardar'), btnA = document.getElementById('regRecAgregar');
+  btnG.disabled = btnA.disabled = true; regRecEstado('Guardando…');
+  try{
+    const {error} = await sb.from('tpg_flota').upsert(filas, {onConflict:'placa'});
+    if(error) throw error;
+    await loadTpgFlota();
+    renderTpgFlota();
+    renderRegRecert();
+    regRecEstado(textoOk, 'ok');
+  }catch(err){
+    regRecEstado('No se pudo guardar. ' + regRecMensajeError(err), 'error');
+  }finally{
+    btnG.disabled = btnA.disabled = false;
+  }
+}
+
+// Guarda solo las placas que cambiaron (avance o status)
+async function guardarRecert(){
+  const filas = [];
+  for(let i = 0; i < REG_REC.length; i++){
+    const x = REG_REC[i], raw = String(document.getElementById('regRecP_'+i).value).replace(',','.').trim();
+    const pct = raw === '' ? NaN : Number(raw), status = document.getElementById('regRecS_'+i).value;
+    if(isNaN(pct) || pct < 0 || pct > 100){ regRecEstado(`${x.placa}: el avance debe ser un número entre 0 y 100.`, 'error'); return; }
+    if(pct !== x.pct || flotaClave(status) !== flotaClave(x.status))
+      filas.push({placa:x.placa, status_flota:status, avance_recertificacion:Math.round(pct*100)/10000});
+  }
+  if(!filas.length){ regRecEstado('No hay cambios para guardar.'); return; }
+  await regRecUpsert(filas, `Guardado ✓ ${filas.length} placa${filas.length===1?'':'s'} actualizada${filas.length===1?'':'s'}`);
+}
+
+// Agrega una placa a recertificación (si la placa no existe en la flota, se crea con el operador elegido)
+async function regRecAgregar(){
+  const placa = document.getElementById('regRecPlaca').value.replace(/\s+/g,'').toUpperCase();
+  const raw = String(document.getElementById('regRecPct').value).replace(',','.').trim();
+  const pct = raw === '' ? NaN : Number(raw);
+  if(!placa){ regRecEstado('Escribe la placa.', 'error'); return; }
+  if(isNaN(pct) || pct < 0 || pct > 100){ regRecEstado('El avance debe ser un número entre 0 y 100.', 'error'); return; }
+  const existe = TPG_FLOTA.rows.some(r=> String(r.placa||'').replace(/\s+/g,'').toUpperCase() === placa);
+  const fila = {placa, status_flota:regStatusRecert(), avance_recertificacion:Math.round(pct*100)/10000};
+  if(!existe){
+    const op = document.getElementById('regRecOp').value;
+    if(!op){ regRecEstado('La placa no está en la flota: elige su operador para crearla.', 'error'); return; }
+    fila.operador = op;
+  }
+  await regRecUpsert([fila], `Guardado ✓ ${placa} en recertificación (${fmt0(pct)}%)` + (existe ? '' : ' · placa nueva'));
+  document.getElementById('regRecPlaca').value = ''; document.getElementById('regRecPct').value = '';
 }
 
 function renderTpgFlota(){
