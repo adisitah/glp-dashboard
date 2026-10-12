@@ -656,9 +656,7 @@
 
     <div id="viewTPGNuevo" class="hidden">
       <div class="section-title">1. Flota</div>
-      <div id="flotaMsg" class="card hidden" style="border-top-color:var(--amber); margin-bottom:16px;"></div>
-      <div id="flotaContent" class="hidden" style="margin-bottom:8px;">
-        <div class="kpi-strip" style="grid-template-columns:repeat(2, minmax(0,1fr)); max-width:640px;">
+      <div class="kpi-strip hidden" id="flotaKpis" style="grid-template-columns:repeat(2, minmax(0,1fr)); max-width:640px;">
           <div class="kpi-strip-item" style="--c:var(--teal);">
             <div class="ksi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 5.6v6c0 4.6 3.1 8.4 7.5 9.9 4.4-1.5 7.5-5.3 7.5-9.9v-6z"/><path d="M9 12.2l2.1 2.1 4-4.2"/></svg></div>
             <div class="ksi-body">
@@ -672,10 +670,12 @@
             <div class="ksi-body">
               <div class="ksi-label">Flota total</div>
               <div class="ksi-value" id="flotaTotal">—</div>
-              <div class="ksi-note">cisternas registradas</div>
+              <div class="ksi-note" id="flotaTotalNota">cisternas registradas</div>
             </div>
           </div>
-        </div>
+      </div>
+      <div id="flotaMsg" class="card hidden" style="border-top-color:var(--amber); margin-bottom:16px;"></div>
+      <div id="flotaContent" class="hidden" style="margin-bottom:8px;">
         <div class="grid">
           <div class="card" style="border-top-color:var(--blue);">
             <div class="card-head"><div><h3>1.1 Status de flota operativa/inoperativa</h3><div class="sub">Cisternas por status</div></div></div>
@@ -685,6 +685,25 @@
             <div class="card-head"><div><h3>1.2 Status de recertificaciones</h3><div class="sub">Avance por placa en recertificación</div></div></div>
             <div class="chart-wrap"><canvas id="chartFlotaRecert"></canvas></div>
           </div>
+        </div>
+      </div>
+
+      <div id="fdispMsg" class="card hidden" style="border-top-color:var(--amber); margin-bottom:16px;"></div>
+      <div class="grid" style="margin-bottom:8px;">
+        <div class="card hidden" id="fdispChartCard" style="border-top-color:var(--teal);">
+          <div class="card-head"><div><h3>1.3 Disponibilidad diaria</h3><div class="sub" id="fdispSub">—</div></div></div>
+          <div class="chart-wrap"><canvas id="chartFlotaDisp"></canvas></div>
+        </div>
+        <div class="card hidden" id="fdispFormCard" style="border-top-color:var(--green);">
+          <div class="card-head"><div><h3>Registrar disponibilidad del día</h3><div class="sub">Se guarda en Supabase (tpg_flota_disponibilidad). Si el día ya existe, se actualiza.</div></div></div>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-top:6px;">
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="fdispFecha" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Fecha</label><input type="date" id="fdispFecha" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; color:var(--ink);"></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="fdispTotal" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Total unds</label><input type="number" id="fdispTotal" min="0" step="1" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:100px; color:var(--ink);"></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="fdispOp" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Unds operativas</label><input type="number" id="fdispOp" min="0" step="1" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:120px; color:var(--ink);"></div>
+            <button type="button" id="fdispGuardar" onclick="guardarFlotaDisp()" style="background:var(--green); color:#fff; border:none; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">Guardar día</button>
+          </div>
+          <div id="fdispEstado" style="margin-top:10px; font-size:12.5px; color:var(--text-muted);"></div>
+          <div id="fdispTabla" style="margin-top:12px;"></div>
         </div>
       </div>
 
@@ -717,6 +736,26 @@
           </div>
         </div>
         <div class="legend-note" id="tpgNota"></div>
+      </div>
+
+      <div class="section-title">3. Seguridad</div>
+      <div id="igroMsg" class="card hidden" style="border-top-color:var(--amber);"></div>
+      <div class="grid">
+        <div class="card hidden" id="igroChartCard" style="border-top-color:var(--blue);">
+          <div class="card-head"><div><h3>3.1 % IGRO mes · 3.2 IFV mes</h3><div class="sub" id="igroSub">—</div></div></div>
+          <div class="chart-wrap"><canvas id="chartIgro"></canvas></div>
+        </div>
+        <div class="card hidden" id="igroFormCard" style="border-top-color:var(--green);">
+          <div class="card-head"><div><h3>Agregar / actualizar mes</h3><div class="sub">Se guarda en Supabase (tpg_igro). Si el mes ya existe, se actualiza.</div></div></div>
+          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-top:6px;">
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="igroMes" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Mes</label><input type="month" id="igroMes" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; color:var(--ink);"></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="igroPct" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">% IGRO</label><input type="number" id="igroPct" min="0" max="100" step="any" placeholder="96" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:90px; color:var(--ink);"></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="igroIfv" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">IFV acumulado mes</label><input type="number" id="igroIfv" min="0" step="any" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:130px; color:var(--ink);"></div>
+            <div style="display:flex; flex-direction:column; gap:4px;"><label for="igroQuiebres" style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Quiebres</label><input type="number" id="igroQuiebres" min="0" step="any" style="border:1px solid var(--border); padding:7px 10px; font-size:13px; width:90px; color:var(--ink);"></div>
+            <button type="button" id="igroGuardar" onclick="guardarIgro()" style="background:var(--green); color:#fff; border:none; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; height:36px;">Guardar mes</button>
+          </div>
+          <div id="igroEstado" style="margin-top:10px; font-size:12.5px; color:var(--text-muted);"></div>
+        </div>
       </div>
     </div>
 
@@ -898,6 +937,8 @@ async function loadAllFromSupabase(){
     await loadTpg();
     await loadTpgPoa();
     await loadTpgFlota();
+    await loadTpgFlotaDisp();
+    await loadTpgIgro();
 
     const sello = new Date().toLocaleString('es-PE',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     document.getElementById('dataStatus').textContent = 'Actualizado ' + sello;
@@ -1148,6 +1189,8 @@ function renderAll(){
   renderDetalle();
   renderTpg();
   renderTpgFlota();
+  renderFlotaDisp();
+  renderTpgIgro();
   renderPoa();
 }
 
@@ -1253,6 +1296,8 @@ function switchTab(tab){
   if(tab === 'tpgnuevo'){
     renderTpg(); // los gráficos se dibujan con el panel visible para que tomen su tamaño
     renderTpgFlota();
+    renderFlotaDisp();
+    renderTpgIgro();
   }
   if(tab === 'poa'){
     renderPoa();
@@ -2013,6 +2058,147 @@ function tpgRazonPorDestino(rows, numeradorFn){
   return {labels, vals};
 }
 
+// ================= TPG · 3. Seguridad: IGRO e IFV (tabla tpg_igro) =================
+let TPG_IGRO = {rows:[], error:null};
+
+async function loadTpgIgro(){
+  TPG_IGRO = {rows:[], error:null};
+  try{
+    const {data, error} = await sb.from('tpg_igro').select('*').order('mes');
+    if(error) throw error;
+    TPG_IGRO.rows = data;
+  }catch(err){
+    TPG_IGRO.error = (err && err.message) ? err.message : String(err);
+    console.warn('No se pudo cargar tpg_igro:', TPG_IGRO.error);
+  }
+}
+
+// Barra = % IGRO (eje izquierdo, fracción 0-1); punto = IFV acumulado del mes (eje derecho)
+function igroEstado(texto, tipo){
+  const e = document.getElementById('igroEstado'); if(!e) return;
+  e.textContent = texto;
+  e.style.color = tipo==='error' ? 'var(--red)' : (tipo==='ok' ? 'var(--green)' : 'var(--text-muted)');
+  e.style.fontWeight = tipo ? '700' : '600';
+}
+
+// Rellena el formulario con los valores del mes elegido (si ya existe) y ajusta el texto del botón
+function igroPrefill(){
+  const m = document.getElementById('igroMes').value;
+  const fila = TPG_IGRO.rows.find(r=> String(r.mes).slice(0,7) === m);
+  const v = x=> (x==null ? '' : x);
+  document.getElementById('igroPct').value = fila && num(fila.igro)!=null ? Math.round(num(fila.igro)*10000)/100 : '';
+  document.getElementById('igroIfv').value = fila ? v(fila.ifv_acumulado_mes) : '';
+  document.getElementById('igroQuiebres').value = fila ? v(fila.quiebres) : '';
+  document.getElementById('igroGuardar').textContent = fila ? 'Actualizar mes' : 'Guardar mes';
+}
+
+// Mes por defecto: el siguiente al último cargado (o el mes anterior si no hay datos)
+function igroInicializarForm(){
+  const inp = document.getElementById('igroMes');
+  if(!inp.value){
+    const ult = TPG_IGRO.rows.length ? String(TPG_IGRO.rows[TPG_IGRO.rows.length-1].mes).slice(0,7) : null;
+    let y, m;
+    if(ult){ [y,m] = ult.split('-').map(Number); m++; if(m>12){ m=1; y++; } }
+    else { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); y = d.getFullYear(); m = d.getMonth()+1; }
+    inp.value = y + '-' + String(m).padStart(2,'0');
+  }
+  inp.onchange = igroPrefill;
+  igroPrefill();
+}
+
+function igroMensajeError(err){
+  const m = (err && err.message) ? err.message : String(err);
+  if(/row-level security|violates row-level/i.test(m)) return 'Supabase no permite escribir en tpg_igro. Corre tpg-igro-permisos.sql en el SQL Editor y vuelve a intentar.';
+  if(/check constraint/i.test(m)) return 'Algún valor está fuera de rango (IGRO entre 0 y 100; IFV y quiebres no negativos).';
+  return mensajeSupabase(err);
+}
+
+async function guardarIgro(){
+  const mes = document.getElementById('igroMes').value;
+  if(!/^\d{4}-\d{2}$/.test(mes)){ igroEstado('Elige el mes.', 'error'); return; }
+  const pct = parseFloat(String(document.getElementById('igroPct').value).replace(',','.'));
+  if(isNaN(pct) || pct < 0 || pct > 100){ igroEstado('Escribe el % IGRO entre 0 y 100 (por ejemplo 96).', 'error'); return; }
+  const leer = (id, nombre)=>{
+    const raw = String(document.getElementById(id).value).replace(',','.').trim();
+    if(raw === '') return {ok:true, v:null};
+    const n = parseFloat(raw);
+    return (isNaN(n) || n < 0) ? {ok:false, nombre} : {ok:true, v:n};
+  };
+  const ifv = leer('igroIfv','IFV acumulado mes'), q = leer('igroQuiebres','Quiebres');
+  if(!ifv.ok){ igroEstado('IFV acumulado mes debe ser un número mayor o igual a 0.', 'error'); return; }
+  if(!q.ok){ igroEstado('Quiebres debe ser un número mayor o igual a 0.', 'error'); return; }
+
+  const fila = {mes: mes + '-01', igro: Math.round(pct*100)/10000, ifv_acumulado_mes: ifv.v, quiebres: q.v};
+  const btn = document.getElementById('igroGuardar');
+  btn.disabled = true; igroEstado('Guardando…');
+  try{
+    const {error} = await sb.from('tpg_igro').upsert(fila, {onConflict:'mes'});
+    if(error) throw error;
+    await loadTpgIgro();
+    renderTpgIgro();
+    igroEstado('Guardado ✓ ' + fmtMes(fila.mes), 'ok');
+  }catch(err){
+    igroEstado('No se pudo guardar. ' + igroMensajeError(err), 'error');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderTpgIgro(){
+  const msg = document.getElementById('igroMsg'), chartCard = document.getElementById('igroChartCard'), formCard = document.getElementById('igroFormCard');
+  if(!msg || !chartCard || !formCard) return;
+  formCard.classList.toggle('hidden', !!TPG_IGRO.error);
+  if(TPG_IGRO.error || !TPG_IGRO.rows.length){
+    chartCard.classList.add('hidden'); destroyChart('chartIgro'); msg.classList.remove('hidden');
+    msg.innerHTML = TPG_IGRO.error
+      ? `<h3>No se pudo leer la tabla tpg_igro</h3><div class="sub">${TPG_IGRO.error}<br>Si aún no existe: corre <b>tpg-igro.sql</b> en el SQL Editor de Supabase y luego importa <b>tpg_igro_carga.csv</b>.</div>`
+      : `<h3>Sin datos de IGRO</h3><div class="sub">La tabla tpg_igro está vacía. Agrega el primer mes con el formulario de abajo (si no deja guardar, corre <b>tpg-igro-permisos.sql</b>) o importa <b>tpg_igro_carga.csv</b>.</div>`;
+    if(!TPG_IGRO.error) igroInicializarForm();
+    return;
+  }
+  msg.classList.add('hidden'); chartCard.classList.remove('hidden');
+  igroInicializarForm();
+
+  const filas = TPG_IGRO.rows;
+  const labels = filas.map(r=> fmtMes(String(r.mes).slice(0,10)));
+  const igro = filas.map(r=> num(r.igro));
+  const ifv  = filas.map(r=> num(r.ifv_acumulado_mes));
+  const vals = igro.filter(v=>v!=null);
+  const minIgro = vals.length ? Math.max(0, Math.floor((Math.min(...vals) - 0.03) * 100) / 100) : 0;   // eje ajustado, como en el Excel
+  const maxIfv = Math.max(2, Math.ceil(Math.max(0, ...ifv.filter(v=>v!=null))) + 1);
+
+  const ult = filas[filas.length-1];
+  const q = num(ult.quiebres);
+  document.getElementById('igroSub').textContent =
+    `Barra: % IGRO (eje izquierdo) · Punto: IFV acumulado del mes (eje derecho)` + (q!=null ? ` · Quiebres ${fmt0(q)} en ${labels[labels.length-1]}` : '');
+
+  destroyChart('chartIgro');
+  charts.chartIgro = new Chart(document.getElementById('chartIgro'), {
+    data:{
+      labels,
+      datasets:[
+        {type:'bar', label:'% IGRO', data:igro, yAxisID:'y', backgroundColor:COLORS.blue, borderRadius:0, barPercentage:.45, categoryPercentage:.9, order:2,
+          datalabels:{display:c=> c.dataset.data[c.dataIndex]!=null, anchor:'end', align:'start', color:'#fff', font:{weight:'700', size:12}, formatter:v=> fmt0(v*100) + '%'}},
+        {type:'line', label:'IFV acumulado mes', data:ifv, yAxisID:'y1', showLine:false, pointRadius:6, pointHoverRadius:7, pointBackgroundColor:COLORS.orange, pointBorderColor:'#fff', pointBorderWidth:1.5, order:1,
+          datalabels:{display:c=> c.dataset.data[c.dataIndex]!=null, anchor:'end', align:'right', offset:8, color:'#0F2547', font:{weight:'700', size:11}, formatter:v=> fmt0(v)}}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:14, right:8}},
+      plugins:{
+        legend:{display:true, position:'top', labels:{usePointStyle:true, boxWidth:9, boxHeight:9, font:{size:10.5}}},
+        tooltip:{callbacks:{label:c=> c.datasetIndex===0 ? ` % IGRO: ${fmt1(c.raw*100)}%` : ` IFV acumulado mes: ${fmt0(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:{display:false}},
+        y:{position:'left', min:minIgro, max:1, grid:{color:'#EEF1F6'}, ticks:{callback:v=> fmt0(v*100) + '%'}},
+        y1:{position:'right', min:0, max:maxIfv, grid:{display:false}, ticks:{precision:0, stepSize:1}, title:{display:true, text:'IFV'}}
+      }
+    }
+  });
+}
+
 // ================= TPG · 1. Flota (tabla tpg_flota) =================
 let TPG_FLOTA = {rows:[], error:null};
 
@@ -2037,10 +2223,179 @@ function flotaClave(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g
 const FLOTA_ORDEN = ['operativa sin conductor','en tramite','en recertificacion','operativa en circuito','en mantto correctivo/preventivo'];
 const FLOTA_ETIQUETA = {'en tramite':'En trámite', 'en recertificacion':'En recertificación'};
 
+// Conteo por status de tpg_flota (null si la tabla no tiene datos); sirve de respaldo para el % de disponibilidad
+let FLOTA_STATUS = null;
+
+// Tarjetas "% Disponibilidad" y "Flota total": usan el último día registrado en tpg_flota_disponibilidad;
+// si no hay registros diarios, usan el conteo por status de tpg_flota.
+function flotaActualizarKpis(){
+  const kpis = document.getElementById('flotaKpis'); if(!kpis) return;
+  const ult = TPG_FDISP.rows.length ? TPG_FDISP.rows[TPG_FDISP.rows.length-1] : null;
+  const tDia = ult ? num(ult.total_unds) : null, oDia = ult ? num(ult.unds_operativas) : null;
+  let total = null, oper = null, nota = '', notaTotal = 'cisternas registradas';
+  if(tDia != null && oDia != null && tDia > 0){
+    total = tDia; oper = oDia;
+    nota = `${fmt0(oper)} operativas ÷ ${fmt0(total)} unds · ${fmtDDMM(ult.fecha)}`;
+    notaTotal = 'unidades al ' + fmtDDMM(ult.fecha);
+  } else if(FLOTA_STATUS){
+    total = FLOTA_STATUS.total; oper = FLOTA_STATUS.operativas;
+    nota = `${fmt0(oper)} operativas ÷ ${fmt0(total)} de flota total`;
+  }
+  kpis.classList.toggle('hidden', total == null);
+  if(total == null) return;
+  document.getElementById('flotaTotal').textContent = fmt0(total);
+  document.getElementById('flotaTotalNota').textContent = notaTotal;
+  document.getElementById('flotaDispo').textContent = fmt1(oper / total * 100) + '%';
+  document.getElementById('flotaDispoNota').textContent = nota;
+}
+
+// ================= TPG · 1.3 Disponibilidad diaria (tabla tpg_flota_disponibilidad) =================
+let TPG_FDISP = {rows:[], error:null};
+
+async function loadTpgFlotaDisp(){
+  TPG_FDISP = {rows:[], error:null};
+  try{
+    const pagina = 1000;
+    for(let desde = 0; ; desde += pagina){
+      const {data, error} = await sb.from('tpg_flota_disponibilidad').select('*').order('fecha').range(desde, desde + pagina - 1);
+      if(error) throw error;
+      TPG_FDISP.rows.push(...data);
+      if(data.length < pagina) break;
+    }
+  }catch(err){
+    TPG_FDISP.error = (err && err.message) ? err.message : String(err);
+    console.warn('No se pudo cargar tpg_flota_disponibilidad:', TPG_FDISP.error);
+  }
+}
+
+function fdispEstado(texto, tipo){
+  const e = document.getElementById('fdispEstado'); if(!e) return;
+  e.textContent = texto;
+  e.style.color = tipo==='error' ? 'var(--red)' : (tipo==='ok' ? 'var(--green)' : 'var(--text-muted)');
+  e.style.fontWeight = tipo ? '700' : '600';
+}
+
+function fdispHoy(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// Si el día elegido ya tiene registro, lo muestra; si no, propone el total del último día (o la flota de tpg_flota)
+// y las operativas según el status de tpg_flota.
+function fdispPrefill(){
+  const f = document.getElementById('fdispFecha').value;
+  const fila = TPG_FDISP.rows.find(r=> String(r.fecha).slice(0,10) === f);
+  const ult = TPG_FDISP.rows.length ? TPG_FDISP.rows[TPG_FDISP.rows.length-1] : null;
+  const v = x=> (x==null ? '' : x);
+  if(fila){
+    document.getElementById('fdispTotal').value = v(fila.total_unds);
+    document.getElementById('fdispOp').value = v(fila.unds_operativas);
+  } else {
+    document.getElementById('fdispTotal').value = ult && num(ult.total_unds)!=null ? num(ult.total_unds) : (FLOTA_STATUS ? FLOTA_STATUS.total : '');
+    document.getElementById('fdispOp').value = FLOTA_STATUS ? FLOTA_STATUS.operativas : '';
+  }
+  document.getElementById('fdispGuardar').textContent = fila ? 'Actualizar día' : 'Guardar día';
+}
+
+function fdispInicializarForm(){
+  const inp = document.getElementById('fdispFecha');
+  if(!inp.value) inp.value = fdispHoy();
+  inp.onchange = fdispPrefill;
+  fdispPrefill();
+}
+
+function fdispMensajeError(err){
+  const m = (err && err.message) ? err.message : String(err);
+  if(/row-level security|violates row-level/i.test(m)) return 'Supabase no permite escribir en tpg_flota_disponibilidad. Corre tpg-flota-disponibilidad.sql en el SQL Editor y vuelve a intentar.';
+  if(/check constraint/i.test(m)) return 'Los valores no son válidos (las unidades operativas no pueden superar el total ni ser negativas).';
+  return mensajeSupabase(err);
+}
+
+async function guardarFlotaDisp(){
+  const fecha = document.getElementById('fdispFecha').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fecha)){ fdispEstado('Elige la fecha.', 'error'); return; }
+  const entero = id=>{
+    const raw = String(document.getElementById(id).value).replace(',','.').trim();
+    const n = raw === '' ? NaN : Number(raw);
+    return (isNaN(n) || n < 0 || !Number.isInteger(n)) ? null : n;
+  };
+  const total = entero('fdispTotal'), oper = entero('fdispOp');
+  if(total == null || total <= 0){ fdispEstado('Total unds debe ser un número entero mayor a 0.', 'error'); return; }
+  if(oper == null){ fdispEstado('Unds operativas debe ser un número entero mayor o igual a 0.', 'error'); return; }
+  if(oper > total){ fdispEstado('Las unidades operativas no pueden ser más que el total de unidades.', 'error'); return; }
+
+  const fila = {fecha, total_unds: total, unds_operativas: oper};
+  const btn = document.getElementById('fdispGuardar');
+  btn.disabled = true; fdispEstado('Guardando…');
+  try{
+    const {error} = await sb.from('tpg_flota_disponibilidad').upsert(fila, {onConflict:'fecha'});
+    if(error) throw error;
+    await loadTpgFlotaDisp();
+    renderFlotaDisp();
+    fdispEstado(`Guardado ✓ ${fmtDDMM(fecha)} · ${fmt1(oper/total*100)}% de disponibilidad`, 'ok');
+  }catch(err){
+    fdispEstado('No se pudo guardar. ' + fdispMensajeError(err), 'error');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderFlotaDisp(){
+  const msg = document.getElementById('fdispMsg'), chartCard = document.getElementById('fdispChartCard'), formCard = document.getElementById('fdispFormCard');
+  if(!msg || !chartCard || !formCard) return;
+  flotaActualizarKpis();
+  formCard.classList.toggle('hidden', !!TPG_FDISP.error);
+  if(TPG_FDISP.error || !TPG_FDISP.rows.length){
+    chartCard.classList.add('hidden'); destroyChart('chartFlotaDisp'); msg.classList.remove('hidden');
+    document.getElementById('fdispTabla').innerHTML = '';
+    msg.innerHTML = TPG_FDISP.error
+      ? `<h3>No se pudo leer la tabla tpg_flota_disponibilidad</h3><div class="sub">${TPG_FDISP.error}<br>Si aún no existe: corre <b>tpg-flota-disponibilidad.sql</b> en el SQL Editor de Supabase.</div>`
+      : `<h3>Sin registros de disponibilidad diaria</h3><div class="sub">Registra el primer día con el formulario (si no deja guardar, corre <b>tpg-flota-disponibilidad.sql</b>).</div>`;
+    if(!TPG_FDISP.error) fdispInicializarForm();
+    return;
+  }
+  msg.classList.add('hidden'); chartCard.classList.remove('hidden');
+  fdispInicializarForm();
+
+  const pct = r=>{ const t = num(r.total_unds), o = num(r.unds_operativas); return (t > 0 && o != null) ? o / t * 100 : null; };
+  const filas = TPG_FDISP.rows.slice(-60);   // últimos 60 días registrados
+  const labels = filas.map(r=> fmtDDMM(r.fecha));
+  const vals = filas.map(pct);
+  const nums = vals.filter(v=>v!=null);
+  const min = nums.length ? Math.max(0, Math.floor((Math.min(...nums) - 5) / 5) * 5) : 0;
+  document.getElementById('fdispSub').textContent = `Operativas ÷ total de unidades, por día · ${filas.length} día${filas.length===1?'':'s'} registrado${filas.length===1?'':'s'}`;
+
+  destroyChart('chartFlotaDisp');
+  charts.chartFlotaDisp = new Chart(document.getElementById('chartFlotaDisp'), {
+    type:'line',
+    data:{labels, datasets:[{label:'% Disponibilidad', data:vals, borderColor:COLORS.teal, backgroundColor:COLORS.teal, borderWidth:2.5, tension:0, pointRadius:4, pointBackgroundColor:COLORS.teal, pointBorderColor:'#fff', pointBorderWidth:1.5, spanGaps:true,
+      datalabels:{display:c=> c.dataset.data[c.dataIndex]!=null, anchor:'end', align:'top', color:'#0F2547', font:{weight:'700', size:11}, formatter:v=> fmt1(v) + '%'}}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:{top:22, right:12}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>{
+        const r = filas[c.dataIndex]; return ` ${fmt1(c.raw)}% (${fmt0(num(r.unds_operativas))} de ${fmt0(num(r.total_unds))} unds)`;
+      }}}},
+      scales:{x:{grid:{display:false}}, y:{min, max:100, grid:{color:'#EEF1F6'}, ticks:{callback:v=> v + '%'}}}
+    }
+  });
+
+  // Últimos 7 registros (más reciente primero)
+  const th = 'text-align:right; padding:5px 8px; font-size:10.5px; color:var(--text-muted); text-transform:uppercase;';
+  const td = 'text-align:right; padding:5px 8px; font-size:12.5px; border-top:1px solid var(--border);';
+  const ult7 = TPG_FDISP.rows.slice(-7).reverse();
+  document.getElementById('fdispTabla').innerHTML =
+    `<table style="width:100%; border-collapse:collapse;"><thead><tr><th style="${th} text-align:left;">Fecha</th><th style="${th}">Total unds</th><th style="${th}">Operativas</th><th style="${th}">% Disp.</th></tr></thead><tbody>` +
+    ult7.map(r=>`<tr><td style="${td} text-align:left;">${fmtDDMM(r.fecha)}</td><td style="${td}">${fmt0(num(r.total_unds))}</td><td style="${td}">${fmt0(num(r.unds_operativas))}</td><td style="${td} font-weight:700;">${pct(r)!=null ? fmt1(pct(r)) + '%' : '—'}</td></tr>`).join('') +
+    `</tbody></table>`;
+}
+
 function renderTpgFlota(){
   const msg = document.getElementById('flotaMsg'), cont = document.getElementById('flotaContent');
   if(!msg || !cont) return;
+  FLOTA_STATUS = null;
   if(TPG_FLOTA.error || !TPG_FLOTA.rows.length){
+    flotaActualizarKpis();
     cont.classList.add('hidden'); msg.classList.remove('hidden');
     msg.innerHTML = TPG_FLOTA.error
       ? `<h3>No se pudo leer la tabla tpg_flota</h3><div class="sub">${TPG_FLOTA.error}<br>Si aún no existe: corre <b>tpg-flota.sql</b> en el SQL Editor de Supabase y luego importa <b>tpg_flota_carga.csv</b>.</div>`
@@ -2060,9 +2415,8 @@ function renderTpgFlota(){
 
   // % Disponibilidad = operativas (en circuito + sin conductor) ÷ flota total
   const operativas = claves.filter(k=> k.startsWith('operativa')).reduce((s,k)=> s + cuenta[k], 0);
-  document.getElementById('flotaTotal').textContent = fmt0(filas.length);
-  document.getElementById('flotaDispo').textContent = fmt1(operativas / filas.length * 100) + '%';
-  document.getElementById('flotaDispoNota').textContent = `${fmt0(operativas)} operativas ÷ ${fmt0(filas.length)} de flota total`;
+  FLOTA_STATUS = {total: filas.length, operativas};
+  flotaActualizarKpis();
 
   tpgBarras('chartFlotaStatus', claves.map(k=> nombre[k]), claves.map(k=> cuenta[k]),
     {horizontal:true, color:COLORS.blue, fmt:v=>fmt0(v), unidad:' cisternas'});
