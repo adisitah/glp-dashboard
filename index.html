@@ -324,6 +324,9 @@
   table.poa-table td.l{text-align:left;}
   table.poa-table tr.r-planta td{font-weight:800; color:var(--ink); border-top:2px solid #C9D3E6;}
   table.poa-table tr.r-planta td.nom{color:var(--teal);}
+  table.poa-table tr.exp-able{cursor:pointer;}
+  table.poa-table tr.exp-able:hover td{filter:brightness(.97);}
+  table.poa-table .poa-tg{display:inline-block; width:16px; color:var(--text-muted); font-size:10px;}
   table.poa-table tr.r-origen td{color:var(--text-body);}
   table.poa-table tr.r-origen td.nom{padding-left:18px;}
   table.poa-table tr.r-total td{font-weight:800; background:#DDE5F3; color:var(--blue-dark); border-top:2px solid var(--blue-dark);}
@@ -691,6 +694,7 @@
         <div class="chips" style="align-items:center; gap:10px; margin-bottom:14px;">
           <label class="chip" id="poaMesWrap">Mes <select id="poaMesSelect"></select></label>
           <span class="chip" id="poaResumen">—</span>
+          <button type="button" class="chip" id="poaToggleTodo" onclick="poaToggleTodo()" style="cursor:pointer; font-weight:700; color:var(--blue-dark);">▸ Expandir rutas</button>
         </div>
         <div class="card" style="padding:0; border-top-color:var(--amber);">
           <div class="data-table-wrap" style="max-height:none; border:none;" id="poaTabla"></div>
@@ -2013,9 +2017,11 @@ function tpgBarras(canvasId, labels, vals, opts){
   opts = opts || {};
   destroyChart(canvasId);
   const colores = labels.map(l=> l==='Nacional' ? COLORS.navy : (opts.color || COLORS.blue));
-  const datasets = [{label:opts.etiqueta||'', data:vals, backgroundColor:colores, borderRadius:0, barPercentage:.5, categoryPercentage:.9}];
+  // Con comparación, las dos barras de cada destino van pegadas (barPercentage 1) y el espacio queda entre destinos.
+  const bp = opts.comparar ? 1 : .5, cp = opts.comparar ? .8 : .9;
+  const datasets = [{label:opts.etiqueta||'', data:vals, backgroundColor:colores, borderRadius:0, barPercentage:bp, categoryPercentage:cp}];
   if(opts.comparar){
-    datasets.push({label:opts.comparar.label, data:opts.comparar.vals, borderRadius:0, barPercentage:.5, categoryPercentage:.9,
+    datasets.push({label:opts.comparar.label, data:opts.comparar.vals, borderRadius:0, barPercentage:bp, categoryPercentage:cp,
       backgroundColor: labels.map(l=> l==='Nacional' ? '#B8791A' : COLORS.amber), datalabels:{color:'#8A5A12'}});
   }
   charts[canvasId] = new Chart(document.getElementById(canvasId), {
@@ -2197,6 +2203,29 @@ function poaCalcular(poaRows, viajes, mes){
   return filas;
 }
 
+// Plantas con el detalle por ruta desplegado (se conserva al cambiar de mes)
+let POA_EXP = new Set();
+let POA_NOMBRES = [];
+
+function poaToggle(i){
+  const nombre = POA_NOMBRES[i];
+  const abrir = !POA_EXP.has(nombre);
+  if(abrir) POA_EXP.add(nombre); else POA_EXP.delete(nombre);
+  document.querySelectorAll(`#poaTabla tr[data-p="${i}"]`).forEach(tr=>{ tr.style.display = abrir ? '' : 'none'; });
+  const fl = document.getElementById('poaFlecha' + i); if(fl) fl.textContent = abrir ? '▾' : '▸';
+  poaActualizarBotonTodo();
+}
+function poaToggleTodo(){
+  const todas = POA_NOMBRES.length > 0 && POA_NOMBRES.every(n=> POA_EXP.has(n));
+  POA_EXP = todas ? new Set() : new Set(POA_NOMBRES);
+  renderPoa();
+}
+function poaActualizarBotonTodo(){
+  const b = document.getElementById('poaToggleTodo'); if(!b) return;
+  const todas = POA_NOMBRES.length > 0 && POA_NOMBRES.every(n=> POA_EXP.has(n));
+  b.textContent = todas ? '▾ Contraer rutas' : '▸ Expandir rutas';
+}
+
 function renderPoa(){
   const msg = document.getElementById('poaMsg'), cont = document.getElementById('poaContent');
   if(!msg || !cont) return;
@@ -2236,13 +2265,21 @@ function renderPoa(){
     + '<th class="h-cierre">Monto (S/)</th><th class="h-cierre">Volumen (TM)</th><th class="h-cierre">Tarifa (S/TM)</th>'
     + '<th class="h-mix">POA</th><th class="h-mix">REAL</th></tr></thead>';
 
+  // Por defecto solo se ve la fila total de cada planta; las rutas (origen) se despliegan con la flecha.
+  POA_NOMBRES = [];
+  let pi = -1;
   const cuerpo = '<tbody>' + filas.map(f=>{
-    const cls = f.tipo==='planta' ? 'r-planta' : (f.tipo==='total' ? 'r-total' : 'r-origen');
+    const esPlanta = f.tipo==='planta';
+    if(esPlanta){ pi++; POA_NOMBRES[pi] = f.nombre; }
+    const abierta = POA_EXP.has(POA_NOMBRES[pi]);
+    const cls = esPlanta ? 'r-planta exp-able' : (f.tipo==='total' ? 'r-total' : 'r-origen');
     const esOrigen = f.tipo==='origen';
     const dot = (!esOrigen) ? `<span class="dot" style="background:${color(f.varS)}"></span>` : '';
     const dotPct = (f.varPct!=null) ? `<span class="dot" style="background:${color(f.varPct)}"></span>` : '';
-    return `<tr class="${cls}">`
-      + `<td class="l nom">${f.nombre}</td>`
+    const atr = esPlanta ? ` onclick="poaToggle(${pi})" title="Ver detalle por ruta"` : (esOrigen ? ` data-p="${pi}"${abierta ? '' : ' style="display:none"'}` : '');
+    const flecha = esPlanta ? `<span class="poa-tg" id="poaFlecha${pi}">${abierta ? '▾' : '▸'}</span>` : '';
+    return `<tr class="${cls}"${atr}>`
+      + `<td class="l nom">${flecha}${f.nombre}</td>`
       + `<td class="c-poa">${n0(f.m0)}</td><td class="c-poa">${n0(f.v0)}</td><td class="c-poa">${n0(f.t0)}</td>`
       + `<td class="c-cie">${n1(f.m1)}</td><td class="c-cie">${n1(f.v1)}</td><td class="c-cie">${n0(f.t1)}</td>`
       + `<td class="c-mix">${esOrigen||f.tipo==='total' ? pc(f.mix0) : ''}</td><td class="c-mix">${esOrigen||f.tipo==='total' ? pc(f.mix1) : ''}</td>`
@@ -2251,6 +2288,7 @@ function renderPoa(){
   }).join('') + '</tbody>';
 
   document.getElementById('poaTabla').innerHTML = `<table class="poa-table">${cab}${cuerpo}</table>`;
+  poaActualizarBotonTodo();
   const tot = filas[filas.length-1];
   document.getElementById('poaResumen').textContent = `Cierre ${fmt0(tot.m1)} vs POA ${fmt0(tot.m0)} S/ · VAR ${fmt0(tot.varS)} S/`;
   document.getElementById('poaNota').textContent =
