@@ -659,11 +659,12 @@
           <label class="chip" id="tpgMesWrap">Mes <select id="tpgMesSelect"></select></label>
           <label class="chip">Origen <select id="tpgOrigenSelect"></select></label>
           <label class="chip">Tipo <select id="tpgTipoSelect"></select></label>
+          <label class="chip hidden" id="tpgPoaWrap">POA <select id="tpgPoaMesSelect"></select></label>
           <span class="chip" id="tpgConteo">—</span>
         </div>
         <div class="grid">
           <div class="card" style="border-top-color:var(--blue);">
-            <div class="card-head"><div><h3>2.1 Unitario flete</h3><div class="sub">Liquidación de flete por TM, por destino</div></div></div>
+            <div class="card-head"><div><h3>2.1 Unitario flete</h3><div class="sub" id="tpgFleteSub">Liquidación de flete por TM, por destino</div></div></div>
             <div class="chart-wrap"><canvas id="chartTpgFlete"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--teal);">
@@ -1972,22 +1973,63 @@ function tpgRazonPorDestino(rows, numeradorFn){
   return {labels, vals};
 }
 
+// Mes de POA elegido (compartido entre la pestaña TPG y "POA vs Cierre"). null = aún no elegido.
+let POA_MES_SEL = null;
+function poaMesDefecto(meses){
+  const ant = new Date(); ant.setDate(1); ant.setMonth(ant.getMonth() - 1);
+  const mesAnt = ant.getFullYear() + '-' + String(ant.getMonth()+1).padStart(2,'0');
+  return meses.includes(mesAnt) ? mesAnt : (meses.length ? meses[meses.length-1] : '');
+}
+// Llena un <select> de mes de POA. "Todos" solo tiene sentido si el cierre trae fechas.
+function poaLlenarMes(sel, meses, hayFechas){
+  sel.innerHTML = (hayFechas ? '<option value="">Todos</option>' : '') + meses.map(m=>`<option value="${m}">${m}</option>`).join('');
+  const quiere = POA_MES_SEL !== null ? POA_MES_SEL : poaMesDefecto(meses);
+  sel.value = [...sel.options].some(o=> o.value === quiere) ? quiere : (meses.length ? meses[meses.length-1] : '');
+  sel.onchange = ()=>{ POA_MES_SEL = sel.value; renderTpg(); renderPoa(); };
+  return sel.value;
+}
+
+// Unitario POA (monto ÷ volumen, S/TM) por destino, del mes de POA elegido. "Nacional" = todo el POA del mes.
+// El filtro Origen aplica (PPAL = Ventanilla); el de Tipo no, porque el POA no distingue tipo de servicio.
+function tpgPoaUnitario(mes, origenSel){
+  const out = {};
+  if(origenSel === TPG_SIN) return out;
+  const okOrigen = origenSel ? poaOrigenNombre(origenSel).toLowerCase() : '';
+  const g = {}; let mT = 0, vT = 0;
+  TPG_POA.rows.forEach(r=>{
+    if(mes && r.periodo && String(r.periodo).slice(0,7) !== mes) return;
+    if(okOrigen && poaOrigenNombre(r.origen).toLowerCase() !== okOrigen) return;
+    const m = num(r.monto_soles)||0, v = num(r.volumen_tm)||0; if(v <= 0) return;
+    mT += m; vT += v;
+    const d = String(r.destino||'').trim().toUpperCase(); if(!d) return;
+    g[d] = g[d] || {m:0, v:0}; g[d].m += m; g[d].v += v;
+  });
+  Object.keys(g).forEach(d=>{ out[d] = g[d].m / g[d].v; });
+  if(vT > 0) out['Nacional'] = mT / vT;
+  return out;
+}
+
 function tpgBarras(canvasId, labels, vals, opts){
   opts = opts || {};
   destroyChart(canvasId);
   const colores = labels.map(l=> l==='Nacional' ? COLORS.navy : (opts.color || COLORS.blue));
+  const datasets = [{label:opts.etiqueta||'', data:vals, backgroundColor:colores, borderRadius:0, barPercentage:.5, categoryPercentage:.9}];
+  if(opts.comparar){
+    datasets.push({label:opts.comparar.label, data:opts.comparar.vals, borderRadius:0, barPercentage:.5, categoryPercentage:.9,
+      backgroundColor: labels.map(l=> l==='Nacional' ? '#B8791A' : COLORS.amber), datalabels:{color:'#8A5A12'}});
+  }
   charts[canvasId] = new Chart(document.getElementById(canvasId), {
     type:'bar',
-    data:{labels, datasets:[{data:vals, backgroundColor:colores, borderRadius:0, barPercentage:.5, categoryPercentage:.9}]},
+    data:{labels, datasets},
     options:{
       responsive:true, maintainAspectRatio:false,
       layout:{padding:{top:22}},
       plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:c=> ` ${opts.fmt ? opts.fmt(c.raw) : fmt1(c.raw)}${opts.unidad||''}`}},
+        legend:{display:!!opts.comparar, position:'top', labels:{usePointStyle:true, pointStyle:'rect', boxWidth:9, boxHeight:9, font:{size:10.5}}},
+        tooltip:{callbacks:{label:c=> ` ${c.dataset.label ? c.dataset.label + ': ' : ''}${opts.fmt ? opts.fmt(c.raw) : fmt1(c.raw)}${opts.unidad||''}`}},
         datalabels:{
           display:c=>{ const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v); },
-          anchor:'end', align:'top', color:'#0F2547', font:{weight:'700', size:10.5},
+          anchor:'end', align:'top', color:'#0F2547', font:{weight:'700', size: opts.comparar ? 9.5 : 10.5},
           formatter:v=> opts.fmt ? opts.fmt(v) : fmt0(v)
         }
       },
@@ -2018,8 +2060,25 @@ function renderTpg(){
   const rows = tpgFiltrar();
   document.getElementById('tpgConteo').textContent = `${fmt0(rows.length)} de ${fmt0(TPG.rows.length)} viajes`;
 
+  // 2.1 Unitario flete: cierre (tpg_gabast) y, si hay POA cargado, el unitario POA por destino al lado
   const flete = tpgRazonPorDestino(rows, r=> num(r.liquidacion_flete));
-  tpgBarras('chartTpgFlete', flete.labels, flete.vals, {eje:'por TM', fmt:v=>fmt0(v)});
+  const mesesPoa = [...new Set(TPG_POA.rows.map(r=>String(r.periodo||'').slice(0,7)).filter(Boolean))].sort();
+  document.getElementById('tpgPoaWrap').classList.toggle('hidden', !mesesPoa.length);
+  const poaMes = mesesPoa.length ? poaLlenarMes(document.getElementById('tpgPoaMesSelect'), mesesPoa, meses.length > 0) : '';
+  const poaUni = tpgPoaUnitario(poaMes, document.getElementById('tpgOrigenSelect').value);
+  const hayPoa = Object.keys(poaUni).length > 0;
+  let lblF = flete.labels, valF = flete.vals, poaVals = null;
+  if(hayPoa){
+    const destinos = [...new Set([...flete.labels, ...Object.keys(poaUni)].filter(l=> l !== 'Nacional'))].sort();
+    lblF = [...destinos, 'Nacional'];
+    valF = lblF.map(l=>{ const i = flete.labels.indexOf(l); return i >= 0 ? flete.vals[i] : null; });
+    poaVals = lblF.map(l=> poaUni[l] != null ? poaUni[l] : null);
+  }
+  tpgBarras('chartTpgFlete', lblF, valF, {eje:'por TM', fmt:v=>fmt0(v), etiqueta:'Cierre',
+    comparar: hayPoa ? {label:'POA ' + (poaMes || '(todos los meses)'), vals:poaVals} : null});
+  document.getElementById('tpgFleteSub').textContent = hayPoa
+    ? `Liquidación de flete por TM, por destino · cierre vs POA ${poaMes || '(todos los meses)'}`
+    : 'Liquidación de flete por TM, por destino';
 
   const sobre = tpgRazonPorDestino(rows, r=> num(r.pago_stand_by));
   tpgBarras('chartTpgSobre', sobre.labels, sobre.vals, {color:COLORS.orange, eje:'por TM', fmt:v=> v>=10 ? fmt0(v) : fmt1(v)});
@@ -2039,6 +2098,7 @@ function renderTpg(){
 
   document.getElementById('tpgNota').textContent =
     `Unitario flete = liquidación de flete ÷ TM; sobreestadía = pago de stand by ÷ TM. Ocupación con datos en ${fmt0(conPct)} de ${fmt0(rows.length)} viajes.` +
+    (hayPoa ? ` POA = monto ÷ volumen del POA (tpg_poa) por destino; Nacional = todo el POA del mes. El filtro Origen también filtra el POA; Tipo no.` : '') +
     (meses.length ? '' : ' Sin filtro de mes: la hoja no trae fechas (llena fecha_viaje en tpg_gabast).');
 }
 
@@ -2094,8 +2154,10 @@ function poaCalcular(poaRows, viajes, mes){
     e.m += num(r.monto_soles)||0; e.v += num(r.volumen_tm)||0;
     const t = num(r.tarifa_soles_tm); if(t!=null) e.t = t;
   });
+  // El mes filtra el cierre solo si los viajes traen fecha_viaje; si no, se toma todo el cierre cargado.
+  const conFecha = viajes.some(r=> r.fecha_viaje);
   viajes.forEach(r=>{
-    if(mes && String(r.fecha_viaje||'').slice(0,7) !== mes) return;
+    if(mes && conFecha && String(r.fecha_viaje||'').slice(0,7) !== mes) return;
     const tm = tpgTm(r), m = num(r.liquidacion_flete); if(tm==null || m==null) return;
     const p = destPlanta[tpgDestino(r)] || '(sin planta)';
     if(!plantas.includes(p)) plantas.push(p);
@@ -2153,8 +2215,11 @@ function renderPoa(){
     ...TPG.rows.map(r=>String(r.fecha_viaje||'').slice(0,7))
   ].filter(Boolean))].sort();
   document.getElementById('poaMesWrap').classList.toggle('hidden', !meses.length);
-  tpgLlenarSelect('poaMesSelect', meses, 'Todos');
-  document.getElementById('poaMesSelect').onchange = renderPoa;
+  // Sin fechas en el cierre no tiene sentido "Todos" (año completo de POA contra un cierre parcial):
+  // se elige un mes de POA y por defecto el mes anterior (el del cierre), o el último disponible.
+  const hayFechas = TPG.rows.some(r=> r.fecha_viaje);
+  const selMes = document.getElementById('poaMesSelect');
+  poaLlenarMes(selMes, meses, hayFechas);   // el mes elegido se comparte con el gráfico 2.1 de la pestaña TPG
 
   const filas = poaCalcular(TPG_POA.rows, TPG.rows, document.getElementById('poaMesSelect').value);
   const n0 = v=> (v==null || Math.abs(v)<0.5) ? '–' : fmt0(v);
@@ -2191,7 +2256,8 @@ function renderPoa(){
   document.getElementById('poaNota').textContent =
     'Cierre desde tpg_gabast (liquidación de flete y TM). VAR = cierre − POA; VAR% = variación de tarifa. Ef. Tarifa = (tarifa cierre − tarifa POA) × volumen cierre; Ef. Volumen = (volumen cierre − volumen POA) × tarifa POA de la planta; Ef. Mix = VAR − Ef. Tarifa − Ef. Volumen. '
     + 'Punto rojo = por encima del POA, verde = por debajo.'
-    + (TPG.rows.length ? '' : ' (Aún no hay viajes en tpg_gabast: el cierre aparece en cero.)');
+    + (TPG.rows.length ? '' : ' (Aún no hay viajes en tpg_gabast: el cierre aparece en cero.)')
+    + (TPG.rows.length && !hayFechas ? ' Los viajes no tienen fecha_viaje: se compara todo el cierre cargado contra el POA del mes elegido.' : '');
 }
 
 // ================= Agregar / editar datos =================
