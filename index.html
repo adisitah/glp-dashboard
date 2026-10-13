@@ -440,7 +440,7 @@
 
 <header class="topbar">
   <div>
-    <h1>Abastecimiento <span style="color:var(--gray);font-weight:500;">|</span> Resumen semanal</h1>
+    <h1>Abastecimiento <span style="color:var(--gray);font-weight:500;">|</span> <span id="tituloSeccion">Resumen semanal</span></h1>
   </div>
   <div class="meta-row" id="metaRow">
     <span class="pill" id="dataStatus">Cargando datos…</span>
@@ -1324,6 +1324,7 @@ function switchTab(tab){
   document.getElementById('viewPOA').classList.toggle('hidden', tab !== 'poa');
   document.getElementById('viewDetalle').classList.toggle('hidden', tab !== 'detalle');
   document.getElementById('viewRegistro').classList.toggle('hidden', tab !== 'registro');
+  document.getElementById('tituloSeccion').textContent = ['tpgnuevo','poa','registro'].includes(tab) ? 'Transporte Primario Granel' : 'Resumen semanal';
   document.getElementById('viewAgregar').classList.toggle('hidden', tab !== 'agregar');
   document.querySelectorAll('[data-tab]').forEach(el=>{
     el.classList.toggle('active', el.dataset.tab === tab);
@@ -2066,6 +2067,11 @@ function tpgTm(r){
   return (c!=null && c>=5 && c<=60) ? c : null;
 }
 function tpgDestino(r){ return String(r.destino_tarifa || r.planta_destino || '').trim().toUpperCase(); }
+// Origen del viaje. Los viajes a Ventanilla sin origen son de PLUSPETROL, que despacha desde Pisco.
+function tpgOrigenViaje(r){
+  const o = String(r.planta_origen || '').trim();
+  return o || (tpgDestino(r) === 'VENTANILLA' ? 'PISCO' : '');
+}
 const TPG_SIN = '(sin dato)';
 
 function tpgLlenarSelect(id, valores, etiquetaTodos){
@@ -2081,7 +2087,7 @@ function tpgFiltrar(){
   const tipo = document.getElementById('tpgTipoSelect').value;
   return TPG.rows.filter(r=>{
     if(mes && String(r.fecha_viaje||'').slice(0,7) !== mes) return false;
-    if(origen && String(r.planta_origen||TPG_SIN).trim() !== origen) return false;
+    if(origen && (tpgOrigenViaje(r) || TPG_SIN) !== origen) return false;
     if(tipo && String(r.tipo_de_servicio||TPG_SIN).trim() !== tipo) return false;
     return true;
   });
@@ -2864,7 +2870,7 @@ function renderTpg(){
   const meses = [...new Set(TPG.rows.map(r=>String(r.fecha_viaje||'').slice(0,7)).filter(Boolean))].sort();
   document.getElementById('tpgMesWrap').classList.toggle('hidden', !meses.length);
   tpgLlenarSelect('tpgMesSelect', meses, 'Todos');
-  tpgLlenarSelect('tpgOrigenSelect', [...new Set(TPG.rows.map(r=>String(r.planta_origen||TPG_SIN).trim()))].sort(), 'Todos');
+  tpgLlenarSelect('tpgOrigenSelect', [...new Set(TPG.rows.map(r=> tpgOrigenViaje(r) || TPG_SIN))].sort(), 'Todos');
   tpgLlenarSelect('tpgTipoSelect', [...new Set(TPG.rows.map(r=>String(r.tipo_de_servicio||TPG_SIN).trim()))].sort(), 'Todos');
   ['tpgMesSelect','tpgOrigenSelect','tpgTipoSelect'].forEach(id=>{ document.getElementById(id).onchange = renderTpg; });
 
@@ -2984,7 +2990,7 @@ function poaCalcular(poaRows, viajes, mes){
     const tm = tpgTm(r), m = num(r.liquidacion_flete); if(tm==null || m==null) return;
     const p = destPlanta[tpgDestino(r)] || '(sin planta)';
     if(!plantas.includes(p)) plantas.push(p);
-    const ok = addPO(p, poaOrigenNombre(r.planta_origen));
+    const ok = addPO(p, poaOrigenNombre(tpgOrigenViaje(r)));
     const e = cie[p+'|'+ok] = cie[p+'|'+ok] || {m:0, v:0};
     e.m += m; e.v += tm;
   });
