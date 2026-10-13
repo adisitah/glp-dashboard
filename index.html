@@ -737,8 +737,10 @@
             <div class="chart-wrap"><canvas id="chartTpgSobre"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--purple);">
-            <div class="card-head"><div><h3>2.4 Llenado de cisternas</h3><div class="sub">Histograma de % de ocupación (viajes)</div></div></div>
+            <div class="card-head"><div><h3 id="tpgLlenadoTitulo">2.4 Llenado de cisternas</h3><div class="sub" id="tpgLlenadoSub">Histograma de % de ocupación (viajes)</div></div>
+              <button type="button" id="tpgLlenadoVolver" class="hidden" onclick="tpgLlenadoVolver()" style="background:#fff; color:var(--blue-dark); border:1px solid var(--border); padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;">← Volver</button></div>
             <div class="chart-wrap"><canvas id="chartTpgLlenado"></canvas></div>
+            <div class="data-table-wrap hidden" id="tpgLlenadoDet" style="max-height:236px; margin-top:6px;"></div>
           </div>
         </div>
         <div class="legend-note" id="tpgNota"></div>
@@ -2762,6 +2764,44 @@ function tpgCargaVista(rows){
     comparar:{label:'No bonificada', vals:ops.map(o=> prom(g[o].nb)), ns:ops.map(o=> g[o].nb.n), color:COLORS.gray, colorNac:'#5A6B8C', labelColor:'#5A6B8C'}});
 }
 
+// 2.4 Llenado de cisternas: al hacer click en un rango de ocupación se lista, por cisterna, su capacidad y su carga promedio
+const TPG_BINS = [[0,.85,'<85%'],[.85,.875,'85–87.5%'],[.875,.9,'87.5–90%'],[.9,.925,'90–92.5%'],[.925,.95,'92.5–95%'],[.95,.975,'95–97.5%'],[.975,.9999,'97.5–<100%'],[.9999,Infinity,'100%']];
+let TPG_LLENADO_SEL = null;
+
+function tpgLlenadoVolver(){ TPG_LLENADO_SEL = null; tpgLlenadoVista(tpgFiltrar()); }
+
+function tpgLlenadoVista(rows){
+  const main = document.getElementById('chartTpgLlenado').parentElement, det = document.getElementById('tpgLlenadoDet');
+  const titulo = document.getElementById('tpgLlenadoTitulo'), sub = document.getElementById('tpgLlenadoSub'), volver = document.getElementById('tpgLlenadoVolver');
+  const bin = TPG_LLENADO_SEL ? TPG_BINS.find(b=> b[2] === TPG_LLENADO_SEL) : null;
+  const enBin = bin ? rows.filter(r=>{ const p = num(r.pct_ocupabilidad); return p != null && p >= bin[0] && p < bin[1]; }) : [];
+  if(!bin || !enBin.length){
+    const venia = main.classList.contains('hidden');
+    TPG_LLENADO_SEL = null;
+    main.classList.remove('hidden'); det.classList.add('hidden'); volver.classList.add('hidden');
+    titulo.textContent = '2.4 Llenado de cisternas'; sub.textContent = 'Histograma de % de ocupación (viajes)';
+    if(venia && charts.chartTpgLlenado) charts.chartTpgLlenado.resize();
+    return;
+  }
+  const prom = a=>{ const v = a.filter(x=> x != null); return v.length ? v.reduce((s,x)=> s + x, 0) / v.length : null; };
+  const g = {};
+  enBin.forEach(r=>{
+    const k = String(r.botella || '').trim() || '(sin cisterna)';
+    const e = g[k] = g[k] || {op:String(r.operador || '').trim(), cap:[], tm:[], pct:[], n:0};
+    e.cap.push(num(r.capacidad_cisterna_tm)); e.tm.push(tpgTm(r)); e.pct.push(num(r.pct_ocupabilidad)); e.n++;
+  });
+  const filas = Object.entries(g).map(([k, e])=>({cist:k, op:e.op, cap:prom(e.cap), tm:prom(e.tm), pct:prom(e.pct), n:e.n}))
+    .sort((a,b)=> b.n - a.n || String(a.cist).localeCompare(String(b.cist)));
+  const capG = prom(enBin.map(r=> num(r.capacidad_cisterna_tm))), tmG = prom(enBin.map(r=> tpgTm(r))), pctG = prom(enBin.map(r=> num(r.pct_ocupabilidad)));
+  titulo.textContent = '2.4 Llenado de cisternas · ' + bin[2];
+  sub.textContent = `${fmt0(enBin.length)} viajes · ${fmt0(filas.length)} cisternas · capacidad prom ${fmt1(capG)} TM · carga prom ${fmt1(tmG)} TM · ocupación prom ${fmt1(pctG * 100)}%`;
+  volver.classList.remove('hidden');
+  main.classList.add('hidden'); det.classList.remove('hidden');
+  det.innerHTML = '<table class="data-table"><thead><tr><th>Cisterna</th><th>Operador</th><th class="num">Viajes</th><th class="num">Capacidad (TM)</th><th class="num">Carga prom (TM)</th><th class="num">Ocupación prom</th></tr></thead><tbody>' +
+    filas.map(f=> `<tr><td><b>${f.cist}</b></td><td>${f.op || '—'}</td><td class="num">${fmt0(f.n)}</td><td class="num">${fmt1(f.cap)}</td><td class="num">${fmt1(f.tm)}</td><td class="num">${f.pct == null ? '—' : fmt1(f.pct * 100) + '%'}</td></tr>`).join('') +
+    `</tbody><tfoot><tr class="total-row"><td colspan="2">Total del rango</td><td class="num">${fmt0(enBin.length)}</td><td class="num">${fmt1(capG)}</td><td class="num">${fmt1(tmG)}</td><td class="num">${fmt1(pctG * 100)}%</td></tr></tfoot></table>`;
+}
+
 // "PUCALLPA-VIA CANTA" → "Pucallpa-Via Canta" (nombres de plantas/destinos con mayúscula inicial)
 function nombrePlanta(s){
   return String(s).toLowerCase().replace(/(^|[\s\-\/])([a-záéíóúüñ])/g, (m, sep, c)=> sep + c.toUpperCase());
@@ -2872,10 +2912,12 @@ function renderTpg(){
   tpgCargaVista(rows);
 
   // Histograma de % de ocupación de cisternas
-  const bins = [[0,.85,'<85%'],[.85,.875,'85–87.5%'],[.875,.9,'87.5–90%'],[.9,.925,'90–92.5%'],[.925,.95,'92.5–95%'],[.95,.975,'95–97.5%'],[.975,.9999,'97.5–<100%'],[.9999,Infinity,'100%']];
+  const bins = TPG_BINS;
   const cuentas = bins.map(()=>0); let conPct = 0;
   rows.forEach(r=>{ const p = num(r.pct_ocupabilidad); if(p==null) return; conPct++; const i = bins.findIndex(b=> p>=b[0] && p<b[1]); if(i>=0) cuentas[i]++; });
-  tpgBarras('chartTpgLlenado', bins.map(b=>b[2]), cuentas, {color:COLORS.purple, eje:'viajes', fmt:v=>fmt0(v), unidad:' viajes'});
+  tpgBarras('chartTpgLlenado', bins.map(b=>b[2]), cuentas, {color:COLORS.purple, eje:'viajes', fmt:v=>fmt0(v), unidad:' viajes',
+    pista:'Click para ver el detalle por cisterna', onClick:l=>{ TPG_LLENADO_SEL = l; tpgLlenadoVista(rows); }});
+  tpgLlenadoVista(rows);
 
   document.getElementById('tpgNota').textContent =
     `Unitario flete = liquidación de flete ÷ TM; sobreestadía = pago de stand by ÷ TM. Ocupación con datos en ${fmt0(conPct)} de ${fmt0(rows.length)} viajes.` +
