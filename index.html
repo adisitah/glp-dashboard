@@ -337,6 +337,12 @@
   .chips{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
   .chip{background:#F5F8FD; border:1px solid var(--border); border-radius:0; padding:6px 10px; font-size:12px; color:var(--text-muted);}
   .chip b{color:var(--ink); font-size:13px;}
+  /* Fila de filtros que ocupa todo el ancho: cada filtro se reparte el espacio por igual */
+  .chips-full{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr); gap:10px; align-items:stretch;}
+  @media (max-width:640px){ .chips-full{grid-auto-flow:row; grid-template-columns:repeat(2, minmax(0, 1fr));} }
+  .chips-full .chip{display:flex; align-items:center; gap:8px; margin:0; min-width:0;}
+  .chips-full .chip select{flex:1; min-width:0;}
+  .chips-full .chip-conteo{justify-content:center; font-weight:600;}
   .empty-msg{text-align:center; color:var(--text-muted); padding:70px 20px; font-size:13.5px;}
   footer{text-align:center; color:var(--gray); font-size:12px; padding:20px;}
   .hidden{display:none !important;}
@@ -708,16 +714,16 @@
       <div class="section-title">2. Productividad y eficiencia</div>
       <div id="tpgMsg" class="card hidden" style="border-top-color:var(--amber);"></div>
       <div id="tpgContent" class="hidden">
-        <div class="chips" style="align-items:center; gap:10px; margin-bottom:14px;">
-          <label class="chip" id="tpgMesWrap">Mes <select id="tpgMesSelect"></select></label>
+        <div class="chips chips-full" style="margin-bottom:14px;">
+          <label class="chip hidden" id="tpgPoaWrap" title="Mes del POA con el que se compara el cierre">Mes <select id="tpgPoaMesSelect"></select></label>
+          <label class="chip" id="tpgMesWrap">Mes de viaje <select id="tpgMesSelect"></select></label>
           <label class="chip">Origen <select id="tpgOrigenSelect"></select></label>
           <label class="chip">Tipo <select id="tpgTipoSelect"></select></label>
-          <label class="chip hidden" id="tpgPoaWrap">POA <select id="tpgPoaMesSelect"></select></label>
-          <span class="chip" id="tpgConteo">—</span>
+          <span class="chip chip-conteo" id="tpgConteo">—</span>
         </div>
         <div class="grid">
           <div class="card" style="border-top-color:var(--blue);">
-            <div class="card-head"><div><h3>2.1 Unitario flete</h3><div class="sub" id="tpgFleteSub">Liquidación de flete por TM, por destino</div></div></div>
+            <div class="card-head"><div><h3>2.1 Flete unitario (Sol/TM)</h3><div class="sub" id="tpgFleteSub">Liquidación de flete por TM, por destino</div></div></div>
             <div class="chart-wrap"><canvas id="chartTpgFlete"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--teal);">
@@ -2546,11 +2552,10 @@ function renderRegRecert(){
   const th = 'padding:6px 8px; font-size:10.5px; color:var(--text-muted); text-transform:uppercase; text-align:left;';
   const td = 'padding:5px 8px; font-size:13px; border-top:1px solid var(--border);';
   const filas = REG_REC.map((x, i)=>
-    `<tr><td style="${td} font-weight:700;">${x.placa}</td><td style="${td} color:var(--text-muted);">${x.operador || '—'}</td>` +
-    `<td style="${td}"><input type="number" min="0" max="100" step="1" id="regRecP_${i}" value="${x.pct == null ? '' : x.pct}" style="${inp} width:80px; text-align:right;"> %</td>` +
+    `<tr><td style="${td} font-weight:700; white-space:nowrap;">${x.placa}</td><td style="${td} color:var(--text-muted);">${x.operador || '—'}</td>` +
+    `<td style="${td} white-space:nowrap;"><input type="number" min="0" max="100" step="1" id="regRecP_${i}" value="${x.pct == null ? '' : x.pct}" style="${inp} width:80px; text-align:right;"> %</td>` +
     `<td style="${td}"><select id="regRecS_${i}" style="${inp}">${opciones.map(o=>`<option value="${o}"${flotaClave(o) === flotaClave(x.status) ? ' selected' : ''}>${FLOTA_ETIQUETA[flotaClave(o)] || o}</option>`).join('')}</select></td>` +
-    `<td style="${td}"><button type="button" onclick="regRecQuitar(${i})" title="Quitar ${x.placa} de recertificación" style="background:#fff; color:var(--red); border:1px solid var(--red); padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">Quitar</button> ` +
-    `<button type="button" onclick="regRecEliminar(${i})" title="Eliminar ${x.placa} de la flota" style="background:var(--red); color:#fff; border:1px solid var(--red); padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">Eliminar</button></td></tr>`
+    `<td style="${td}"><button type="button" onclick="regRecEliminar(${i})" title="Eliminar ${x.placa} de la flota" aria-label="Eliminar ${x.placa}" style="background:#fff; color:var(--red); border:1px solid var(--red); width:34px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button></td></tr>`
   ).join('');
   document.getElementById('regRecTabla').innerHTML = REG_REC.length
     ? `<table style="width:100%; max-width:640px; border-collapse:collapse;"><thead><tr><th style="${th}">Placa</th><th style="${th}">Operador</th><th style="${th}">Avance</th><th style="${th}">Status</th><th style="${th}"></th></tr></thead><tbody>${filas}</tbody></table>`
@@ -2600,18 +2605,10 @@ async function guardarRecert(){
   await regRecUpsert(filas, `Guardado ✓ ${filas.length} placa${filas.length===1?'':'s'} actualizada${filas.length===1?'':'s'}`);
 }
 
-// Quita la placa del gráfico 1.2: pasa a "Operativa en circuito" (la unidad sigue en la flota; no se borra nada)
-async function regRecQuitar(i){
-  const x = REG_REC[i]; if(!x) return;
-  const destino = regStatusOpciones().find(o=> flotaClave(o) === 'operativa en circuito') || 'Operativa en circuito';
-  if(!confirm(`¿Quitar ${x.placa} de recertificación?\n\nSale del gráfico 1.2 y pasa a "${destino}". Los cambios sin guardar de las otras placas se pierden.`)) return;
-  await regRecUpsert([{placa:x.placa, status_flota:destino}], `Listo ✓ ${x.placa} salió de recertificación (ahora: ${destino})`);
-}
-
 // Elimina la placa de la tabla tpg_flota (sale de todos los gráficos y del total de flota). No se puede deshacer.
 async function regRecEliminar(i){
   const x = REG_REC[i]; if(!x) return;
-  if(!confirm(`¿ELIMINAR ${x.placa} de la flota?\n\nSe borra la unidad de la tabla tpg_flota: sale del gráfico 1.2, de 1.1 y del total de flota. No se puede deshacer.\nSi solo terminó la recertificación, usa "Quitar". Los cambios sin guardar de las otras placas se pierden.`)) return;
+  if(!confirm(`¿ELIMINAR ${x.placa} de la flota?\n\nSe borra la unidad de la tabla tpg_flota: sale del gráfico 1.2, de 1.1 y del total de flota. No se puede deshacer.\nSi solo terminó la recertificación, cámbiale el status a Operativa y usa Guardar cambios. Los cambios sin guardar de las otras placas se pierden.`)) return;
   const botones = document.querySelectorAll('#regRecCard button'); botones.forEach(b=> b.disabled = true);
   regRecEstado('Eliminando…');
   try{
@@ -2700,7 +2697,7 @@ function poaMesDefecto(meses){
 }
 // Llena un <select> de mes de POA. "Todos" solo tiene sentido si el cierre trae fechas.
 function poaLlenarMes(sel, meses, hayFechas){
-  sel.innerHTML = (hayFechas ? '<option value="">Todos</option>' : '') + meses.map(m=>`<option value="${m}">${m}</option>`).join('');
+  sel.innerHTML = (hayFechas ? '<option value="">Todos</option>' : '') + meses.map(m=>`<option value="${m}">${fmtMes(m + '-01')}</option>`).join('');
   const quiere = POA_MES_SEL !== null ? POA_MES_SEL : poaMesDefecto(meses);
   sel.value = [...sel.options].some(o=> o.value === quiere) ? quiere : (meses.length ? meses[meses.length-1] : '');
   sel.onchange = ()=>{ POA_MES_SEL = sel.value; renderTpg(); renderPoa(); };
@@ -2727,6 +2724,11 @@ function tpgPoaUnitario(mes, origenSel){
   return out;
 }
 
+// "PUCALLPA-VIA CANTA" → "Pucallpa-Via Canta" (nombres de plantas/destinos con mayúscula inicial)
+function nombrePlanta(s){
+  return String(s).toLowerCase().replace(/(^|[\s\-\/])([a-záéíóúüñ])/g, (m, sep, c)=> sep + c.toUpperCase());
+}
+
 function tpgBarras(canvasId, labels, vals, opts){
   opts = opts || {};
   destroyChart(canvasId);
@@ -2743,7 +2745,7 @@ function tpgBarras(canvasId, labels, vals, opts){
   }
   charts[canvasId] = new Chart(document.getElementById(canvasId), {
     type:'bar',
-    data:{labels, datasets},
+    data:{labels: opts.plantas ? labels.map(nombrePlanta) : labels, datasets},
     options:{
       indexAxis: h ? 'y' : 'x',
       responsive:true, maintainAspectRatio:false,
@@ -2800,14 +2802,14 @@ function renderTpg(){
     valF = lblF.map(l=>{ const i = flete.labels.indexOf(l); return i >= 0 ? flete.vals[i] : null; });
     poaVals = lblF.map(l=> poaUni[l] != null ? poaUni[l] : null);
   }
-  tpgBarras('chartTpgFlete', lblF, valF, {sinEjeY:true, fmt:v=>fmt0(v), etiqueta:'Cierre',
-    comparar: hayPoa ? {label:'POA ' + (poaMes || '(todos los meses)'), vals:poaVals} : null});
+  tpgBarras('chartTpgFlete', lblF, valF, {sinEjeY:true, plantas:true, fmt:v=>fmt0(v), etiqueta:'Cierre',
+    comparar: hayPoa ? {label:'POA ' + (poaMes ? fmtMes(poaMes + '-01') : '(todos los meses)'), vals:poaVals} : null});
   document.getElementById('tpgFleteSub').textContent = hayPoa
-    ? `Liquidación de flete por TM, por destino · cierre vs POA ${poaMes || '(todos los meses)'}`
+    ? `Liquidación de flete por TM, por destino · cierre vs POA ${poaMes ? fmtMes(poaMes + '-01') : '(todos los meses)'}`
     : 'Liquidación de flete por TM, por destino';
 
   const sobre = tpgRazonPorDestino(rows, r=> num(r.pago_stand_by));
-  tpgBarras('chartTpgSobre', sobre.labels, sobre.vals, {color:COLORS.orange, eje:'por TM', fmt:v=> v>=10 ? fmt0(v) : fmt1(v)});
+  tpgBarras('chartTpgSobre', sobre.labels, sobre.vals, {color:COLORS.orange, eje:'por TM', plantas:true, fmt:v=> v>=10 ? fmt0(v) : fmt1(v)});
 
   // Promedio de TM por viaje y destino
   // separado por tipo de cisterna: bonificada (columna bonificacion con dato) vs no bonificada
@@ -2824,7 +2826,7 @@ function renderTpg(){
   const vB = cLabels.map(k=> prom(g[k].b)), vN = cLabels.map(k=> prom(g[k].nb));
   const nB = cLabels.map(k=> g[k].b.n), nN = cLabels.map(k=> g[k].nb.n);
   if(tB.n + tN.n){ cLabels.push('Nacional'); vB.push(prom(tB)); vN.push(prom(tN)); nB.push(tB.n); nN.push(tN.n); }
-  tpgBarras('chartTpgCarga', cLabels, vB, {color:COLORS.teal, eje:'TM', fmt:v=>fmt1(v), etiqueta:'Cisterna bonificada', ns:nB,
+  tpgBarras('chartTpgCarga', cLabels, vB, {color:COLORS.teal, sinEjeY:true, plantas:true, fmt:v=>fmt1(v), etiqueta:'Cisterna bonificada', ns:nB,
     comparar:{label:'No bonificada', vals:vN, ns:nN, color:COLORS.gray, colorNac:'#5A6B8C', labelColor:'#5A6B8C'}});
 
   // Histograma de % de ocupación de cisternas
