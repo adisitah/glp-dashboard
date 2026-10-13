@@ -2548,10 +2548,12 @@ function renderRegRecert(){
   const filas = REG_REC.map((x, i)=>
     `<tr><td style="${td} font-weight:700;">${x.placa}</td><td style="${td} color:var(--text-muted);">${x.operador || '—'}</td>` +
     `<td style="${td}"><input type="number" min="0" max="100" step="1" id="regRecP_${i}" value="${x.pct == null ? '' : x.pct}" style="${inp} width:80px; text-align:right;"> %</td>` +
-    `<td style="${td}"><select id="regRecS_${i}" style="${inp}">${opciones.map(o=>`<option value="${o}"${flotaClave(o) === flotaClave(x.status) ? ' selected' : ''}>${FLOTA_ETIQUETA[flotaClave(o)] || o}</option>`).join('')}</select></td></tr>`
+    `<td style="${td}"><select id="regRecS_${i}" style="${inp}">${opciones.map(o=>`<option value="${o}"${flotaClave(o) === flotaClave(x.status) ? ' selected' : ''}>${FLOTA_ETIQUETA[flotaClave(o)] || o}</option>`).join('')}</select></td>` +
+    `<td style="${td}"><button type="button" onclick="regRecQuitar(${i})" title="Quitar ${x.placa} de recertificación" style="background:#fff; color:var(--red); border:1px solid var(--red); padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">Quitar</button> ` +
+    `<button type="button" onclick="regRecEliminar(${i})" title="Eliminar ${x.placa} de la flota" style="background:var(--red); color:#fff; border:1px solid var(--red); padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer;">Eliminar</button></td></tr>`
   ).join('');
   document.getElementById('regRecTabla').innerHTML = REG_REC.length
-    ? `<table style="width:100%; max-width:640px; border-collapse:collapse;"><thead><tr><th style="${th}">Placa</th><th style="${th}">Operador</th><th style="${th}">Avance</th><th style="${th}">Status</th></tr></thead><tbody>${filas}</tbody></table>`
+    ? `<table style="width:100%; max-width:640px; border-collapse:collapse;"><thead><tr><th style="${th}">Placa</th><th style="${th}">Operador</th><th style="${th}">Avance</th><th style="${th}">Status</th><th style="${th}"></th></tr></thead><tbody>${filas}</tbody></table>`
     : `<div class="sub">Ninguna placa está en recertificación. Agrega una abajo.</div>`;
   document.getElementById('regRecGuardar').classList.toggle('hidden', !REG_REC.length);
 
@@ -2596,6 +2598,35 @@ async function guardarRecert(){
   }
   if(!filas.length){ regRecEstado('No hay cambios para guardar.'); return; }
   await regRecUpsert(filas, `Guardado ✓ ${filas.length} placa${filas.length===1?'':'s'} actualizada${filas.length===1?'':'s'}`);
+}
+
+// Quita la placa del gráfico 1.2: pasa a "Operativa en circuito" (la unidad sigue en la flota; no se borra nada)
+async function regRecQuitar(i){
+  const x = REG_REC[i]; if(!x) return;
+  const destino = regStatusOpciones().find(o=> flotaClave(o) === 'operativa en circuito') || 'Operativa en circuito';
+  if(!confirm(`¿Quitar ${x.placa} de recertificación?\n\nSale del gráfico 1.2 y pasa a "${destino}". Los cambios sin guardar de las otras placas se pierden.`)) return;
+  await regRecUpsert([{placa:x.placa, status_flota:destino}], `Listo ✓ ${x.placa} salió de recertificación (ahora: ${destino})`);
+}
+
+// Elimina la placa de la tabla tpg_flota (sale de todos los gráficos y del total de flota). No se puede deshacer.
+async function regRecEliminar(i){
+  const x = REG_REC[i]; if(!x) return;
+  if(!confirm(`¿ELIMINAR ${x.placa} de la flota?\n\nSe borra la unidad de la tabla tpg_flota: sale del gráfico 1.2, de 1.1 y del total de flota. No se puede deshacer.\nSi solo terminó la recertificación, usa "Quitar". Los cambios sin guardar de las otras placas se pierden.`)) return;
+  const botones = document.querySelectorAll('#regRecCard button'); botones.forEach(b=> b.disabled = true);
+  regRecEstado('Eliminando…');
+  try{
+    const {data, error} = await sb.from('tpg_flota').delete().eq('placa', x.placa).select();
+    if(error) throw error;
+    if(!data || !data.length) throw new Error('row-level security: no se borró ninguna fila');
+    await loadTpgFlota();
+    renderTpgFlota();
+    renderRegRecert();
+    regRecEstado(`Listo ✓ ${x.placa} eliminada de la flota`, 'ok');
+  }catch(err){
+    botones.forEach(b=> b.disabled = false);
+    const m = (err && err.message) ? err.message : String(err);
+    regRecEstado('No se pudo eliminar. ' + (/row-level security/i.test(m) ? 'Supabase no permite borrar en tpg_flota. Corre tpg-flota-permisos.sql en el SQL Editor y vuelve a intentar.' : mensajeSupabase(err)), 'error');
+  }
 }
 
 // Agrega una placa a recertificación (si la placa no existe en la flota, se crea con el operador elegido)
