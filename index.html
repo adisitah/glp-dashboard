@@ -771,8 +771,10 @@
             <div class="chart-wrap hidden"><canvas id="chartTpgCargaOp"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--orange);">
-            <div class="card-head"><div><h3>2.2 Sobreestadía total (S/)</h3></div></div>
+            <div class="card-head"><div><h3 id="tpgSobreTitulo">2.2 Sobreestadía total (S/)</h3><div class="sub hidden" id="tpgSobreSub"></div></div>
+              <button type="button" id="tpgSobreVolver" class="hidden" onclick="tpgSobreVolver()" style="background:#fff; color:var(--blue-dark); border:1px solid var(--border); padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;">← Volver</button></div>
             <div class="chart-wrap"><canvas id="chartTpgSobre"></canvas></div>
+            <div class="chart-wrap hidden"><canvas id="chartTpgSobrePl"></canvas></div>
             <div class="sub hidden" id="tpgSobreMsg" style="padding:24px 4px;"></div>
           </div>
           <div class="card" style="border-top-color:var(--purple);">
@@ -811,7 +813,7 @@
       </div>
       <div id="igroOpWrap" class="hidden">
         <div class="card" style="margin-top:16px; border-top-color:var(--purple); padding-bottom:6px;">
-          <div class="card-head"><div><h3>3.4 IGRO por operador y mes</h3><div class="sub">Verde = cumple el objetivo · rojo = por debajo · en morado, los eventos IFV del mes · "–" = sin operación ese mes</div></div></div>
+          <div class="card-head"><div><h3>3.4 IGRO por operador y mes</h3><div class="sub">Verde = cumple el objetivo · rojo = por debajo · en morado, "N° IFV" = cantidad de eventos IFV del mes (no el tipo IFV 1, 2 o 3) · "–" = sin operación ese mes</div></div></div>
           <div id="igroOpTabla" style="overflow-x:auto; margin-top:8px;"></div>
         </div>
       </div>
@@ -2403,7 +2405,7 @@ function renderIgroOperador(){
   const igro = [...delMes.map(r=> num(r.igro)), totPond];
   const ifv = [...delMes.map(r=> num(r.ifv_eventos)), totIfv];
   const bajo = igro.filter(v=> v < obj).length;
-  document.getElementById('igroOpSub').textContent = `Barra: % IGRO (rojo = bajo el objetivo de ${fmt0(obj*100)}%) · Punto: IFV del mes (eje derecho) · ${fmt0(bajo)} bajo el objetivo`;
+  document.getElementById('igroOpSub').textContent = `Barra: % IGRO (rojo = bajo el objetivo de ${fmt0(obj*100)}%) · Punto: N° de eventos IFV del mes (eje derecho) · ${fmt0(bajo)} bajo el objetivo`;
   const minI = Math.max(0, Math.floor((Math.min(...igro, obj) - 0.03) * 100) / 100), maxIfv = Math.max(2, Math.ceil(Math.max(0, ...ifv.filter(v=> v != null))) + 1);
   destroyChart('chartIgroOp');
   charts.chartIgroOp = new Chart(document.getElementById('chartIgroOp'), {
@@ -2411,7 +2413,7 @@ function renderIgroOperador(){
       {type:'bar', label:'% IGRO', data:igro, yAxisID:'y', order:2, borderRadius:0, barPercentage:.6, categoryPercentage:.9,
         backgroundColor:labels.map((l, i)=> l === 'TPG' ? COLORS.navy : (igro[i] < obj ? COLORS.orange : COLORS.blue)),
         datalabels:{display:true, anchor:'end', align:'start', color:'#fff', font:{weight:'700', size:10.5}, formatter:v=> fmt0(v*100) + '%'}},
-      {type:'line', label:'IFV del mes', data:ifv, yAxisID:'y1', showLine:false, pointRadius:6, pointHoverRadius:7, pointBackgroundColor:COLORS.purple, pointBorderColor:'#fff', pointBorderWidth:1.5, order:1,
+      {type:'line', label:'N° IFV del mes', data:ifv, yAxisID:'y1', showLine:false, pointRadius:6, pointHoverRadius:7, pointBackgroundColor:COLORS.purple, pointBorderColor:'#fff', pointBorderWidth:1.5, order:1,
         datalabels:{display:c=> c.dataset.data[c.dataIndex] != null && c.dataset.data[c.dataIndex] > 0, anchor:'end', align:'top', offset:6, color:COLORS.purple, font:{weight:'700', size:11}, formatter:v=> fmt0(v)}},
       {type:'line', label:`Objetivo ${fmt0(obj*100)}%`, data:labels.map(()=> obj), yAxisID:'y', borderColor:COLORS.gray, borderDash:[6,4], borderWidth:2, pointRadius:0, pointHoverRadius:0, order:0, datalabels:{display:false}}
     ]},
@@ -2420,7 +2422,7 @@ function renderIgroOperador(){
       layout:{padding:{top:16, right:8}},
       plugins:{
         legend:{display:true, position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10, font:{size:10.5}}},
-        tooltip:{callbacks:{label:c=> c.datasetIndex === 0 ? ` % IGRO: ${fmt1(c.raw*100)}%` : c.datasetIndex === 1 ? ` IFV: ${fmt0(c.raw)}` : ` Objetivo: ${fmt0(c.raw*100)}%`}}
+        tooltip:{callbacks:{label:c=> c.datasetIndex === 0 ? ` % IGRO: ${fmt1(c.raw*100)}%` : c.datasetIndex === 1 ? ` N° IFV: ${fmt0(c.raw)}` : ` Objetivo: ${fmt0(c.raw*100)}%`}}
       },
       scales:{
         x:{grid:{display:false}, ticks:{font:{size:10}}},
@@ -2444,7 +2446,7 @@ function renderIgroOperador(){
     if(p == null) return `<td style="${td} color:var(--gray);">–</td>`;
     const ok = p >= obj;
     return `<td style="${td} background:${ok ? '#E6F5F0' : '#FDEDEF'}; ${extra||''}"><div style="font-weight:800; color:${ok ? '#0B7A5C' : '#B22B3E'};">${fmt1(p*100)}%</div>` +
-      (e > 0 ? `<div style="font-size:10.5px; font-weight:700; color:${COLORS.purple};">IFV ${fmt0(e)}</div>` : '') + '</td>';
+      (e > 0 ? `<div style="font-size:10.5px; font-weight:700; color:${COLORS.purple};" title="Cantidad de eventos IFV del mes (no el tipo IFV 1, 2 o 3)">N° IFV: ${fmt0(e)}</div>` : '') + '</td>';
   };
   document.getElementById('igroOpTabla').innerHTML =
     `<table style="width:100%; border-collapse:collapse; font-size:12.5px;"><thead><tr><th style="${th} text-align:left;">Operador</th>${meses.map(m=> `<th style="${th}">${fmtMes(m + '-01')}</th>`).join('')}</tr></thead><tbody>` +
@@ -3101,49 +3103,85 @@ async function loadTpgSobre(){
 
 const SOBRE_COLORES = {SERVOSA:COLORS.blue, TRC:COLORS.orange, MAJHOMA:COLORS.teal, TRANSPESA:COLORS.purple, TRANSARER:COLORS.gray, JEVARO:COLORS.navy, AMPAY:COLORS.blueLight};
 
-function renderTpgSobre(){
-  const canvas = document.getElementById('chartTpgSobre'); if(!canvas) return;
-  const wrap = canvas.parentElement, msg = document.getElementById('tpgSobreMsg');
-  const filas = TPG_SOBRE.rows.filter(r=> r.incluir !== false && num(r.monto) != null);
-  if(TPG_SOBRE.error || !filas.length){
-    destroyChart('chartTpgSobre'); wrap.classList.add('hidden'); msg.classList.remove('hidden');
-    msg.innerHTML = TPG_SOBRE.error
-      ? `No se pudo leer la tabla tpg_sobreestadia: ${TPG_SOBRE.error}<br>Si aún no existe: corre <b>tpg-sobreestadia.sql</b> en el SQL Editor de Supabase e importa <b>tpg_sobreestadias_detalle_2026.csv</b>.`
-      : 'La tabla tpg_sobreestadia está vacía. Impórtale <b>tpg_sobreestadias_detalle_2026.csv</b> desde el Table Editor de Supabase.';
-    return;
-  }
-  msg.classList.add('hidden'); wrap.classList.remove('hidden');
-  const clave = r=> r.mes ? String(r.mes).slice(0, 7) : '';
-  const meses = [...new Set(filas.map(clave))].sort((a, b)=> (a === '' ? 1 : b === '' ? -1 : (a < b ? -1 : 1)));   // "sin mes" al final
-  const total = ol=> filas.filter(r=> String(r.ol) === ol).reduce((s, r)=> s + num(r.monto), 0);
-  const ols = [...new Set(filas.map(r=> String(r.ol || '(sin OL)')))].sort((a, b)=> total(b) - total(a));
-  const monto = (ol, m)=> filas.filter(r=> String(r.ol || '(sin OL)') === ol && clave(r) === m).reduce((s, r)=> s + num(r.monto), 0);
-  const dias = (ol, m)=> filas.filter(r=> String(r.ol || '(sin OL)') === ol && clave(r) === m).reduce((s, r)=> s + (num(r.dias) || 0), 0);
+const SOBRE_PLANTAS = {PAQP:'Arequipa', PCUS:'Cusco', PCHI:'Chiclayo', PTRN:'Trujillo', PPIU:'Piura', PPUC:'Pucallpa', PPAL:'Ventanilla', MAYA:'Ayacucho', MPAJ:'Juanjui', MHUA:'Huaraz'};
+let TPG_SOBRE_SEL = null;   // mes elegido para el desglose por planta ('__sin' = líneas sin mes); null = vista general
+
+// Barras apiladas por OL: categorías = meses (vista general) o plantas (desglose de un mes)
+function sobreApilado(canvas, filas, catDe, etiquetaDe, ordenar, onClick){
+  const cats = [...new Set(filas.map(catDe))].sort(ordenar);
+  const olDe = r=> String(r.ol || '(sin OL)');
+  const suma = (ol, c, campo)=> filas.filter(r=> olDe(r) === ol && catDe(r) === c).reduce((s, r)=> s + (num(r[campo]) || 0), 0);
+  const ols = [...new Set(filas.map(olDe))].sort((a, b)=> filas.filter(r=> olDe(r) === b).reduce((s, r)=> s + num(r.monto), 0) - filas.filter(r=> olDe(r) === a).reduce((s, r)=> s + num(r.monto), 0));
   const extra = [COLORS.green, COLORS.red, COLORS.blueMid];
   const datasets = ols.map((ol, i)=>({
-    type:'bar', label:ol, data:meses.map(m=> monto(ol, m) || null), dias:meses.map(m=> dias(ol, m)),
+    type:'bar', label:ol, data:cats.map(c=> suma(ol, c, 'monto') || null), dias:cats.map(c=> suma(ol, c, 'dias')),
     backgroundColor:SOBRE_COLORES[ol] || extra[i % extra.length], borderRadius:0, barPercentage:.6, categoryPercentage:.9, stack:'s',
     datalabels:{display:false}
   }));
-  const totales = meses.map(m=> ols.reduce((s, ol)=> s + monto(ol, m), 0));
+  const totales = cats.map(c=> ols.reduce((s, ol)=> s + suma(ol, c, 'monto'), 0));
   datasets.push({type:'line', label:'Total', data:totales, showLine:false, pointRadius:0, pointHoverRadius:0,
     datalabels:{display:true, anchor:'end', align:'top', offset:2, color:'#0F2547', font:{weight:'700', size:10.5}, formatter:v=> 'S/ ' + fmt0(v)}});
-  destroyChart('chartTpgSobre');
-  charts.chartTpgSobre = new Chart(canvas, {
-    data:{labels:meses.map(m=> m === '' ? 'Sin mes' : fmtMes(m + '-01')), datasets},
+  return new Chart(canvas, {
+    data:{labels:cats.map(etiquetaDe), datasets},
     options:{
       responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      onClick:(ev, els)=>{ if(onClick && els.length) onClick(cats[els[0].index]); },
+      onHover:(ev, els)=>{ if(onClick && ev.native) ev.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
       layout:{padding:{top:22}},
       plugins:{
         legend:{display:true, position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10, font:{size:10.5}, filter:i=> i.text !== 'Total'}},
-        tooltip:{filter:i=> i.dataset.label !== 'Total', callbacks:{
+        tooltip:{filter:i=> i.dataset.label !== 'Total' && i.raw != null, callbacks:{
           label:c=> ` ${c.dataset.label}: S/ ${fmt0(c.raw)} · ${fmt0(c.dataset.dias[c.dataIndex])} días`,
-          footer:items=> 'Total: S/ ' + fmt0(items.reduce((s, i)=> s + i.raw, 0))
+          footer:items=> 'Total: S/ ' + fmt0(items.reduce((s, i)=> s + i.raw, 0)) + (onClick ? '\nClick para ver el desglose por planta' : '')
         }}
       },
       scales:{x:{stacked:true, grid:{display:false}, ticks:{font:{size:10.5}}}, y:{stacked:true, display:false, beginAtZero:true}}
     }
   });
+}
+
+function tpgSobreVolver(){ TPG_SOBRE_SEL = null; renderTpgSobre(); }
+
+function renderTpgSobre(){
+  const canvas = document.getElementById('chartTpgSobre'); if(!canvas) return;
+  const wrap = canvas.parentElement, msg = document.getElementById('tpgSobreMsg');
+  const wrapPl = document.getElementById('chartTpgSobrePl').parentElement;
+  const titulo = document.getElementById('tpgSobreTitulo'), sub = document.getElementById('tpgSobreSub'), volver = document.getElementById('tpgSobreVolver');
+  const filas = TPG_SOBRE.rows.filter(r=> r.incluir !== false && num(r.monto) != null);
+  if(TPG_SOBRE.error || !filas.length){
+    destroyChart('chartTpgSobre'); destroyChart('chartTpgSobrePl'); wrap.classList.add('hidden'); wrapPl.classList.add('hidden');
+    sub.classList.add('hidden'); volver.classList.add('hidden'); msg.classList.remove('hidden');
+    msg.innerHTML = TPG_SOBRE.error
+      ? `No se pudo leer la tabla tpg_sobreestadia: ${TPG_SOBRE.error}<br>Si aún no existe: corre <b>tpg-sobreestadia.sql</b> en el SQL Editor de Supabase e importa <b>tpg_sobreestadias_detalle_2026.csv</b>.`
+      : 'La tabla tpg_sobreestadia está vacía. Impórtale <b>tpg_sobreestadias_detalle_2026.csv</b> desde el Table Editor de Supabase.';
+    return;
+  }
+  msg.classList.add('hidden');
+  const mesDe = r=> r.mes ? String(r.mes).slice(0, 7) : '__sin';
+  const etiquetaMes = m=> m === '__sin' ? 'Sin mes' : fmtMes(m + '-01');
+  if(TPG_SOBRE_SEL !== null && !filas.some(r=> mesDe(r) === TPG_SOBRE_SEL)) TPG_SOBRE_SEL = null;
+
+  if(TPG_SOBRE_SEL === null){   // vista general: total por mes, apilado por OL
+    wrapPl.classList.add('hidden'); wrap.classList.remove('hidden'); volver.classList.add('hidden'); sub.classList.add('hidden');
+    titulo.textContent = '2.2 Sobreestadía total (S/)';
+    destroyChart('chartTpgSobre'); destroyChart('chartTpgSobrePl');
+    charts.chartTpgSobre = sobreApilado(canvas, filas, mesDe, etiquetaMes, (a, b)=> a === '__sin' ? 1 : b === '__sin' ? -1 : (a < b ? -1 : 1),
+      m=>{ TPG_SOBRE_SEL = m; renderTpgSobre(); });
+    return;
+  }
+  // desglose del mes elegido: total por planta, apilado por OL
+  const delMes = filas.filter(r=> mesDe(r) === TPG_SOBRE_SEL);
+  const plantaDe = r=> String(r.planta || '').trim().toUpperCase() || '(sin planta)';
+  const etiquetaPl = p=> SOBRE_PLANTAS[p] ? `${SOBRE_PLANTAS[p]} (${p})` : p;
+  const totalPl = p=> delMes.filter(r=> plantaDe(r) === p).reduce((s, r)=> s + num(r.monto), 0);
+  const total = delMes.reduce((s, r)=> s + num(r.monto), 0), dias = delMes.reduce((s, r)=> s + (num(r.dias) || 0), 0);
+  titulo.textContent = '2.2 Sobreestadía por planta · ' + etiquetaMes(TPG_SOBRE_SEL);
+  sub.textContent = `S/ ${fmt0(total)} · ${fmt0(dias)} días · ${fmt0(delMes.length)} líneas`;
+  sub.classList.remove('hidden'); volver.classList.remove('hidden');
+  wrap.classList.add('hidden'); wrapPl.classList.remove('hidden');
+  destroyChart('chartTpgSobre'); destroyChart('chartTpgSobrePl');
+  charts.chartTpgSobrePl = sobreApilado(document.getElementById('chartTpgSobrePl'), delMes, plantaDe, etiquetaPl, (a, b)=> totalPl(b) - totalPl(a), null);
 }
 
 // 2.3 Promedio de carga: al hacer click en un destino (o en Nacional) se muestra el promedio por operador logístico
