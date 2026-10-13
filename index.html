@@ -2278,10 +2278,12 @@ function tpgTm(r){
   return (c!=null && c>=5 && c<=60) ? c : null;
 }
 function tpgDestino(r){ return String(r.destino_tarifa || r.planta_destino || '').trim().toUpperCase(); }
-// Origen del viaje. Los viajes a Ventanilla sin origen son de PLUSPETROL, que despacha desde Pisco.
+// Origen del viaje cuando la hoja no lo trae: los viajes a Ventanilla son de PLUSPETROL, que despacha desde Pisco;
+// los viajes a Piura salen de Talara (su tarifa es la de Talara).
+const TPG_ORIGEN_POR_DESTINO = {VENTANILLA:'PISCO', PIURA:'TALARA'};
 function tpgOrigenViaje(r){
   const o = String(r.planta_origen || '').trim();
-  return o || (tpgDestino(r) === 'VENTANILLA' ? 'PISCO' : '');
+  return o || TPG_ORIGEN_POR_DESTINO[tpgDestino(r)] || '';
 }
 const TPG_SIN = '(sin dato)';
 
