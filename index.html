@@ -312,15 +312,15 @@
     padding:8px 9px; text-align:center; font-size:10.5px; font-weight:800; letter-spacing:.03em;
     color:#fff; border:1px solid rgba(255,255,255,.35); position:sticky; top:0; z-index:1;
   }
-  table.poa-table th.h-base{background:#6B7A99;}
-  table.poa-table th.h-poa{background:#E58A3A;}
-  table.poa-table th.h-cierre{background:#15266B;}
-  table.poa-table th.h-mix{background:#B88A3E;}
-  table.poa-table th.h-var{background:#6B7A99;}
+  table.poa-table th.h-base{background:#0F2143;}
+  table.poa-table th.h-poa{background:#12A47F;}
+  table.poa-table th.h-cierre{background:#2563C7;}
+  table.poa-table th.h-mix{background:#6E5FD0;}
+  table.poa-table th.h-var{background:#0F2143;}
   table.poa-table td{padding:5px 9px; border-bottom:1px solid #E9EDF5; text-align:right; white-space:nowrap;}
-  table.poa-table td.c-poa{background:#FFF4E0;}
+  table.poa-table td.c-poa{background:#E6F5F0;}
   table.poa-table td.c-cie{background:#E8F0FB;}
-  table.poa-table td.c-mix{background:#EEF1F8;}
+  table.poa-table td.c-mix{background:#EFEDFA;}
   table.poa-table td.l{text-align:left;}
   table.poa-table tr.r-planta td{font-weight:800; color:var(--ink); border-top:2px solid #C9D3E6;}
   table.poa-table tr.r-planta td.nom{color:var(--teal);}
@@ -727,8 +727,10 @@
             <div class="chart-wrap"><canvas id="chartTpgFlete"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--teal);">
-            <div class="card-head"><div><h3>2.3 Promedio de carga</h3></div></div>
+            <div class="card-head"><div><h3 id="tpgCargaTitulo">2.3 Promedio de carga</h3><div class="sub hidden" id="tpgCargaSub"></div></div>
+              <button type="button" id="tpgCargaVolver" class="hidden" onclick="tpgCargaVolver()" style="background:#fff; color:var(--blue-dark); border:1px solid var(--border); padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;">← Volver</button></div>
             <div class="chart-wrap"><canvas id="chartTpgCarga"></canvas></div>
+            <div class="chart-wrap hidden"><canvas id="chartTpgCargaOp"></canvas></div>
           </div>
           <div class="card" style="border-top-color:var(--orange);">
             <div class="card-head"><div><h3>2.2 Unitario sobreestadía</h3><div class="sub">Pago de stand by por TM, por destino</div></div></div>
@@ -772,7 +774,7 @@
           <span class="chip" id="poaResumen">—</span>
           <button type="button" class="chip" id="poaToggleTodo" onclick="poaToggleTodo()" style="cursor:pointer; font-weight:700; color:var(--blue-dark);">▸ Expandir rutas</button>
         </div>
-        <div class="card" style="padding:0; border-top-color:var(--amber);">
+        <div class="card" style="padding:0; border-top-color:var(--blue);">
           <div class="data-table-wrap" style="max-height:none; border:none;" id="poaTabla"></div>
         </div>
         <div class="legend-note" id="poaNota"></div>
@@ -2725,6 +2727,41 @@ function tpgPoaUnitario(mes, origenSel){
   return out;
 }
 
+// 2.3 Promedio de carga: al hacer click en un destino (o en Nacional) se muestra el promedio por operador logístico
+let TPG_CARGA_SEL = null;
+
+function tpgCargaVolver(){ TPG_CARGA_SEL = null; tpgCargaVista(tpgFiltrar()); }
+
+function tpgCargaVista(rows){
+  const main = document.getElementById('chartTpgCarga').parentElement, det = document.getElementById('chartTpgCargaOp').parentElement;
+  const titulo = document.getElementById('tpgCargaTitulo'), sub = document.getElementById('tpgCargaSub'), volver = document.getElementById('tpgCargaVolver');
+  const sel = TPG_CARGA_SEL;
+  const delDestino = sel ? rows.filter(r=> (sel === 'Nacional' || (tpgDestino(r) || TPG_SIN) === sel) && tpgTm(r) != null) : [];
+  if(!sel || !delDestino.length){
+    TPG_CARGA_SEL = null;
+    const venia = main.classList.contains('hidden');
+    main.classList.remove('hidden'); det.classList.add('hidden'); destroyChart('chartTpgCargaOp');
+    titulo.textContent = '2.3 Promedio de carga'; sub.classList.add('hidden'); volver.classList.add('hidden');
+    if(venia && charts.chartTpgCarga) charts.chartTpgCarga.resize();
+    return;
+  }
+  const g = {};
+  delDestino.forEach(r=>{
+    const op = String(r.operador || '').trim() || '(sin operador)', bon = String(r.bonificacion || '').trim() !== '';
+    const e = g[op] = g[op] || {b:{s:0,n:0}, nb:{s:0,n:0}};
+    const t = bon ? e.b : e.nb; t.s += tpgTm(r); t.n++;
+  });
+  const ops = Object.keys(g).sort((a,b)=> a.localeCompare(b, 'es'));
+  const prom = o=> o.n > 0 ? o.s / o.n : null;
+  const total = delDestino.reduce((s,r)=> s + tpgTm(r), 0) / delDestino.length;
+  titulo.textContent = '2.3 Promedio de carga · ' + (sel === 'Nacional' ? 'Nacional' : nombrePlanta(sel));
+  sub.textContent = `Por operador logístico · promedio general ${fmt1(total)} TM por viaje (${fmt0(delDestino.length)} viajes)`;
+  sub.classList.remove('hidden'); volver.classList.remove('hidden');
+  main.classList.add('hidden'); det.classList.remove('hidden');
+  tpgBarras('chartTpgCargaOp', ops, ops.map(o=> prom(g[o].b)), {color:COLORS.teal, sinEjeY:true, fmt:v=>fmt1(v), etiqueta:'Cisterna bonificada', ns:ops.map(o=> g[o].b.n),
+    comparar:{label:'No bonificada', vals:ops.map(o=> prom(g[o].nb)), ns:ops.map(o=> g[o].nb.n), color:COLORS.gray, colorNac:'#5A6B8C', labelColor:'#5A6B8C'}});
+}
+
 // "PUCALLPA-VIA CANTA" → "Pucallpa-Via Canta" (nombres de plantas/destinos con mayúscula inicial)
 function nombrePlanta(s){
   return String(s).toLowerCase().replace(/(^|[\s\-\/])([a-záéíóúüñ])/g, (m, sep, c)=> sep + c.toUpperCase());
@@ -2750,10 +2787,15 @@ function tpgBarras(canvasId, labels, vals, opts){
     options:{
       indexAxis: h ? 'y' : 'x',
       responsive:true, maintainAspectRatio:false,
+      onClick:(ev, els)=>{ if(opts.onClick && els.length) opts.onClick(labels[els[0].index]); },
+      onHover:(ev, els)=>{ if(opts.onClick && ev.native) ev.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
       layout:{padding: h ? {top:4, right:46} : {top:22}},
       plugins:{
         legend:{display:!!opts.comparar, position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10, font:{size:10.5}}},
-        tooltip:{callbacks:{label:c=> ` ${c.dataset.label ? c.dataset.label + ': ' : ''}${opts.fmt ? opts.fmt(c.raw) : fmt1(c.raw)}${opts.unidad||''}${c.dataset.ns ? ' · ' + fmt0(c.dataset.ns[c.dataIndex]) + ' viajes' : ''}`}},
+        tooltip:{callbacks:{
+          label:c=> ` ${c.dataset.label ? c.dataset.label + ': ' : ''}${opts.fmt ? opts.fmt(c.raw) : fmt1(c.raw)}${opts.unidad||''}${c.dataset.ns ? ' · ' + fmt0(c.dataset.ns[c.dataIndex]) + ' viajes' : ''}`,
+          footer:()=> opts.pista || ''
+        }},
         datalabels:{
           display:c=>{ const v=c.dataset.data[c.dataIndex]; return v!=null && !isNaN(v); },
           anchor:'end', align: h ? 'right' : 'top', color:'#0F2547', font:{weight:'700', size: opts.comparar ? 9.5 : 10.5},
@@ -2825,7 +2867,9 @@ function renderTpg(){
   const nB = cLabels.map(k=> g[k].b.n), nN = cLabels.map(k=> g[k].nb.n);
   if(tB.n + tN.n){ cLabels.push('Nacional'); vB.push(prom(tB)); vN.push(prom(tN)); nB.push(tB.n); nN.push(tN.n); }
   tpgBarras('chartTpgCarga', cLabels, vB, {color:COLORS.teal, sinEjeY:true, plantas:true, fmt:v=>fmt1(v), etiqueta:'Cisterna bonificada', ns:nB,
+    pista:'Click para ver por operador logístico', onClick:l=>{ TPG_CARGA_SEL = l; tpgCargaVista(rows); },
     comparar:{label:'No bonificada', vals:vN, ns:nN, color:COLORS.gray, colorNac:'#5A6B8C', labelColor:'#5A6B8C'}});
+  tpgCargaVista(rows);
 
   // Histograma de % de ocupación de cisternas
   const bins = [[0,.85,'<85%'],[.85,.875,'85–87.5%'],[.875,.9,'87.5–90%'],[.9,.925,'90–92.5%'],[.925,.95,'92.5–95%'],[.95,.975,'95–97.5%'],[.975,.9999,'97.5–<100%'],[.9999,Infinity,'100%']];
