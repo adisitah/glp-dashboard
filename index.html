@@ -337,6 +337,21 @@
   .chips{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
   .chip{background:#F5F8FD; border:1px solid var(--border); border-radius:0; padding:6px 10px; font-size:12px; color:var(--text-muted);}
   .chip b{color:var(--ink); font-size:13px;}
+  /* Formularios para agregar una semana desde cada gráfico */
+  .mini-btn{background:#fff; color:var(--blue-dark); border:1px solid var(--border); padding:6px 10px; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap;}
+  .mini-btn:hover{background:#F5F8FD;}
+  .chart-form{margin-top:10px; padding-top:10px; border-top:1px solid var(--border);}
+  .chart-form-head{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:8px;}
+  .chart-form-head label{display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;}
+  .chart-form input{border:1px solid var(--border); padding:6px 8px; font-size:13px; color:var(--ink); font-family:inherit;}
+  .chart-form table{border-collapse:collapse; font-size:12.5px;}
+  .chart-form th{padding:5px 8px; font-size:10.5px; color:var(--text-muted); text-transform:uppercase; text-align:right;}
+  .chart-form td{padding:3px 6px; border-top:1px solid #F0F3F8; text-align:right;}
+  .chart-form td input{width:84px; text-align:right;}
+  .chart-form-foot{display:flex; align-items:center; gap:12px; margin-top:10px;}
+  .chart-form .save-btn{background:var(--green); color:#fff; border:none; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .chart-form .save-btn:disabled{opacity:.6; cursor:default;}
+  .chart-form-estado{font-size:12.5px; font-weight:600; color:var(--text-muted);}
   /* Fila de filtros que ocupa todo el ancho: cada filtro se reparte el espacio por igual */
   .chips-full{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0, 1fr); gap:10px; align-items:stretch;}
   @media (max-width:640px){ .chips-full{grid-auto-flow:row; grid-template-columns:repeat(2, minmax(0, 1fr));} }
@@ -642,9 +657,20 @@
             </h3>
             <div class="sub">Volumen por destino y fuente (%)</div>
           </div>
-          <select id="mixWeekSelect"></select>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" class="mini-btn" onclick="toggleFormGrafico('mixForm')">+ Agregar semana</button>
+            <select id="mixWeekSelect"></select>
+          </div>
         </div>
         <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
+        <div class="chart-form hidden" id="mixForm">
+          <div class="chart-form-head">
+            <label>N° de semana <input type="number" id="mixNuevaSemana" min="1" max="53" step="1" style="width:80px;"></label>
+            <span class="sub">Volumen por destino y fuente. Deja vacío lo que no tenga volumen esa semana.</span>
+          </div>
+          <div id="mixFormTabla" style="overflow-x:auto;"></div>
+          <div class="chart-form-foot"><button type="button" class="save-btn" id="mixGuardar" onclick="guardarMixSemana()">Guardar semana</button><span id="mixEstado" class="chart-form-estado"></span></div>
+        </div>
       </div>
 
       <div class="card" style="border-top-color:var(--orange);">
@@ -659,8 +685,17 @@
             </h3>
             <div class="sub">Horas promedio por semana</div>
           </div>
+          <button type="button" class="mini-btn" onclick="toggleFormGrafico('esperaForm')">+ Agregar semana</button>
         </div>
         <div class="chart-wrap"><canvas id="chartEspera"></canvas></div>
+        <div class="chart-form hidden" id="esperaForm">
+          <div class="chart-form-head">
+            <label>Semana <input type="date" id="esperaNuevaSemana"></label>
+            <label>Horas promedio <input type="number" id="esperaNuevasHoras" min="0" step="any" style="width:100px;"></label>
+            <span class="sub">Si la semana ya existe, se actualiza.</span>
+          </div>
+          <div class="chart-form-foot"><button type="button" class="save-btn" id="esperaGuardar" onclick="guardarEsperaSemana()">Guardar semana</button><span id="esperaEstado" class="chart-form-estado"></span></div>
+        </div>
       </div>
     </div>
     </div>
@@ -1682,10 +1717,124 @@ function renderPrima(){
   });
 }
 
+// ================= Agregar una semana desde el propio gráfico (Mix y Tiempo de espera) =================
+function toggleFormGrafico(id){ document.getElementById(id).classList.toggle('hidden'); }
+
+function estadoFormGrafico(id, texto, tipo){
+  const e = document.getElementById(id); if(!e) return;
+  e.textContent = texto;
+  e.style.color = tipo==='error' ? 'var(--red)' : (tipo==='ok' ? 'var(--green)' : 'var(--text-muted)');
+  e.style.fontWeight = tipo ? '700' : '600';
+}
+
+// Semana propuesta: 7 días después de la última cargada (o hoy si no hay datos)
+function siguienteSemana(filas){
+  const ult = filas.map(r=> toDateInput(r.semana)).filter(Boolean).sort().pop();
+  if(!ult) return regHoy();
+  const [y, m, d] = ult.split('-').map(Number);
+  return new Date(Date.UTC(y, m-1, d + 7)).toISOString().slice(0, 10);
+}
+
+let MIX_FORM = {destinos:[], fuentes:[]};
+
+function renderMixForm(){
+  const tabla = document.getElementById('mixFormTabla'); if(!tabla) return;
+  const destinos = [...new Set(DATA.mix.map(r=> r.destino))].filter(Boolean);
+  const orden = x=>{ const i = DESTINO_ORDEN.indexOf(x); return i < 0 ? 99 : i; };
+  destinos.sort((a, b)=> orden(a) - orden(b) || String(a).localeCompare(String(b), 'es'));
+  const fuentes = [...new Set(DATA.mix.map(r=> r.fuente))].filter(Boolean);
+  MIX_FORM = {destinos: destinos.length ? destinos : [...DESTINO_ORDEN], fuentes: fuentes.length ? fuentes : ['Talara', 'PPAL', 'PlusPetrol']};
+  // La semana del mix es el número de semana (33, 34, 35...). Se propone la siguiente a la última cargada.
+  const nums = DATA.mix.map(r=> parseInt(r.semana, 10)).filter(n=> !isNaN(n));
+  const ultSem = nums.length ? Math.max(...nums) : null;
+  const inp = document.getElementById('mixNuevaSemana');
+  if(!inp.value && ultSem != null) inp.value = ultSem + 1;
+  // referencia: los volúmenes de la última semana cargada, como texto de ayuda en cada casilla
+  const ref = {}; DATA.mix.filter(r=> parseInt(r.semana, 10) === ultSem).forEach(r=>{ ref[r.destino + '|' + r.fuente] = r.volumen; });
+  tabla.innerHTML = `<table><thead><tr><th style="text-align:left;">Destino</th>${MIX_FORM.fuentes.map(f=> `<th>${f}</th>`).join('')}</tr></thead><tbody>` +
+    MIX_FORM.destinos.map((d, i)=> `<tr><td style="text-align:left; font-weight:600;">${d}</td>${MIX_FORM.fuentes.map((f, j)=>{
+      const v = ref[d + '|' + f];
+      return `<td><input type="number" min="0" step="any" id="mixV_${i}_${j}" placeholder="${v == null ? '' : v}"></td>`;
+    }).join('')}</tr>`).join('') + '</tbody></table>';
+}
+
+async function recargarMixEspera(){
+  const [mix, espera] = await Promise.all([
+    sb.from('mix_abastecimiento').select('*').order('semana'),
+    sb.from('espera_pluspetrol').select('*').order('semana')
+  ]);
+  if(mix.error) throw mix.error;
+  if(espera.error) throw espera.error;
+  DATA.mix = mix.data.map(r=>({semana:r.semana, destino:r.destino, fuente:r.fuente, volumen:num(r.volumen)}));
+  DATA.espera = espera.data.map(r=>({semana:r.semana, horas:num(r.horas)}));
+}
+
+async function guardarMixSemana(){
+  const nSem = Number(String(document.getElementById('mixNuevaSemana').value).trim());
+  if(!Number.isInteger(nSem) || nSem < 1 || nSem > 53){ estadoFormGrafico('mixEstado', 'Escribe el número de semana (entre 1 y 53).', 'error'); return; }
+  const semana = String(nSem);   // en la tabla la semana se guarda como número de semana (33, 34, 35...)
+  if(DATA.mix.some(r=> String(r.semana).trim() === semana)){
+    estadoFormGrafico('mixEstado', `La semana ${semana} ya existe en el mix. Para corregirla usa la pestaña "Agregar datos".`, 'error'); return;
+  }
+  const filas = [];
+  for(let i = 0; i < MIX_FORM.destinos.length; i++){
+    for(let j = 0; j < MIX_FORM.fuentes.length; j++){
+      const raw = String(document.getElementById(`mixV_${i}_${j}`).value).replace(',', '.').trim();
+      if(raw === '') continue;
+      const v = Number(raw);
+      if(isNaN(v) || v < 0){ estadoFormGrafico('mixEstado', `${MIX_FORM.destinos[i]} · ${MIX_FORM.fuentes[j]}: el volumen debe ser un número mayor o igual a 0.`, 'error'); return; }
+      filas.push({semana, destino:MIX_FORM.destinos[i], fuente:MIX_FORM.fuentes[j], volumen:v});
+    }
+  }
+  if(!filas.length){ estadoFormGrafico('mixEstado', 'Escribe al menos un volumen.', 'error'); return; }
+  const btn = document.getElementById('mixGuardar');
+  btn.disabled = true; estadoFormGrafico('mixEstado', 'Guardando…');
+  try{
+    const {error} = await sb.from('mix_abastecimiento').insert(filas);
+    if(error) throw error;
+    await recargarMixEspera();
+    document.getElementById('mixNuevaSemana').value = '';
+    renderMix(); renderDetalle();
+    estadoFormGrafico('mixEstado', `Guardado ✓ semana ${semana} · ${filas.length} valor${filas.length===1?'':'es'}`, 'ok');
+  }catch(err){
+    estadoFormGrafico('mixEstado', 'No se pudo guardar. ' + mensajeSupabase(err), 'error');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderEsperaForm(){
+  const inp = document.getElementById('esperaNuevaSemana'); if(!inp) return;
+  if(!inp.value) inp.value = siguienteSemana(DATA.espera);
+}
+
+async function guardarEsperaSemana(){
+  const semana = document.getElementById('esperaNuevaSemana').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(semana)){ estadoFormGrafico('esperaEstado', 'Elige la fecha de la semana.', 'error'); return; }
+  const raw = String(document.getElementById('esperaNuevasHoras').value).replace(',', '.').trim();
+  const horas = raw === '' ? NaN : Number(raw);
+  if(isNaN(horas) || horas < 0){ estadoFormGrafico('esperaEstado', 'Escribe las horas promedio (número mayor o igual a 0).', 'error'); return; }
+  const btn = document.getElementById('esperaGuardar');
+  btn.disabled = true; estadoFormGrafico('esperaEstado', 'Guardando…');
+  try{
+    const {error} = await sb.from('espera_pluspetrol').upsert({semana, horas}, {onConflict:'semana'});
+    if(error) throw error;
+    await recargarMixEspera();
+    document.getElementById('esperaNuevaSemana').value = ''; document.getElementById('esperaNuevasHoras').value = '';
+    renderEspera(); renderDetalle();
+    estadoFormGrafico('esperaEstado', `Guardado ✓ semana ${fmtPeriodo(semana)} · ${fmt1(horas)} h`, 'ok');
+  }catch(err){
+    estadoFormGrafico('esperaEstado', 'No se pudo guardar. ' + mensajeSupabase(err), 'error');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 function renderMix(){
   const d = DATA.mix;
   const select = document.getElementById('mixWeekSelect');
   destroyChart('chartMix');
+  renderMixForm();
   if(!d.length){ select.innerHTML=''; return; }
   const weeks = [...new Set(d.map(r=>r.semana))];
   select.innerHTML = weeks.map(w=>`<option value="${w}">${fmtPeriodo(w)}</option>`).join('');
@@ -1842,6 +1991,7 @@ function renderPPICFR(){
 function renderEspera(){
   const d = DATA.espera;
   destroyChart('chartEspera');
+  renderEsperaForm();
   const ctx = document.getElementById('chartEspera');
   charts.chartEspera = new Chart(ctx, {
     type:'bar',
