@@ -813,7 +813,7 @@
       </div>
       <div id="igroOpWrap" class="hidden">
         <div class="card" style="margin-top:16px; border-top-color:var(--purple); padding-bottom:6px;">
-          <div class="card-head"><div><h3>3.4 IGRO por operador y mes</h3><div class="sub">Verde = cumple el objetivo · rojo = por debajo · en morado, "N° IFV" = cantidad de eventos IFV del mes (no el tipo IFV 1, 2 o 3) · "–" = sin operación ese mes</div></div></div>
+          <div class="card-head"><div><h3>3.4 IGRO por operador y mes</h3><div class="sub">Verde = cumple el objetivo · rojo = por debajo · en morado, los eventos IFV del mes · "–" = sin operación ese mes</div></div></div>
           <div id="igroOpTabla" style="overflow-x:auto; margin-top:8px;"></div>
         </div>
       </div>
@@ -2405,7 +2405,7 @@ function renderIgroOperador(){
   const igro = [...delMes.map(r=> num(r.igro)), totPond];
   const ifv = [...delMes.map(r=> num(r.ifv_eventos)), totIfv];
   const bajo = igro.filter(v=> v < obj).length;
-  document.getElementById('igroOpSub').textContent = `Barra: % IGRO (rojo = bajo el objetivo de ${fmt0(obj*100)}%) · Punto: N° de eventos IFV del mes (eje derecho) · ${fmt0(bajo)} bajo el objetivo`;
+  document.getElementById('igroOpSub').textContent = `Barra: % IGRO (rojo = bajo el objetivo de ${fmt0(obj*100)}%) · Punto: IFV del mes (eje derecho) · ${fmt0(bajo)} bajo el objetivo`;
   const minI = Math.max(0, Math.floor((Math.min(...igro, obj) - 0.03) * 100) / 100), maxIfv = Math.max(2, Math.ceil(Math.max(0, ...ifv.filter(v=> v != null))) + 1);
   destroyChart('chartIgroOp');
   charts.chartIgroOp = new Chart(document.getElementById('chartIgroOp'), {
@@ -2413,7 +2413,7 @@ function renderIgroOperador(){
       {type:'bar', label:'% IGRO', data:igro, yAxisID:'y', order:2, borderRadius:0, barPercentage:.6, categoryPercentage:.9,
         backgroundColor:labels.map((l, i)=> l === 'TPG' ? COLORS.navy : (igro[i] < obj ? COLORS.orange : COLORS.blue)),
         datalabels:{display:true, anchor:'end', align:'start', color:'#fff', font:{weight:'700', size:10.5}, formatter:v=> fmt0(v*100) + '%'}},
-      {type:'line', label:'N° IFV del mes', data:ifv, yAxisID:'y1', showLine:false, pointRadius:6, pointHoverRadius:7, pointBackgroundColor:COLORS.purple, pointBorderColor:'#fff', pointBorderWidth:1.5, order:1,
+      {type:'line', label:'IFV del mes', data:ifv, yAxisID:'y1', showLine:false, pointRadius:6, pointHoverRadius:7, pointBackgroundColor:COLORS.purple, pointBorderColor:'#fff', pointBorderWidth:1.5, order:1,
         datalabels:{display:c=> c.dataset.data[c.dataIndex] != null && c.dataset.data[c.dataIndex] > 0, anchor:'end', align:'top', offset:6, color:COLORS.purple, font:{weight:'700', size:11}, formatter:v=> fmt0(v)}},
       {type:'line', label:`Objetivo ${fmt0(obj*100)}%`, data:labels.map(()=> obj), yAxisID:'y', borderColor:COLORS.gray, borderDash:[6,4], borderWidth:2, pointRadius:0, pointHoverRadius:0, order:0, datalabels:{display:false}}
     ]},
@@ -2422,7 +2422,7 @@ function renderIgroOperador(){
       layout:{padding:{top:16, right:8}},
       plugins:{
         legend:{display:true, position:'bottom', labels:{usePointStyle:true, pointStyle:'circle', boxWidth:4, boxHeight:4, padding:10, font:{size:10.5}}},
-        tooltip:{callbacks:{label:c=> c.datasetIndex === 0 ? ` % IGRO: ${fmt1(c.raw*100)}%` : c.datasetIndex === 1 ? ` N° IFV: ${fmt0(c.raw)}` : ` Objetivo: ${fmt0(c.raw*100)}%`}}
+        tooltip:{callbacks:{label:c=> c.datasetIndex === 0 ? ` % IGRO: ${fmt1(c.raw*100)}%` : c.datasetIndex === 1 ? ` IFV: ${fmt0(c.raw)}` : ` Objetivo: ${fmt0(c.raw*100)}%`}}
       },
       scales:{
         x:{grid:{display:false}, ticks:{font:{size:10}}},
@@ -2442,16 +2442,16 @@ function renderIgroOperador(){
   });
   const th = 'padding:7px 10px; font-size:10.5px; font-weight:800; text-transform:uppercase; color:var(--blue-dark); text-align:center; white-space:nowrap; background:#F5F8FD; border-bottom:1px solid var(--border);';
   const td = 'padding:6px 10px; text-align:center; border-bottom:1px solid #F0F3F8; font-variant-numeric:tabular-nums; white-space:nowrap;';
-  const pctCel = (p, e, extra)=>{
+  const pctCel = (p, e, extra, esTotal)=>{
     if(p == null) return `<td style="${td} color:var(--gray);">–</td>`;
     const ok = p >= obj;
     return `<td style="${td} background:${ok ? '#E6F5F0' : '#FDEDEF'}; ${extra||''}"><div style="font-weight:800; color:${ok ? '#0B7A5C' : '#B22B3E'};">${fmt1(p*100)}%</div>` +
-      (e > 0 ? `<div style="font-size:10.5px; font-weight:700; color:${COLORS.purple};" title="Cantidad de eventos IFV del mes (no el tipo IFV 1, 2 o 3)">N° IFV: ${fmt0(e)}</div>` : '') + '</td>';
+      (e > 0 ? `<div style="font-size:10.5px; font-weight:700; color:${COLORS.purple};">${esTotal ? `IFV (${fmt0(e)} total)` : `IFV ${fmt0(e)}`}</div>` : '') + '</td>';
   };
   document.getElementById('igroOpTabla').innerHTML =
     `<table style="width:100%; border-collapse:collapse; font-size:12.5px;"><thead><tr><th style="${th} text-align:left;">Operador</th>${meses.map(m=> `<th style="${th}">${fmtMes(m + '-01')}</th>`).join('')}</tr></thead><tbody>` +
     ops.map(o=> `<tr><td style="${td} text-align:left; font-weight:700; color:var(--ink);">${o}</td>${meses.map(m=>{ const r = cel[o + '|' + m]; return r ? pctCel(num(r.igro), num(r.ifv_eventos) || 0) : pctCel(null, 0); }).join('')}</tr>`).join('') +
-    `<tr><td style="${td} text-align:left; font-weight:800; background:#DDE5F3; color:var(--blue-dark);">TPG (IGRO ponderado)</td>${meses.map(m=> pctCel(tot[m].p, tot[m].e, 'border-top:2px solid var(--blue-dark);')).join('')}</tr></tbody></table>`;
+    `<tr><td style="${td} text-align:left; font-weight:800; background:#DDE5F3; color:var(--blue-dark);">TPG (IGRO ponderado)</td>${meses.map(m=> pctCel(tot[m].p, tot[m].e, 'border-top:2px solid var(--blue-dark);', true)).join('')}</tr></tbody></table>`;
 }
 
 // Barra = % IGRO (eje izquierdo, fracción 0-1); punto = IFV acumulado del mes (eje derecho)
