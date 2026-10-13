@@ -337,10 +337,13 @@
   .chips{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
   .chip{background:#F5F8FD; border:1px solid var(--border); border-radius:0; padding:6px 10px; font-size:12px; color:var(--text-muted);}
   .chip b{color:var(--ink); font-size:13px;}
+  /* Fila de 4 tarjetas que ocupa todo el ancho (2 por fila en pantallas angostas) */
+  .kpi-strip-4{grid-template-columns:repeat(4, minmax(0, 1fr));}
+  @media (max-width:900px){ .kpi-strip-4{grid-template-columns:repeat(2, minmax(0, 1fr));} }
   /* Formularios para agregar una semana desde cada gráfico */
   .mini-btn{background:#fff; color:var(--blue-dark); border:1px solid var(--border); padding:6px 10px; font-size:11.5px; font-weight:700; cursor:pointer; white-space:nowrap;}
   .mini-btn:hover{background:#F5F8FD;}
-  .chart-form{margin-top:10px; padding-top:10px; border-top:1px solid var(--border);}
+  .chart-form{margin-top:4px;}
   .chart-form-head{display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:8px;}
   .chart-form-head label{display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;}
   .chart-form input{border:1px solid var(--border); padding:6px 8px; font-size:13px; color:var(--ink); font-family:inherit;}
@@ -658,19 +661,11 @@
             <div class="sub">Volumen por destino y fuente (%)</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button" class="mini-btn" onclick="toggleFormGrafico('mixForm')">+ Agregar semana</button>
+            <button type="button" class="mini-btn" onclick="abrirFormGrafico('mixModal')">+ Agregar semana</button>
             <select id="mixWeekSelect"></select>
           </div>
         </div>
         <div class="chart-wrap"><canvas id="chartMix"></canvas></div>
-        <div class="chart-form hidden" id="mixForm">
-          <div class="chart-form-head">
-            <label>N° de semana <input type="number" id="mixNuevaSemana" min="1" max="53" step="1" style="width:80px;"></label>
-            <span class="sub">Volumen por destino y fuente. Deja vacío lo que no tenga volumen esa semana.</span>
-          </div>
-          <div id="mixFormTabla" style="overflow-x:auto;"></div>
-          <div class="chart-form-foot"><button type="button" class="save-btn" id="mixGuardar" onclick="guardarMixSemana()">Guardar semana</button><span id="mixEstado" class="chart-form-estado"></span></div>
-        </div>
       </div>
 
       <div class="card" style="border-top-color:var(--orange);">
@@ -685,24 +680,16 @@
             </h3>
             <div class="sub">Horas promedio por semana</div>
           </div>
-          <button type="button" class="mini-btn" onclick="toggleFormGrafico('esperaForm')">+ Agregar semana</button>
+          <button type="button" class="mini-btn" onclick="abrirFormGrafico('esperaModal')">+ Agregar semana</button>
         </div>
         <div class="chart-wrap"><canvas id="chartEspera"></canvas></div>
-        <div class="chart-form hidden" id="esperaForm">
-          <div class="chart-form-head">
-            <label>Semana <input type="date" id="esperaNuevaSemana"></label>
-            <label>Horas promedio <input type="number" id="esperaNuevasHoras" min="0" step="any" style="width:100px;"></label>
-            <span class="sub">Si la semana ya existe, se actualiza.</span>
-          </div>
-          <div class="chart-form-foot"><button type="button" class="save-btn" id="esperaGuardar" onclick="guardarEsperaSemana()">Guardar semana</button><span id="esperaEstado" class="chart-form-estado"></span></div>
-        </div>
       </div>
     </div>
     </div>
 
     <div id="viewTPGNuevo" class="hidden">
       <div class="section-title">1. Flota</div>
-      <div class="kpi-strip hidden" id="flotaKpis" style="grid-template-columns:repeat(2, minmax(0,1fr)); max-width:640px;">
+      <div class="kpi-strip kpi-strip-4 hidden" id="flotaKpis">
           <div class="kpi-strip-item" style="--c:var(--teal);">
             <div class="ksi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4.5 5.6v6c0 4.6 3.1 8.4 7.5 9.9 4.4-1.5 7.5-5.3 7.5-9.9v-6z"/><path d="M9 12.2l2.1 2.1 4-4.2"/></svg></div>
             <div class="ksi-body">
@@ -717,6 +704,22 @@
               <div class="ksi-label">Flota total</div>
               <div class="ksi-value" id="flotaTotal">—</div>
               <div class="ksi-note" id="flotaTotalNota">cisternas registradas</div>
+            </div>
+          </div>
+          <div class="kpi-strip-item" style="--c:var(--purple);">
+            <div class="ksi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.8 20c0-3.4 2.8-5.6 6.2-5.6s6.2 2.2 6.2 5.6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M17.5 14.2c2.5 0 4.2 1.7 4.2 4.3"/></svg></div>
+            <div class="ksi-body">
+              <div class="ksi-label">N° Operadores Logísticos</div>
+              <div class="ksi-value" id="flotaOps" style="color:var(--navy-900);">—</div>
+              <div class="ksi-note" id="flotaOpsNota">con unidades en la flota</div>
+            </div>
+          </div>
+          <div class="kpi-strip-item" style="--c:var(--purple);">
+            <div class="ksi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/><path d="M9 12.2l2.1 2.1 3.9-4"/></svg></div>
+            <div class="ksi-body">
+              <div class="ksi-label">En recertificación</div>
+              <div class="ksi-value" id="flotaRecert" style="color:var(--purple);">—</div>
+              <div class="ksi-note" id="flotaRecertNota">cisternas</div>
             </div>
           </div>
       </div>
@@ -903,6 +906,42 @@
 
 </div><!-- /.content -->
 </div><!-- /.shell -->
+
+<div class="modal-overlay" id="mixModal" onclick="if(event.target===this) cerrarFormGrafico('mixModal')">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="card-head">
+      <div>
+        <h3>Agregar semana · Mix de abastecimiento</h3>
+        <div class="sub">Volumen por destino y fuente. Deja vacío lo que no tenga volumen esa semana.</div>
+      </div>
+      <button class="modal-close" title="Cerrar" onclick="cerrarFormGrafico('mixModal')">&times;</button>
+    </div>
+    <div class="chart-form">
+      <div class="chart-form-head"><label>N° de semana <input type="number" id="mixNuevaSemana" min="1" max="53" step="1" style="width:80px;"></label></div>
+      <div id="mixFormTabla" style="overflow-x:auto;"></div>
+      <div class="chart-form-foot"><button type="button" class="save-btn" id="mixGuardar" onclick="guardarMixSemana()">Guardar semana</button><span id="mixEstado" class="chart-form-estado"></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="esperaModal" onclick="if(event.target===this) cerrarFormGrafico('esperaModal')">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="card-head">
+      <div>
+        <h3>Agregar semana · Tiempo de espera PlusPetrol</h3>
+        <div class="sub">Si la semana ya existe, se actualiza.</div>
+      </div>
+      <button class="modal-close" title="Cerrar" onclick="cerrarFormGrafico('esperaModal')">&times;</button>
+    </div>
+    <div class="chart-form">
+      <div class="chart-form-head">
+        <label>Semana <input type="date" id="esperaNuevaSemana"></label>
+        <label>Horas promedio <input type="number" id="esperaNuevasHoras" min="0" step="any" style="width:100px;"></label>
+      </div>
+      <div class="chart-form-foot"><button type="button" class="save-btn" id="esperaGuardar" onclick="guardarEsperaSemana()">Guardar semana</button><span id="esperaEstado" class="chart-form-estado"></span></div>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="variacionModalOverlay" onclick="if(event.target===this) closeVariacionModal()">
   <div class="modal-box">
@@ -1718,7 +1757,15 @@ function renderPrima(){
 }
 
 // ================= Agregar una semana desde el propio gráfico (Mix y Tiempo de espera) =================
-function toggleFormGrafico(id){ document.getElementById(id).classList.toggle('hidden'); }
+// Los formularios de "Agregar semana" se abren como ventana emergente (pop-up)
+function abrirFormGrafico(id){
+  document.getElementById(id).classList.add('open');
+  const estado = document.querySelector('#' + id + ' .chart-form-estado'); if(estado) estado.textContent = '';
+}
+function cerrarFormGrafico(id){ document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') ['mixModal', 'esperaModal'].forEach(cerrarFormGrafico);
+});
 
 function estadoFormGrafico(id, texto, tipo){
   const e = document.getElementById(id); if(!e) return;
@@ -1796,6 +1843,7 @@ async function guardarMixSemana(){
     document.getElementById('mixNuevaSemana').value = '';
     renderMix(); renderDetalle();
     estadoFormGrafico('mixEstado', `Guardado ✓ semana ${semana} · ${filas.length} valor${filas.length===1?'':'es'}`, 'ok');
+    setTimeout(()=> cerrarFormGrafico('mixModal'), 1300);
   }catch(err){
     estadoFormGrafico('mixEstado', 'No se pudo guardar. ' + mensajeSupabase(err), 'error');
   }finally{
@@ -1823,6 +1871,7 @@ async function guardarEsperaSemana(){
     document.getElementById('esperaNuevaSemana').value = ''; document.getElementById('esperaNuevasHoras').value = '';
     renderEspera(); renderDetalle();
     estadoFormGrafico('esperaEstado', `Guardado ✓ semana ${fmtPeriodo(semana)} · ${fmt1(horas)} h`, 'ok');
+    setTimeout(()=> cerrarFormGrafico('esperaModal'), 1300);
   }catch(err){
     estadoFormGrafico('esperaEstado', 'No se pudo guardar. ' + mensajeSupabase(err), 'error');
   }finally{
@@ -2605,6 +2654,18 @@ function flotaActualizarKpis(){
   }
   kpis.classList.toggle('hidden', total == null);
   if(total == null) return;
+  // N° de operadores logísticos: los de la flota (tpg_flota); si no hay flota, los del cierre de viajes
+  const clavesOps = new Set(TPG_FLOTA.rows.map(r=> regClaveOp(r.operador)).filter(Boolean));
+  const deFlota = clavesOps.size > 0;
+  const nOps = deFlota ? clavesOps.size : regOperadores().length;
+  document.getElementById('flotaOps').textContent = fmt0(nOps);
+  document.getElementById('flotaOpsNota').textContent = deFlota ? 'con unidades en la flota' : 'en el cierre de viajes';
+  // Cisternas en recertificación y su avance promedio
+  const enRec = TPG_FLOTA.rows.filter(r=> flotaClave(r.status_flota).startsWith('en recertificacion'));
+  const avances = enRec.map(r=> num(r.avance_recertificacion)).filter(v=> v != null);
+  document.getElementById('flotaRecert').textContent = TPG_FLOTA.rows.length ? fmt0(enRec.length) : '—';
+  document.getElementById('flotaRecertNota').textContent = !TPG_FLOTA.rows.length ? 'sin flota cargada'
+    : (avances.length ? `cisternas · avance prom. ${fmt0(avances.reduce((s, v)=> s + v, 0) / avances.length * 100)}%` : 'cisternas');
   document.getElementById('flotaTotal').textContent = fmt0(total);
   document.getElementById('flotaTotalNota').textContent = notaTotal;
   document.getElementById('flotaDispo').textContent = fmt1(oper / total * 100) + '%';
