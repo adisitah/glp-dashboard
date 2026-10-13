@@ -753,6 +753,11 @@
           <div class="card-head"><div><h3>3.1 % IGRO mes · 3.2 IFV mes</h3><div class="sub" id="igroSub">—</div></div></div>
           <div class="chart-wrap"><canvas id="chartIgro"></canvas></div>
         </div>
+        <div class="card hidden" id="igroOpCard" style="border-top-color:var(--blue);">
+          <div class="card-head"><div><h3>3.3 IGRO e IFV por operador</h3><div class="sub" id="igroOpSub">—</div></div>
+            <label class="chip" style="display:inline-flex; align-items:center; gap:8px;">Mes <select id="igroOpMes"></select></label></div>
+          <div class="chart-wrap"><canvas id="chartIgroOp"></canvas></div>
+        </div>
         <div class="card hidden" id="igroFormCard" style="border-top-color:var(--green);">
           <div class="card-head"><div><h3>Agregar / actualizar mes</h3><div class="sub">Se guarda en Supabase (tpg_igro). Si el mes ya existe, se actualiza.</div></div></div>
           <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-top:6px;">
@@ -766,13 +771,6 @@
         </div>
       </div>
       <div id="igroOpWrap" class="hidden">
-        <div class="grid" style="margin-top:16px;">
-          <div class="card" style="border-top-color:var(--blue); grid-column:1 / -1;">
-            <div class="card-head"><div><h3>3.3 IGRO e IFV por operador</h3><div class="sub" id="igroOpSub">—</div></div>
-              <label class="chip" style="display:inline-flex; align-items:center; gap:8px;">Mes <select id="igroOpMes"></select></label></div>
-            <div class="chart-wrap"><canvas id="chartIgroOp"></canvas></div>
-          </div>
-        </div>
         <div class="card" style="margin-top:16px; border-top-color:var(--purple); padding-bottom:6px;">
           <div class="card-head"><div><h3>3.4 IGRO por operador y mes</h3><div class="sub">Verde = cumple el objetivo · rojo = por debajo · en morado, los eventos IFV del mes · "–" = sin operación ese mes</div></div></div>
           <div id="igroOpTabla" style="overflow-x:auto; margin-top:8px;"></div>
@@ -2183,8 +2181,9 @@ function igroMensual(){
 function renderIgroOperador(){
   const wrap = document.getElementById('igroOpWrap'); if(!wrap) return;
   const filas = TPG_IGRO_OP.rows;
-  if(TPG_IGRO_OP.error || !filas.length){ wrap.classList.add('hidden'); destroyChart('chartIgroOp'); return; }
-  wrap.classList.remove('hidden');
+  const card = document.getElementById('igroOpCard');
+  if(TPG_IGRO_OP.error || !filas.length){ wrap.classList.add('hidden'); card.classList.add('hidden'); destroyChart('chartIgroOp'); return; }
+  wrap.classList.remove('hidden'); card.classList.remove('hidden');
   const obj = igroObjetivo();
   const meses = [...new Set(filas.map(r=> String(r.mes).slice(0,7)))].sort();
   const sel = document.getElementById('igroOpMes');
@@ -2858,7 +2857,7 @@ function tpgPoaUnitario(mes, origenSel){
     if(okOrigen && poaOrigenNombre(r.origen).toLowerCase() !== okOrigen) return;
     const m = num(r.monto_soles)||0, v = num(r.volumen_tm)||0; if(v <= 0) return;
     mT += m; vT += v;
-    const d = String(r.destino||'').trim().toUpperCase(); if(!d) return;
+    const d = poaDestinoDe(r); if(!d) return;
     g[d] = g[d] || {m:0, v:0}; g[d].m += m; g[d].v += v;
   });
   Object.keys(g).forEach(d=>{ out[d] = g[d].m / g[d].v; });
@@ -3096,6 +3095,12 @@ function poaOrigenNombre(s){
 //   Ef. Tarifa = (T1 - T0) x V1   (por origen; T0 = monto/volumen POA, o la tarifa informada si el volumen POA es 0)
 //   Ef. Volumen = (V1 - V0) x T0 promedio de la planta
 //   Ef. Mix = VAR - Ef. Tarifa - Ef. Volumen
+// Destino (como en el cierre) de una fila del POA. MPAJ = Maquila Juanjui: sus viajes llegan como destino JUANJUI.
+function poaDestinoDe(r){
+  const d = String(r.destino || '').trim().toUpperCase();
+  return d || (String(r.planta || '').trim().toUpperCase() === 'MPAJ' ? 'JUANJUI' : '');
+}
+
 function poaCalcular(poaRows, viajes, mes){
   const poa = {}, cie = {}, origenNombre = {}, plantaOrigenes = {}, destPlanta = {}, plantas = [];
   const addPO = (p, nombre)=>{
@@ -3107,7 +3112,7 @@ function poaCalcular(poaRows, viajes, mes){
   poaRows.forEach(r=>{
     const p = String(r.planta||'').trim(); if(!p) return;
     if(!plantas.includes(p)) plantas.push(p);
-    if(r.destino) destPlanta[String(r.destino).trim().toUpperCase()] = p;
+    const dp = poaDestinoDe(r); if(dp) destPlanta[dp] = p;
     const ok = addPO(p, poaOrigenNombre(r.origen));
     if(mes && r.periodo && String(r.periodo).slice(0,7) !== mes) return;
     const e = poa[p+'|'+ok] = poa[p+'|'+ok] || {m:0, v:0, t:null};
